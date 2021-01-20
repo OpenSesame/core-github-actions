@@ -1,0 +1,62 @@
+name: "Build and Apply"
+description: "Build Project, Run Tests, and Apply Resources"
+inputs:
+    github_ssh_key:
+      description: "Github SSH Key to read shared terraform modules"
+      required: true
+    terraform_folder:
+      description: "Terraform root configuration folder"
+      required: true
+    terraform_workspace:
+      description: "Terraform workspace to select"
+      required: true
+
+outputs:
+  name_prefix:
+    description: "The computed name_prefix"
+    value: ${{ steps.set_outputs.outputs.name_prefix }}
+
+runs:
+  using: "composite"
+  steps:
+  - name: Configure Github Credentials
+    shell: bash
+    run: |
+      mkdir -p ~/.ssh
+      chmod 700 ~/.ssh
+      echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+      ssh-keyscan github.com > ~/.ssh/known_hosts
+      chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
+  - name: Npm Commands
+    shell: bash
+    run: |
+      npm install
+      npm run lint
+      npm run build
+      npm run test
+
+  - name: Read Secrets Into Env
+    shell: bash
+    run: |
+      echo read secrets into ./terraform/.env
+      node ./scripts/read-secrets.js > ./terraform/.env
+
+  - name: Terraform Commands
+    shell: bash
+    working-directory: ${{ inputs.terraform_folder }}
+    run: |
+      echo terraform init
+      terraform init -upgrade
+      echo select terraform workspace ${{ inputs.terraform_workspace }}
+      node ../../scripts/tf-select-workspace.js ${{ inputs.terraform_workspace }}
+      echo terraform validate
+      ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
+      echo terraform apply
+      ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
+
+  - name: Set Outputs
+    id: set_outputs
+    shell: bash
+    working-directory: ${{ inputs.terraform_folder }}
+    run: echo "::set-output name=name_prefix::$(terraform output name_prefix)"
