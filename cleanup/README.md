@@ -13,10 +13,12 @@ The action will do the following:
 
 The following items must be in the repository:
 
-* `scripts/tf-select-workspace.js` - script to select a terraform workspace based on a branch name (or from a given branch)
-* `scripts/read-secrets.js` - script to read secrets from AWS using the `secrets-map.json` and output an `.env` file
-* `secrets-map.json` containing map of secrets and associated environment variables. These will be written to `.env` file.
-* npm dependencies
+* `package.json` dependencies:
   * `env-cmd` - to launch process using environment variables in `.env` file
-  * `current-git-branch` - used by the tf-select-workspace script to read the current git branch
+  * `core-build-library` - for core-build commands
+* `package.json` scripts:
+  * `lint` - lint the code
+  * `build` - build the code
+  * `test` - test the code (pre-deployment)
+* `secrets-map.json` file containing map of secrets and associated environment variables. These will be written to `.env` file.
 * `terraform` folder containing roots for each environment (`dev`, `stage`, and `prod`)

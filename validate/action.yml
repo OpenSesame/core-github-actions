@@ -4,8 +4,8 @@ inputs:
     github_ssh_key:
       description: "Github SSH Key to read shared terraform modules"
       required: true
-    terraform_folder:
-      description: "Terraform root configuration folder"
+    terraform_root:
+      description: "Terraform root configuration name"
       required: true
     terraform_workspace:
       description: "Terraform workspace to select"
@@ -31,15 +31,17 @@ runs:
     shell: bash
     run: |
       echo read secrets into ./terraform/.env
-      node ./scripts/read-secrets.js > ./terraform/.env
+      ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
-  - name: Terraform Commands
+  - name: Terraform Validate
     shell: bash
-    working-directory: ${{ inputs.terraform_folder }}
+    working-directory: terraform/${{ inputs.terraform_root }}
     run: |
       echo terraform init
       terraform init -upgrade
+
       echo select terraform workspace ${{ inputs.terraform_workspace }}
-      node ../../scripts/tf-select-workspace.js ${{ inputs.terraform_workspace }}
+      node ../../node_modules/.bin/core-build select-workspace ${{ inputs.terraform_workspace }}
+
       echo terraform validate
       ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
