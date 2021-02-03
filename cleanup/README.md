@@ -5,7 +5,7 @@ The cleanup composite action destroys terraform resources in a target environmen
 The action will do the following:
 
 1. Configure githug credentials so that terraform can read from our private repos
-2. Run `npm install`
+2. Run `npm ci`
 3. Run a script to read secrets and write them to a `.env` file (git ignored)
 4. Run terraform commands using the `.env` file to destroy state in the target environment under the provided workspace
 

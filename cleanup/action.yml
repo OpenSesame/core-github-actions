@@ -23,9 +23,9 @@ runs:
       ssh-keyscan github.com > ~/.ssh/known_hosts
       chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
-  - name: Npm Install
+  - name: Npm CI
     shell: bash
-    run: npm install
+    run: npm ci
 
   - name: Read Secrets Into Env
     shell: bash
