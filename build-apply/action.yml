@@ -10,6 +10,9 @@ inputs:
     terraform_workspace:
       description: "Terraform workspace to select"
       required: true
+    run_npm_deploy:
+      description: "Runs 'npm run deploy' after the terraform operations"
+      required: false
 
 outputs:
   name_prefix:
@@ -65,6 +68,12 @@ runs:
 
       echo terraform apply
       ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
+
+  - name: NPM Run Deploy
+    if: inputs.run_npm_deploy == true
+    shell: bash
+    working-directory: terraform/${{ inputs.terraform_root }}
+    run: terraform output -json | npm run deploy
 
   - name: Set Outputs
     id: set_outputs
