@@ -2,8 +2,8 @@
 
 The core team uses github actions to standardize our CI/CD process. Our github workflows compose these actions to deploy and cleanup our software.
 
-- [build-apply](build-apply)
-- [cleanup](cleanup)
+* [build-apply](build-apply)
+* [cleanup](cleanup)
 
 ### Motivation
 
