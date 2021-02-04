@@ -46,8 +46,11 @@ runs:
     shell: bash
     working-directory: terraform/${{ inputs.terraform_root }}
     run: |
-      echo running deploy command if present
-      terraform output -json | npm run deploy --if-present
+      echo save terraform outputs to file
+      terraform output -json > outputs.json 
+      
+      echo pipe outputs.json into npm run deploy
+      cat outputs.json | npm run deploy --if-present
 
   - name: NPM Run Contract Tests
     shell: bash
