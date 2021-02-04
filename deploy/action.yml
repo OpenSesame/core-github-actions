@@ -1,5 +1,5 @@
-name: "Build and Apply"
-description: "Build Project, Run Tests, and Apply Resources"
+name: "Deploy"
+description: "Run deploy script and contract tests"
 inputs:
     github_ssh_key:
       description: "Github SSH Key to read shared terraform modules"
@@ -32,25 +32,7 @@ runs:
     shell: bash
     run: npm ci
 
-  - name: Lint
-    shell: bash
-    run: npm run lint
-
-  - name: Build
-    shell: bash
-    run: npm run build
-
-  - name: Test
-    shell: bash
-    run: npm run test
-
-  - name: Read Secrets Into Env
-    shell: bash
-    run: |
-      echo read secrets into ./terraform/.env
-      ./node_modules/.bin/core-build build-secrets > ./terraform/.env
-
-  - name: Terraform Deploy
+  - name: Terraform Setup
     shell: bash
     working-directory: terraform/${{ inputs.terraform_root }}
     run: |
@@ -60,14 +42,16 @@ runs:
       echo select terraform workspace ${{ inputs.terraform_workspace }}
       node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-      echo terraform validate
-      ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
-
-      echo terraform apply
-      ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
-
-  - name: Set Outputs
-    id: set_outputs
+  - name: NPM Run Deploy
     shell: bash
     working-directory: terraform/${{ inputs.terraform_root }}
-    run: echo "::set-output name=name_prefix::$(terraform output name_prefix)"
+    run: |
+      echo running deploy command if present
+      terraform output -json | npm run deploy --if-present
+
+  - name: NPM Run Contract Tests
+    shell: bash
+    working-directory: terraform/${{ inputs.terraform_root }}
+    run: |
+      echo running contract-tests command if present
+      npm run contract-tests --if-present
