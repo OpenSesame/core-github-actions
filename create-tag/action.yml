@@ -1,0 +1,33 @@
+name: "Increment Version and Create Tag"
+description: "Creates a new GitHub tag with an incremented major, minor, patch, or pre-release suffix number.
+  Defaults to patch or pre-release, depending on whether it is in the main branch, but can be overridden by commit messages."
+
+outputs:
+  new_tag:
+    description: "The value of the newly created tag."
+    value: ${{steps.github-tag-action.outputs.new_tag}}
+  tag:
+    description: "The value of the latest tag after running this action."
+    value: ${{steps.github-tag-action.outputs.tag}}
+  part:
+    description: "The part of version which was bumped."
+    value: ${{steps.github-tag-action.outputs.part}}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: '0'
+    - name: Bump version and push tag
+      uses: anothrNick/github-tag-action@1.34.0
+      id: github-tag-action
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        DEFAULT_BUMP: patch
+        TAG_CONTEXT: repo
+        PRERELEASE_SUFFIX: beta
+        RELEASE_BRANCHES: main
+        INITIAL_VERSION: 0.0.0
+        VERBOSE: false
+        DRY_RUN: false
