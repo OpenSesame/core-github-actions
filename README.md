@@ -4,6 +4,8 @@ The core team uses github actions to standardize our CI/CD process. Our github w
 
 * [build-apply](build-apply)
 * [cleanup](cleanup)
+* [create-tag](create-tag)
+* [deploy](deploy)
 
 ### Motivation
 

@@ -5,13 +5,12 @@ The create-tag composite action creates a new GitHub tag with an incremented maj
 The action will do the following:
 
 1. Determine what type of release this is.
-  - Major, minor, or patch if specified in commit messages
-  - Patch if unspecified and on `main` branch
-  - `beta-1`, `beta-2`, etc. if unspecified on not on `main` branch
+    - Major, minor, or patch if specified in commit messages
+    - Patch if unspecified and on `main` branch
+    - `beta-1`, `beta-2`, etc. if unspecified on not on `main` branch
 2. Increment the version based on existing tags (if none exist, start with 0.0.0)
 3. Create a new tag with this version.
-
-### Using this version number to publish a package
+q1  ### Using this version number to publish a package
 
 If you are publishing a package (e.g. an NPM package) in another GitHub Action job, you can use the new tag variable by following these steps:
 
