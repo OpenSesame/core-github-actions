@@ -1,0 +1,35 @@
+name: "Increment Version and Create Tag"
+description: "Creates a new GitHub tag with an incremented major, minor, patch, or pre-release suffix number.
+  Defaults to patch or pre-release, depending on whether it is in the main branch, but can be overridden by commit messages."
+
+inputs:
+  github_token:
+    description: Auth token for GitHub
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Bump version and push tag
+      uses: anothrNick/github-tag-action@1.34.0
+      id: github-tag-action
+      env:
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        DEFAULT_BUMP: patch
+        TAG_CONTEXT: repo
+        PRERELEASE_SUFFIX: beta
+        RELEASE_BRANCHES: main
+        INITIAL_VERSION: 0.0.0
+        VERBOSE: false
+        DRY_RUN: false
+    - name: Setup Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+          registry-url: 'https://npm.pkg.github.com'
+    - name: Bump Package Version
+        run: npm version ${{steps.github-tag-action.outputs.new_tag}}
+    - name: Publish GitHub Package
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ inputs.github_token }}
