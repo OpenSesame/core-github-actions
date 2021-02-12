@@ -18,7 +18,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
 
-  DeleteTagRelease:
+  DeleteTagAndRelease:
     runs-on: ubuntu-latest
     needs: ReadPackageVersion
     steps:
@@ -34,7 +34,7 @@ jobs:
 
   CreateTag:
     runs-on: ubuntu-latest
-    needs: [ReadPackageVersion, DeleteTagRelease]
+    needs: [ReadPackageVersion, DeleteTagAndRelease]
     steps:
       - name: Tag Release
         id: tag_release
@@ -45,7 +45,7 @@ jobs:
 
   CreateRelease:
     runs-on: ubuntu-latest
-    needs: [ReadPackageVersion, DeleteTagRelease, CreateTag]
+    needs: [ReadPackageVersion, DeleteTagAndRelease, CreateTag]
     steps:
       - name: Upload release notes
         if: needs.ReadPackageVersion.outputs.version
