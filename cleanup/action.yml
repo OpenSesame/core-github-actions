@@ -1,53 +1,58 @@
 name: "Cleanup"
 description: "Cleanup provisioned resources"
 inputs:
-    github_ssh_key:
-      description: "Github SSH Key to read shared terraform modules"
-      required: true
-    terraform_root:
-      description: "Terraform root configuration name"
-      required: true
-    terraform_workspace:
-      description: "Terraform workspace to select"
-      required: true
+  github_ssh_key:
+    description: "Github SSH Key to read shared terraform modules"
+    required: true
+  terraform_root:
+    description: "Terraform root configuration name"
+    required: true
+  terraform_workspace:
+    description: "Terraform workspace to select"
+    required: true
+  node_auth_token:
+    description: "Node auth token environment variable"
+    required: false
 
 runs:
   using: "composite"
   steps:
-  - name: Configure Github Credentials
-    shell: bash
-    run: |
-      mkdir -p ~/.ssh
-      chmod 700 ~/.ssh
-      echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
-      ssh-keyscan github.com > ~/.ssh/known_hosts
-      chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+    - name: Configure Github Credentials
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+        ssh-keyscan github.com > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
-  - name: Npm CI
-    shell: bash
-    run: npm ci
+    - name: Npm CI
+      shell: bash
+      run: npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
-  - name: Read Secrets Into Env
-    shell: bash
-    run: |
-      echo read secrets into ./terraform/.env
-      ./node_modules/.bin/core-build build-secrets > ./terraform/.env
+    - name: Read Secrets Into Env
+      shell: bash
+      run: |
+        echo read secrets into ./terraform/.env
+        ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
-  - name: Terraform Cleanup
-    shell: bash
-    working-directory: terraform/${{ inputs.terraform_root }}
-    run: |
-      echo terraform init
-      terraform init -upgrade
+    - name: Terraform Cleanup
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo terraform init
+        terraform init -upgrade
 
-      echo select terraform workspace ${{ inputs.terraform_workspace }}
-      node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
+        echo select terraform workspace ${{ inputs.terraform_workspace }}
+        node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-      echo terraform destroy
-      ../../node_modules/.bin/env-cmd -f ../.env terraform destroy -auto-approve -no-color
+        echo terraform destroy
+        ../../node_modules/.bin/env-cmd -f ../.env terraform destroy -auto-approve -no-color
 
-      echo terraform select default workspace
-      terraform workspace select default
+        echo terraform select default workspace
+        terraform workspace select default
 
-      echo terraform delete workspace
-      terraform workspace delete ${{ inputs.terraform_workspace }}
+        echo terraform delete workspace
+        terraform workspace delete ${{ inputs.terraform_workspace }}
