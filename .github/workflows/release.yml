@@ -15,3 +15,26 @@ jobs:
           version=$(grep version package.json | awk -F \" '{print $4}')
           echo version: $version
           echo ::set-output name=version::$version
+
+      - name: Delete current tag and release
+        uses: dev-drprasad/delete-tag-and-release@v0.1.3
+        with:
+          delete_release: true
+          tag_name: v1-beta.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag Release
+        id: tag_release
+        uses: tvdias/github-tagger@v0.0.1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.version.outputs.version }}
+
+      - name: Upload release notes
+        if: steps.tag_release.outputs.tag
+        uses: Roang-zero1/github-create-release-action@master
+        with:
+          created_tag: ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
