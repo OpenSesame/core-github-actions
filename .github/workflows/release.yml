@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ReadPackageVersion, DeleteTagAndRelease]
     steps:
-      - name: Tag Release
+      - name: Create Git Tag
         id: tag_release
         uses: tvdias/github-tagger@v0.0.1
         with:
@@ -47,7 +47,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ReadPackageVersion, DeleteTagAndRelease, CreateTag]
     steps:
-      - name: Upload release notes
+      - name: Create Git Release
         if: needs.ReadPackageVersion.outputs.version
         uses: Roang-zero1/github-create-release-action@master
         with:
