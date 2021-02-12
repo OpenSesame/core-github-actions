@@ -1,0 +1,33 @@
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged
+    steps:
+      - name: Checkout Actions
+        uses: actions/checkout@v1
+
+      - name: Get current version
+        id: version
+        shell: bash
+        run: |
+          version=$(grep version package.json | awk -F \" '{print $4}')
+          echo version: $version
+          echo ::set-output name=version::$version"
+
+      - name: Add Git Tag
+        id: git_tag
+        with:
+          tag: ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: git -a ${{ steps.version.outputs.version }} -f -m "${{ steps.version.outputs.version }}"
+
+      - name: Upload release notes
+        if: steps.tag_release.outputs.tag
+        uses: Roang-zero1/github-create-release-action@master
+        with:
+          created_tag: ${{ steps.version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

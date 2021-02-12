@@ -1,0 +1,15 @@
+{
+  "name": "core-github-actions",
+  "version": "1.0.1",
+  "description": "Core Team's sharable GitHub Actions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenSesame/core-github-actions.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/OpenSesame/core-github-actions/issues"
+  },
+  "homepage": "https://github.com/OpenSesame/core-github-actions#readme"
+}
