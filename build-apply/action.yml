@@ -1,15 +1,18 @@
 name: "Build and Apply"
 description: "Build Project, Run Tests, and Apply Resources"
 inputs:
-    github_ssh_key:
-      description: "Github SSH Key to read shared terraform modules"
-      required: true
-    terraform_root:
-      description: "Terraform root configuration name"
-      required: true
-    terraform_workspace:
-      description: "Terraform workspace to select"
-      required: true
+  github_ssh_key:
+    description: "Github SSH Key to read shared terraform modules"
+    required: true
+  terraform_root:
+    description: "Terraform root configuration name"
+    required: true
+  terraform_workspace:
+    description: "Terraform workspace to select"
+    required: true
+  node_auth_token:
+    description: "Node auth token environment variable"
+    required: false
 
 outputs:
   name_prefix:
@@ -19,55 +22,57 @@ outputs:
 runs:
   using: "composite"
   steps:
-  - name: Configure Github Credentials
-    shell: bash
-    run: |
-      mkdir -p ~/.ssh
-      chmod 700 ~/.ssh
-      echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
-      ssh-keyscan github.com > ~/.ssh/known_hosts
-      chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+    - name: Configure Github Credentials
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+        ssh-keyscan github.com > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
-  - name: Npm CI
-    shell: bash
-    run: npm ci
+    - name: Npm CI
+      shell: bash
+      run: npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
-  - name: Lint
-    shell: bash
-    run: npm run lint
+    - name: Lint
+      shell: bash
+      run: npm run lint --if-present
 
-  - name: Build
-    shell: bash
-    run: npm run build
+    - name: Build
+      shell: bash
+      run: npm run build --if-present
 
-  - name: Test
-    shell: bash
-    run: npm run test
+    - name: Test
+      shell: bash
+      run: npm run test --if-present
 
-  - name: Read Secrets Into Env
-    shell: bash
-    run: |
-      echo read secrets into ./terraform/.env
-      ./node_modules/.bin/core-build build-secrets > ./terraform/.env
+    - name: Read Secrets Into Env
+      shell: bash
+      run: |
+        echo read secrets into ./terraform/.env
+        ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
-  - name: Terraform Deploy
-    shell: bash
-    working-directory: terraform/${{ inputs.terraform_root }}
-    run: |
-      echo terraform init
-      terraform init -upgrade
+    - name: Terraform Deploy
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo terraform init
+        terraform init -upgrade
 
-      echo select terraform workspace ${{ inputs.terraform_workspace }}
-      node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
+        echo select terraform workspace ${{ inputs.terraform_workspace }}
+        node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-      echo terraform validate
-      ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
+        echo terraform validate
+        ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
 
-      echo terraform apply
-      ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
+        echo terraform apply
+        ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
 
-  - name: Set Outputs
-    id: set_outputs
-    shell: bash
-    working-directory: terraform/${{ inputs.terraform_root }}
-    run: echo "::set-output name=name_prefix::$(terraform output name_prefix)"
+    - name: Set Outputs
+      id: set_outputs
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: echo "::set-output name=name_prefix::$(terraform output name_prefix)"
