@@ -8,7 +8,7 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v1
 
-      - name: Get current version
+      - name: Read current package version
         id: version
         shell: bash
         run: |
