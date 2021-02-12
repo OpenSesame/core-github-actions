@@ -1,7 +1,7 @@
 on: [push]
 
 jobs:
-  build:
+  ReadPackageVersion:
     runs-on: ubuntu-latest
     # if: github.event.pull_request.merged
     steps:
@@ -15,26 +15,42 @@ jobs:
           version=$(grep version package.json | awk -F \" '{print $4}')
           echo version: $version
           echo ::set-output name=version::$version
+    outputs:
+      version: ${{ steps.version.outputs.version }}
 
+  DeleteTagRelease:
+    runs-on: ubuntu-latest
+    needs: ReadPackageVersion
+    steps:
       - name: Delete current tag and release
         uses: dev-drprasad/delete-tag-and-release@v0.1.3
         with:
           delete_release: true
-          tag_name: v1-beta.1
+          tag_name: ${{ needs.ReadPackageVersion.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      version: ${{ needs.ReadPackageVersion.outputs.version }}
 
+  CreateTag:
+    runs-on: ubuntu-latest
+    needs: [ReadPackageVersion, DeleteTagRelease]
+    steps:
       - name: Tag Release
         id: tag_release
         uses: tvdias/github-tagger@v0.0.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ steps.version.outputs.version }}
+          tag: ${{ needs.ReadPackageVersion.outputs.version }}
 
+  CreateRelease:
+    runs-on: ubuntu-latest
+    needs: [ReadPackageVersion, DeleteTagRelease, CreateTag]
+    steps:
       - name: Upload release notes
-        if: steps.tag_release.outputs.tag
+        if: needs.ReadPackageVersion.outputs.version
         uses: Roang-zero1/github-create-release-action@master
         with:
-          created_tag: ${{ steps.version.outputs.version }}
+          created_tag: ${{ needs.ReadPackageVersion.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
