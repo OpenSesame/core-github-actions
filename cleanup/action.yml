@@ -32,6 +32,12 @@ runs:
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
+    # Some destroy actions require the build artifacts to be present in order to destroy properly.
+    # Use the --force flag to ignore errors, so that invalid builds can still be cleaned up.
+    - name: Build
+      shell: bash
+      run: npm run build --if-present --force
+
     - name: Read Secrets Into Env
       shell: bash
       run: |
