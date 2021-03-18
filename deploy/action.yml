@@ -62,7 +62,7 @@ runs:
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
         echo transform terraform outputs to environment variables
-        source <(terraform output | sed 's/\(\S*\)\s*=\s*\(.*\)/TF_\U\1\E=\2/g')
+        source <(terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r)
 
         echo running contract-tests command if present
         npm run contract-tests --if-present
