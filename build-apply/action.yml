@@ -41,6 +41,10 @@ runs:
       shell: bash
       run: npm run lint --if-present
 
+    - name: Generate build env
+      shell: bash
+      run: npm run env:build --if-present
+
     - name: Build
       shell: bash
       run: npm run build --if-present
