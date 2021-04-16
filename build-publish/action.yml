@@ -57,6 +57,8 @@ runs:
     - name: Publish
       shell: bash
       run: |
+        echo "[>>>] npm run pre-publish --if-present"
+        npm run pre-publish --if-present
         echo "[>>>] npm publish"
         npm publish ${{ inputs.dist_folder }}
       env:
