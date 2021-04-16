@@ -13,5 +13,10 @@ We introduced these modules to standardize the way we build and deploy software,
 
 A technical issue is also solved: terraform providers cannot be reliably initialized from values that are retrieved dynamically during apply or destroy. Provider configuration values must be supplied via an input or an environment variable. The pattern established by these actions retrieves the secrets from AWS Secrets Manager and supplies them when running terraform commands.
 
+### Testing
 
-*** Add note on branch testing 
+To test changes on a branch before it is published, you can push your branch up, and then change the consuming repo's github workflow to use the version on branch. For example, if you are working on branch `feature/CORE-123`, you can change the workflow like this to use the branch version:
+
+```
+uses: opensesame/core-github-actions/build-apply@feature/CORE-123
+```
