@@ -51,7 +51,7 @@ runs:
     - name: Version
       shell: bash
       run: |
-        echo "[>>>] npm version"
+        echo "[>>>] npm version ${{ inputs.package_version }}"
         npm version ${{ inputs.package_version }} -no-git-tag-version
 
     - name: Publish
