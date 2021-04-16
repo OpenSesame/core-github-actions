@@ -1,26 +1,26 @@
-name: "Build and Apply"
-description: "Build Project, Run Tests, and Apply Resources"
+name: Build and Apply
+description: Build Project, Run Tests, and Apply Resources
 inputs:
   github_ssh_key:
-    description: "Github SSH Key to read shared terraform modules"
+    description: Github SSH Key to read shared terraform modules
     required: true
   terraform_root:
-    description: "Terraform root configuration name"
+    description: Terraform root configuration name
     required: true
   terraform_workspace:
-    description: "Terraform workspace to select"
+    description: Terraform workspace to select
     required: true
   node_auth_token:
-    description: "Node auth token environment variable"
+    description: Node auth token environment variable
     required: false
 
 outputs:
   name_prefix:
-    description: "The computed name_prefix"
+    description: The computed name_prefix
     value: ${{ steps.set_outputs.outputs.name_prefix }}
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Configure Github Credentials
       shell: bash
