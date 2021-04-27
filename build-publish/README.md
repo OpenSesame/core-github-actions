@@ -9,7 +9,8 @@ The action will do the following:
 3. Run npm command to publish the package to the configured registry
 
 You will need to add this as a script in your `package.json`:
-```
+
+```JSON
     "postversion": "cp package.json <output_folder>"
 ```
 
