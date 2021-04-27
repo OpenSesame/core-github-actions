@@ -11,7 +11,7 @@ The action will do the following:
 You will need to add this as a script in your `package.json`:
 
 ```JSON
-    "postversion": "cp package.json <output_folder>"
+    "postversion": "cp package.json <dist_folder>"
 ```
 
 You can utilize the cp command, or install and use copyfiles to be system agnostic. After the `npm version` command bumps the version in the `package.json`, you need to copy the updated `package.json` into your output folder (default is `dist`) before `npm publish` runs to ensure it will publish the new version.
