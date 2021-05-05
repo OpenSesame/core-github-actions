@@ -20,5 +20,6 @@ The following items must be in the repository:
   * `lint` - lint the code
   * `build` - build the code
   * `test` - test the code (pre-deployment)
+  * (optional) `env:build` - generate your build environment
 * `terraform` folder containing roots for each environment (`dev`, `stage`, and `prod`)
 * (optional) `secrets-map.json` file containing map of secrets and associated environment variables. These will be written to `.env` file.

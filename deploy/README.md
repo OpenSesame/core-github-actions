@@ -15,8 +15,7 @@ The following items must be in the repository:
   * `env-cmd` - to launch process using environment variables in `.env` file
   * `core-build-library` - for core-build commands
 * `package.json` scripts:
-  * `lint` - lint the code
-  * `build` - build the code
-  * `test` - test the code (pre-deployment)
+  * (optional) `env:deploy` - generate your deploy environment
+  * (optional) `contract-tests` - test the code (post-deployment)
 * `terraform` folder containing roots for each environment (`dev`, `stage`, and `prod`)
-* (optional) `secrets-map.json` file containing map of secrets and associated environment variables. These will be written to `.env` file.
+

@@ -37,6 +37,12 @@ runs:
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
+    - name: Generate deploy env
+      shell: bash
+      run: |
+        echo "[>>>] npm run env:deploy --if-present"
+        npm run env:deploy --if-present
+
     - name: Terraform Setup
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
