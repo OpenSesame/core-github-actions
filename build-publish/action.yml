@@ -6,6 +6,10 @@ inputs:
     description: Output folder of build
     required: false
     default: ./dist
+  dist_tag:
+    description: Tag for the npm package
+    required: false
+    default: latest
   node_auth_token:
     description: Node auth token environment variable
     required: true
@@ -58,6 +62,6 @@ runs:
       shell: bash
       run: |
         echo "[>>>] npm publish"
-        npm publish ${{ inputs.dist_folder }}
+        npm publish ${{ inputs.dist_folder }} --tag ${{ inputs.dist_tag }}
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
