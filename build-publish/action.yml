@@ -6,10 +6,10 @@ inputs:
     description: Output folder of build
     required: false
     default: ./dist
-  dist_tag:
-    description: Tag for the npm package
+  main_branch:
+    description: Name of branch that latest release comes from
     required: false
-    default: latest
+    default: main
   node_auth_token:
     description: Node auth token environment variable
     required: true
@@ -58,10 +58,20 @@ runs:
         echo "[>>>] npm version ${{ inputs.package_version }}"
         npm version ${{ inputs.package_version }} -no-git-tag-version
 
-    - name: Publish
+    - name: Publish Latest
+      if: github.ref == 'refs/heads/${{ inputs.main_branch }}' 
       shell: bash
       run: |
         echo "[>>>] npm publish"
-        npm publish ${{ inputs.dist_folder }} --tag ${{ inputs.dist_tag }}
+        npm publish ${{ inputs.dist_folder }} --tag latest
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+
+    - name: Publish Experimental
+      if: github.ref != 'refs/heads/${{ inputs.main_branch }}' 
+      shell: bash
+      run: |
+        echo "[>>>] npm publish"
+        npm publish ${{ inputs.dist_folder }} --tag experimental
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
