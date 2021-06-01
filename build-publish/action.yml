@@ -58,20 +58,11 @@ runs:
         echo "[>>>] npm version ${{ inputs.package_version }}"
         npm version ${{ inputs.package_version }} -no-git-tag-version
 
-    - name: Publish Latest
-      if: github.ref == 'refs/heads/${{ inputs.main_branch }}' 
+    - name: Publish
       shell: bash
       run: |
-        echo "[>>>] npm publish"
-        npm publish ${{ inputs.dist_folder }} --tag latest
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
-
-    - name: Publish Experimental
-      if: github.ref != 'refs/heads/${{ inputs.main_branch }}' 
-      shell: bash
-      run: |
-        echo "[>>>] npm publish"
-        npm publish ${{ inputs.dist_folder }} --tag experimental
+        DIST_TAG=$([ ${{ github.ref }} = 'refs/heads/${{ inputs.main_branch }}' ] && echo 'latest' || echo 'experimental')
+        echo "[>>>] npm publish $DIST_TAG"
+        npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
