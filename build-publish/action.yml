@@ -62,7 +62,7 @@ runs:
       shell: bash
       run: |
         DIST_TAG=$([ ${{ github.ref }} = 'refs/heads/${{ inputs.main_branch }}' ] && echo 'latest' || echo 'experimental')
-        echo "[>>>] npm publish $DIST_TAG"
+        echo "[>>>] npm publish $DIST_TAG ${{ github.ref }}"
         npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
