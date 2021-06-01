@@ -61,7 +61,7 @@ runs:
     - name: Publish
       shell: bash
       run: |
-        DIST_TAG=$([ ${{ github.ref }} = 'refs/heads/${{ inputs.main_branch }}' ] && echo 'latest' || echo 'experimental')
+        DIST_TAG=$([ ${{ github.ref }} != 'refs/heads/${{ inputs.main_branch }}' ] && echo 'latest' || echo 'experimental')
         echo "[>>>] npm publish $DIST_TAG ${{ github.ref }}"
         npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
       env:
