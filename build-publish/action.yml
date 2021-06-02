@@ -6,10 +6,10 @@ inputs:
     description: Output folder of build
     required: false
     default: ./dist
-  main_branch:
-    description: Name of branch that latest release comes from
+  is_release_branch:
+    description: Is branch that latest release comes from
     required: false
-    default: main
+    default: 'true'
   node_auth_token:
     description: Node auth token environment variable
     required: true
@@ -61,7 +61,7 @@ runs:
     - name: Publish
       shell: bash
       run: |
-        DIST_TAG=$([ ${{ github.ref }} = 'refs/heads/${{ inputs.main_branch }}' ] && echo 'latest' || echo 'experimental')
+        DIST_TAG=$([ ${{ inputs.is_release_branch }} = 'true' ] && echo 'latest' || echo 'experimental')
         echo "[>>>] npm publish $DIST_TAG"
         npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
       env:
