@@ -6,8 +6,8 @@ inputs:
     description: Output folder of build
     required: false
     default: ./dist
-  is_release_branch:
-    description: Is branch that latest release comes from
+  is_release:
+    description: True if package is latest release
     required: false
     default: 'true'
   node_auth_token:
@@ -61,7 +61,7 @@ runs:
     - name: Publish
       shell: bash
       run: |
-        DIST_TAG=$([ ${{ inputs.is_release_branch }} = 'true' ] && echo 'latest' || echo 'experimental')
+        DIST_TAG=$([ ${{ inputs.is_release }} = 'true' ] && echo 'latest' || echo 'experimental')
         echo "[>>>] npm publish $DIST_TAG"
         npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
       env:
