@@ -1,0 +1,3 @@
+{
+  "extends": ["github>OpenSesame/renovate-config:core"]
+}
