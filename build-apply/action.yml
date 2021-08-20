@@ -94,7 +94,7 @@ runs:
         terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
 
         if terraform output name_prefix; then
-          echo "::set-output name=name_prefix::$(terraform output name_prefix)"
+          echo "::set-output name=name_prefix::$(terraform output -raw name_prefix)"
         else
           echo "name_prefix output not set. If you were expecting a name_prefix to be set, please fix this issue."
         fi
