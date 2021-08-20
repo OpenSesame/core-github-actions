@@ -14,11 +14,6 @@ inputs:
     description: "Node auth token environment variable"
     required: false
 
-outputs:
-  name_prefix:
-    description: "The computed name_prefix"
-    value: ${{ steps.set_outputs.outputs.name_prefix }}
-
 runs:
   using: "composite"
   steps:
