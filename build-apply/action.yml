@@ -96,5 +96,5 @@ runs:
         if terraform output name_prefix; then
           echo "::set-output name=name_prefix::$(terraform output name_prefix)"
         else
-          echo ""
+          echo "name_prefix output not set. If you were expecting a name_prefix to be set, please fix this issue."
         fi
