@@ -1,23 +1,12 @@
 name: Build
-description: Build Project and Run Tests
+description: Build Project
 inputs:
   github_ssh_key:
     description: Github SSH Key to read shared terraform modules
     required: true
-  terraform_root:
-    description: Terraform root configuration name
-    required: true
-  terraform_workspace:
-    description: Terraform workspace to select
-    required: true
   node_auth_token:
     description: Node auth token environment variable
     required: false
-
-outputs:
-  name_prefix:
-    description: The computed name_prefix
-    value: ${{ steps.set_outputs.outputs.name_prefix }}
 
 runs:
   using: composite
@@ -39,12 +28,6 @@ runs:
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
-    - name: Lint
-      shell: bash
-      run: |
-        echo "[>>>] npm run lint --if-present"
-        npm run lint --if-present
-
     - name: Generate build env
       shell: bash
       run: |
@@ -56,9 +39,3 @@ runs:
       run: |
         echo "[>>>] npm run build --if-present"
         npm run build --if-present
-
-    - name: Read Secrets Into Env
-      shell: bash
-      run: |
-        echo "[>>>] read secrets into ./terraform/.env"
-        ./node_modules/.bin/core-build build-secrets > ./terraform/.env
