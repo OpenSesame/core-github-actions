@@ -87,4 +87,4 @@ runs:
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
         echo "[>>>] terraform plan 🔮"
-        ../../node_modules/.bin/env-cmd -f ../.env terraform plan -no-color > terraform-plan.txt
+        ../../node_modules/.bin/env-cmd -f ../.env terraform plan -no-color
