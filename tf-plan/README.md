@@ -1,13 +1,12 @@
 ### Overview
 
-The build-apply composite action builds and applies the current branch to a destination environment.
+The tf-plan composite action initializes, validates and plans terraform resources whilst selecting the desired workspace.
 
 The action will do the following:
 
 1. Configure github credentials so that terraform can read from our private repos
-2. Run npm commands to build and test
-3. Run a script to read secrets and write them to a `.env` file (git ignored)
-4. Run terraform commands using the `.env` file to apply state to the target environment under the provided workspace
+2. Run a script to read secrets and write them to a `.env` file (git ignored)
+3. Run terraform commands uses the `.env` file to validate and plan state to the target environment under the provided workspace
 
 ### Requirements
 
