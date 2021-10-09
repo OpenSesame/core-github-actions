@@ -1,0 +1,29 @@
+name: Build
+description: Build Project
+inputs:
+  node_auth_token:
+    description: Node auth token environment variable
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Npm CI
+      shell: bash
+      run: |
+        echo "[>>>] npm ci"
+        npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+
+    - name: Generate build env
+      shell: bash
+      run: |
+        echo "[>>>] npm run env:build --if-present"
+        npm run env:build --if-present
+
+    - name: Build
+      shell: bash
+      run: |
+        echo "[>>>] npm run build --if-present"
+        npm run build --if-present
