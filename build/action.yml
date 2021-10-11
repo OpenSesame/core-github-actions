@@ -1,20 +1,29 @@
 name: Build
 description: Build Project
-# inputs:
-#   node_auth_token:
-#     description: Node auth token environment variable
-#     required: false
+inputs:
+  node_auth_token:
+    description: Node auth token environment variable
+    required: false
 
 runs:
   using: composite
   steps:
+    - name: Configure Github Credentials
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+        ssh-keyscan github.com > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
     - name: Npm CI
       shell: bash
       run: |
         echo "[>>>] npm ci"
         npm ci
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN  }}
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
     - name: Generate build env
       shell: bash
