@@ -14,7 +14,7 @@ runs:
         echo "[>>>] npm ci"
         npm ci
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+        NODE_AUTH_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN  }}
 
     - name: Generate build env
       shell: bash
