@@ -1,9 +1,9 @@
 name: Build
 description: Build Project
-inputs:
-  node_auth_token:
-    description: Node auth token environment variable
-    required: false
+# inputs:
+#   node_auth_token:
+#     description: Node auth token environment variable
+#     required: false
 
 runs:
   using: composite
