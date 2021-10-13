@@ -1,6 +1,9 @@
 name: Build
 description: Build Project
 inputs:
+  github_ssh_key:
+    description: Github SSH Key to read private GitHub packages
+    required: true
   node_auth_token:
     description: Node auth token environment variable
     required: false
@@ -8,6 +11,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Configure Github Credentials
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+        ssh-keyscan github.com > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
     - name: Npm CI
       shell: bash
       run: |
