@@ -1,6 +1,6 @@
 ### Overview
 
-The tf-apply-management composite action initializes, validates and apply terraform resources whilst selecting the desired workspace.
+The tf-apply composite action initializes, validates and apply terraform resources whilst selecting the desired workspace.
 
 The action will do the following:
 
