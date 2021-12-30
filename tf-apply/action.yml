@@ -1,5 +1,5 @@
-name: Terraform Plan
-description: Execute Terraform Plan
+name: Terraform Apply
+description: Execute Terraform Apply
 inputs:
   github_ssh_key:
     description: Github SSH Key to read shared terraform modules
@@ -21,12 +21,12 @@ outputs:
   terraform_validate_status:
     description: The status of terraform validate step
     value: ${{ steps.tf-validate.outcome }}
-  terraform_plan_log:
-    description: The output of terraform plan
-    value: ${{ steps.tf-plan.outputs.stdout }}
-  terraform_plan_status:
-    description: The status of terraform plan step
-    value: ${{ steps.tf-plan.outcome }}
+  terraform_apply_log:
+    description: The output of terraform apply
+    value: ${{ steps.tf-apply.outputs.stdout }}
+  terraform_apply_status:
+    description: The status of terraform apply step
+    value: ${{ steps.tf-apply.outcome }}
 
 runs:
   using: composite
@@ -81,10 +81,10 @@ runs:
         echo "[>>>] terraform validate 🕵️"
         ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
 
-    - name: Terraform Plan 🔮
-      id: tf-plan
+    - name: Terraform Apply 🔮
+      id: tf-apply
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
-        echo "[>>>] terraform plan 🔮"
-        ../../node_modules/.bin/env-cmd -f ../.env terraform plan -no-color
+        echo "[>>>] terraform apply 🔮"
+        ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
