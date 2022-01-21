@@ -62,7 +62,7 @@ runs:
         if test -f "requirements.txt"; then
           echo detected requirements.txt. installing dependencies with pip
           pip install -r requirements.txt
-        end
+        fi
 
     - name: Terraform Deploy
       shell: bash
