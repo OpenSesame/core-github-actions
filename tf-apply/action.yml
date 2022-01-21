@@ -1,0 +1,90 @@
+name: Terraform Apply
+description: Execute Terraform Apply
+inputs:
+  github_ssh_key:
+    description: Github SSH Key to read shared terraform modules
+    required: true
+  terraform_root:
+    description: Terraform root configuration name
+    required: true
+  terraform_workspace:
+    description: Terraform workspace to select
+    required: true
+  node_auth_token:
+    description: Node auth token environment variable
+    required: false
+
+outputs:
+  terraform_validate_log:
+    description: The output of terraform validate
+    value: ${{ steps.tf-validate.outputs.stdout }}
+  terraform_validate_status:
+    description: The status of terraform validate step
+    value: ${{ steps.tf-validate.outcome }}
+  terraform_apply_log:
+    description: The output of terraform apply
+    value: ${{ steps.tf-apply.outputs.stdout }}
+  terraform_apply_status:
+    description: The status of terraform apply step
+    value: ${{ steps.tf-apply.outcome }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure Github Credentials
+      id: configure-credentials
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
+        ssh-keyscan github.com > ~/.ssh/known_hosts
+        chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
+    - name: Npm CI
+      id: npm-ci
+      shell: bash
+      run: |
+        echo "[>>>] npm ci"
+        npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+
+    - name: Read Secrets Into Env
+      id: build-secrets
+      shell: bash
+      run: |
+        echo "[>>>] read secrets into ./terraform/.env"
+        ./node_modules/.bin/core-build build-secrets > ./terraform/.env
+
+    - name: Terraform Init ✨
+      id: tf-init
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo "[>>>] terraform init ✨"
+        terraform init -upgrade
+
+    - name: Terraform Select Workspace 🔍
+      id: tf-select
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }} 🔍"
+        node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
+
+    - name: Terraform Validate 🕵️
+      id: tf-validate
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo "[>>>] terraform validate 🕵️"
+        ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
+
+    - name: Terraform Apply 🔮
+      id: tf-apply
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo "[>>>] terraform apply 🔮"
+        ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false

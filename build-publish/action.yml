@@ -1,0 +1,68 @@
+name: Build and Publish
+description: Build Project, Run Tests, and Publish to Github Packages
+
+inputs:
+  dist_folder:
+    description: Output folder of build
+    required: false
+    default: ./dist
+  is_release:
+    description: True if package is latest release
+    required: false
+    default: 'true'
+  node_auth_token:
+    description: Node auth token environment variable
+    required: true
+  package_version:
+    description: Github package version
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Npm CI
+      shell: bash
+      run: |
+        echo "[>>>] npm ci"
+        npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+
+    - name: Lint
+      shell: bash
+      run: |
+        echo "[>>>] npm run lint --if-present"
+        npm run lint --if-present
+
+    - name: Generate build env
+      shell: bash
+      run: |
+        echo "[>>>] npm run env:build --if-present"
+        npm run env:build --if-present
+
+    - name: Build
+      shell: bash
+      run: |
+        echo "[>>>] npm run build --if-present"
+        npm run build --if-present
+
+    - name: Test
+      shell: bash
+      run: |
+        echo "[>>>] npm run test --if-present"
+        npm run test --if-present
+
+    - name: Version
+      shell: bash
+      run: |
+        echo "[>>>] npm version ${{ inputs.package_version }}"
+        npm version ${{ inputs.package_version }} -no-git-tag-version
+
+    - name: Publish
+      shell: bash
+      run: |
+        DIST_TAG=$([ ${{ inputs.is_release }} = 'true' ] && echo 'latest' || echo 'experimental')
+        echo "[>>>] npm publish $DIST_TAG"
+        npm publish ${{ inputs.dist_folder }} --tag $DIST_TAG
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}

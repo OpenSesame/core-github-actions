@@ -1,26 +1,26 @@
-name: "Build and Apply"
-description: "Build Project, Run Tests, and Apply Resources"
+name: Build and Apply
+description: Build Project, Run Tests, and Apply Resources
 inputs:
   github_ssh_key:
-    description: "Github SSH Key to read shared terraform modules"
+    description: Github SSH Key to read shared terraform modules
     required: true
   terraform_root:
-    description: "Terraform root configuration name"
+    description: Terraform root configuration name
     required: true
   terraform_workspace:
-    description: "Terraform workspace to select"
+    description: Terraform workspace to select
     required: true
   node_auth_token:
-    description: "Node auth token environment variable"
+    description: Node auth token environment variable
     required: false
 
 outputs:
   name_prefix:
-    description: "The computed name_prefix"
+    description: The computed name_prefix
     value: ${{ steps.set_outputs.outputs.name_prefix }}
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Configure Github Credentials
       shell: bash
@@ -33,26 +33,40 @@ runs:
 
     - name: Npm CI
       shell: bash
-      run: npm ci
+      run: |
+        echo "[>>>] npm ci"
+        npm ci
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
     - name: Lint
       shell: bash
-      run: npm run lint --if-present
+      run: |
+        echo "[>>>] npm run lint --if-present"
+        npm run lint --if-present
+
+    - name: Generate build env
+      shell: bash
+      run: |
+        echo "[>>>] npm run env:build --if-present"
+        npm run env:build --if-present
 
     - name: Build
       shell: bash
-      run: npm run build --if-present
+      run: |
+        echo "[>>>] npm run build --if-present"
+        npm run build --if-present
 
     - name: Test
       shell: bash
-      run: npm run test --if-present
+      run: |
+        echo "[>>>] npm run test --if-present"
+        npm run test --if-present
 
     - name: Read Secrets Into Env
       shell: bash
       run: |
-        echo read secrets into ./terraform/.env
+        echo "[>>>] read secrets into ./terraform/.env"
         ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
     - name: Install Python Dependencies
@@ -68,20 +82,28 @@ runs:
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
-        echo terraform init
-        terraform init -upgrade
+        echo "[>>>] terraform init"
+        terraform init
 
-        echo select terraform workspace ${{ inputs.terraform_workspace }}
+        echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-        echo terraform validate
+        echo "[>>>] terraform validate"
         ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
 
-        echo terraform apply
+        echo "[>>>] terraform apply"
         ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
 
     - name: Set Outputs
       id: set_outputs
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
-      run: echo "::set-output name=name_prefix::$(terraform output name_prefix)"
+      run: |
+        echo "[>>>] transform terraform outputs to environment variables"
+        terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
+
+        if terraform output name_prefix; then
+          echo "::set-output name=name_prefix::$(terraform output -raw name_prefix)"
+        else
+          echo "name_prefix output not set. If you were expecting a name_prefix to be set, please fix this issue."
+        fi

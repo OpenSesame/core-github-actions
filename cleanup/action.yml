@@ -1,21 +1,21 @@
-name: "Cleanup"
-description: "Cleanup provisioned resources"
+name: Cleanup
+description: Cleanup provisioned resources
 inputs:
   github_ssh_key:
-    description: "Github SSH Key to read shared terraform modules"
+    description: Github SSH Key to read shared terraform modules
     required: true
   terraform_root:
-    description: "Terraform root configuration name"
+    description: Terraform root configuration name
     required: true
   terraform_workspace:
-    description: "Terraform workspace to select"
+    description: Terraform workspace to select
     required: true
   node_auth_token:
-    description: "Node auth token environment variable"
+    description: Node auth token environment variable
     required: false
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Configure Github Credentials
       shell: bash
@@ -28,7 +28,9 @@ runs:
 
     - name: Npm CI
       shell: bash
-      run: npm ci
+      run: |
+        echo "[>>>] npm ci"
+        npm ci
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
@@ -36,29 +38,31 @@ runs:
     # Use the --force flag to ignore errors, so that invalid builds can still be cleaned up.
     - name: Build
       shell: bash
-      run: npm run build --if-present --force
+      run: |
+        echo "[>>>] npm run build --if-present --force"
+        npm run build --if-present --force
 
     - name: Read Secrets Into Env
       shell: bash
       run: |
-        echo read secrets into ./terraform/.env
+        echo "[>>>] read secrets into ./terraform/.env"
         ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
     - name: Terraform Cleanup
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
-        echo terraform init
-        terraform init -upgrade
+        echo "[>>>] terraform init"
+        terraform init
 
-        echo select terraform workspace ${{ inputs.terraform_workspace }}
+        echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-        echo terraform destroy
+        echo "[>>>] terraform destroy"
         ../../node_modules/.bin/env-cmd -f ../.env terraform destroy -auto-approve -no-color
 
-        echo terraform select default workspace
+        echo "[>>>] terraform select default workspace"
         terraform workspace select default
 
-        echo terraform delete workspace
+        echo "[>>>] terraform delete workspace"
         terraform workspace delete ${{ inputs.terraform_workspace }}
