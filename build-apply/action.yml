@@ -69,6 +69,15 @@ runs:
         echo "[>>>] read secrets into ./terraform/.env"
         ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
+    - name: Install Python Dependencies
+      shell: bash
+      working-directory: terraform
+      run: |
+        if test -f "requirements.txt"; then
+          echo detected requirements.txt. installing dependencies with pip
+          pip install -r requirements.txt
+        fi
+
     - name: Terraform Deploy
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}

@@ -73,6 +73,15 @@ runs:
         echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }} 🔍"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
+    - name: Install Python Dependencies 🐍
+      shell: bash
+      working-directory: terraform
+      run: |
+        if test -f "requirements.txt"; then
+          echo "[>>>] detected requirements.txt. installing dependencies with pip 🐍"
+          pip install -r requirements.txt
+        fi
+
     - name: Terraform Validate 🕵️
       id: tf-validate
       shell: bash
