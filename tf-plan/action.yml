@@ -97,18 +97,20 @@ runs:
 
           const output = `
           ### Terraform Plan Prod 🔍
-          <details><summary>Logs</summary>
+          <details>
+          <summary>Logs</summary>
 
-          ${ CODE_BLOCK }terraform
-          ${{ steps.tf-plan.outputs.stdout }}
+          ${ CODE_BLOCK }
+          ${ steps.tf-plan.outputs.stdout }
           ${ CODE_BLOCK }
           </details>
 
-          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
+          `;
 
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
             body: output
-          })
+          });
