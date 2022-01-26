@@ -4,6 +4,9 @@ inputs:
   terraform_plan:
     description: The contents of the terraform plan
     required: true
+  terraform_environment:
+    description: Terraform environment
+    required: true
 
 runs:
   using: composite
@@ -17,7 +20,7 @@ runs:
           const CODE_BLOCK = '```';
 
           const output = `
-          ### Terraform Plan Prod 🔍
+          ### Terraform Plan ${{ inputs.terraform_environment }} 🔍
           <details>
           <summary>Logs</summary>
 
