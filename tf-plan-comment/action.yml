@@ -1,0 +1,35 @@
+name: Terraform Plan Comment
+description: Create a terraform plan comment in the PR
+inputs:
+  terraform_plan:
+    description: The output of terraform plan
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Comment on PR
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const CODE_BLOCK = '```';
+
+          const output = `
+          ### Terraform Plan Prod 🔍
+          <details>
+          <summary>Logs</summary>
+
+          ${ CODE_BLOCK }
+          ${{ inputs.terraform_plan }}
+          ${ CODE_BLOCK }
+          </details>
+
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
+          `;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          });
