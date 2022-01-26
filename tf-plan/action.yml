@@ -108,9 +108,9 @@ runs:
           *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
           `;
 
-          return github.rest.issues.createComment({
+          github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: output
+            body: '${{ steps.tf-plan.outputs.stdout }}'
           });
