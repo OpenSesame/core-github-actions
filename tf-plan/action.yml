@@ -88,3 +88,28 @@ runs:
       run: |
         echo "[>>>] terraform plan 🔮"
         ../../node_modules/.bin/env-cmd -f ../.env terraform plan -no-color
+
+    - name: Comment on PR
+      uses: actions/github-script@v5
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const CODE_BLOCK = '```';
+
+          const output = `
+          ### Terraform Plan Prod 🔍
+          <details><summary>Logs</summary>
+
+          ${ CODE_BLOCK }terraform
+          ${{ steps.tf-plan.outputs.stdout }}
+          ${ CODE_BLOCK }
+          </details>
+
+          *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
