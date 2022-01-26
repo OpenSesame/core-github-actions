@@ -92,7 +92,7 @@ runs:
     - name: Comment on PR
       uses: actions/github-script@v5
       env:
-        PLAN: "${{ steps.tf-plan.outputs.stdout }}"
+        PLAN: "${{ steps.tf-plan.outputs.terraform_plan_log }}"
       with:
         script: |
           const CODE_BLOCK = '```';
