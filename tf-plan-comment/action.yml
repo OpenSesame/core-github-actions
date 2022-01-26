@@ -21,7 +21,7 @@ runs:
           <details>
           <summary>Logs</summary>
 
-          ${ CODE_BLOCK }
+          ${ CODE_BLOCK }terraform
           ${ process.env.PLAN }
           ${ CODE_BLOCK }
           </details>
