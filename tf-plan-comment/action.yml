@@ -2,7 +2,7 @@ name: Terraform Plan Comment
 description: Create a terraform plan comment in the PR
 inputs:
   terraform_plan:
-    description: The output of terraform plan
+    description: The contents of the terraform plan
     required: true
 
 runs:
@@ -10,6 +10,8 @@ runs:
   steps:
     - name: Comment on PR
       uses: actions/github-script@v5
+      env:
+        PLAN: "${{ inputs.terraform_plan }}"
       with:
         script: |
           const CODE_BLOCK = '```';
@@ -20,7 +22,7 @@ runs:
           <summary>Logs</summary>
 
           ${ CODE_BLOCK }
-          ${{ inputs.terraform_plan }}
+          ${ process.env.PLAN }
           ${ CODE_BLOCK }
           </details>
 
