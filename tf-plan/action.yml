@@ -101,7 +101,7 @@ runs:
           <summary>Logs</summary>
 
           ${ CODE_BLOCK }
-          ${ steps.tf-plan.outputs.stdout }
+          ${{ steps.tf-plan.outputs.stdout }}
           ${ CODE_BLOCK }
           </details>
 
