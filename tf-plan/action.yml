@@ -95,7 +95,7 @@ runs:
         script: |
           const CODE_BLOCK = '```';
 
-          const output = `
+          let output = `
           ### Terraform Plan Prod 🔍
           <details>
           <summary>Logs</summary>
@@ -112,5 +112,5 @@ runs:
             issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: '${{ steps.tf-plan.outputs.stdout }}'
+            body: output
           });
