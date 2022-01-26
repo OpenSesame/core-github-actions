@@ -87,7 +87,7 @@ runs:
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
         echo "[>>>] terraform plan 🔮"
-        ../../node_modules/.bin/env-cmd -f ../.env terraform plan
+        ../../node_modules/.bin/env-cmd -f ../.env terraform plan -no-color
 
     - name: Comment on PR
       uses: actions/github-script@v5
@@ -95,9 +95,9 @@ runs:
         PLAN: "${{ steps.tf-plan.outputs.stdout }}"
       with:
         script: |
-          let CODE_BLOCK = '```';
+          const CODE_BLOCK = '```';
 
-          let output = `
+          const output = `
           ### Terraform Plan Prod 🔍
           <details>
           <summary>Logs</summary>
