@@ -93,7 +93,7 @@ runs:
       uses: actions/github-script@v5
       with:
         script: |
-          const CODE_BLOCK = '```';
+          let CODE_BLOCK = '```';
 
           let output = `
           ### Terraform Plan Prod 🔍
