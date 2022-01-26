@@ -103,7 +103,7 @@ runs:
           <summary>Logs</summary>
 
           ${ CODE_BLOCK }
-          ${ process.env.PLAN }
+          ${ JSON.parse(process.env.PLAN) }
           ${ CODE_BLOCK }
           </details>
 
