@@ -34,6 +34,12 @@ runs:
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
+    - name: Generate build env
+      shell: bash
+      run: |
+        echo "[>>>] npm run env:build --if-present"
+        npm run env:build --if-present
+
     # Some destroy actions require the build artifacts to be present in order to destroy properly.
     # Use the --force flag to ignore errors, so that invalid builds can still be cleaned up.
     - name: Build
