@@ -38,6 +38,7 @@ runs:
     # Use the --force flag to ignore errors, so that invalid builds can still be cleaned up.
     - name: Build
       shell: bash
+      continue-on-error: true
       run: |
         echo "[>>>] npm run build --if-present --force"
         npm run build --if-present --force
