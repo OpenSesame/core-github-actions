@@ -54,6 +54,12 @@ runs:
         echo "[>>>] read secrets into ./terraform/.env"
         ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
+    - name: Remove NodeJs devDependencies
+      shell: bash
+      run: |
+        echo "[>>>] npm run compact --if-present"
+        npm run compact --if-present
+
     - name: Terraform Cleanup
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}

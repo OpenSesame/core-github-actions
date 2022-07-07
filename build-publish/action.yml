@@ -58,6 +58,12 @@ runs:
         echo "[>>>] npm version ${{ inputs.package_version }}"
         npm version ${{ inputs.package_version }} -no-git-tag-version
 
+    - name: Remove NodeJs devDependencies
+      shell: bash
+      run: |
+        echo "[>>>] npm run compact --if-present"
+        npm run compact --if-present
+
     - name: Publish
       shell: bash
       run: |
