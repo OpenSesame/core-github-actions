@@ -89,7 +89,7 @@ runs:
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
         echo "[>>>] terraform init"
-        terraform init
+        terraform init -upgrade
 
         echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
