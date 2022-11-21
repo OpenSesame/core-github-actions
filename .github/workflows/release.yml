@@ -17,7 +17,7 @@ jobs:
         run: |
           version=v$(grep version package.json | awk -F \" '{print $4}')
           echo version: $version
-          echo "{name}={version}" >> $version
+          echo "name=version" >> $version
     outputs:
       version: ${{ steps.version.outputs.version }}
 
