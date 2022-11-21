@@ -26,7 +26,7 @@ jobs:
     needs: ReadPackageVersion
     steps:
       - name: Delete current tag and release matching the version
-        uses: dev-drprasad/delete-tag-and-release@v0.1.3
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
           tag_name: ${{ needs.ReadPackageVersion.outputs.version }}
