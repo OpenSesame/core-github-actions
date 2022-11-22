@@ -29,7 +29,7 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
-          tag_name: echo ${{ needs.ReadPackageVersion.outputs.version }}
+          tag_name: ${{ env.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
