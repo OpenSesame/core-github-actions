@@ -1,40 +1,39 @@
 on:
   pull_request:
     branches: [main]
-    types: [closed]
+    types: [opened]
 
 jobs:
   ReadPackageVersion:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged
+    if: github.event.pull_request.opened
+    outputs:
+      version: ${{ steps.tag_version.outputs.version }}
     steps:
       - name: Checkout Actions
         uses: actions/checkout@v1
 
       - name: Read current package version
-        id: version
+        id: tag_version
         shell: bash
         run: |
           version=v$(grep version package.json | awk -F \" '{print $4}')
           echo version: $version
-          echo "name=version" >> $version
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+          echo "name=version" >> $GITHUB_ENV
 
-  # FIXME: Package is outdated and not working properly
-  # DeleteTagAndRelease:
-  #   runs-on: ubuntu-latest
-  #   needs: ReadPackageVersion
-  #   steps:
-  #     - name: Delete current tag and release matching the version
-  #       uses: dev-drprasad/delete-tag-and-release@v0.2.0
-  #       with:
-  #         delete_release: true
-  #         tag_name: ${{ env.version }}
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #   outputs:
-  #     version: ${{ needs.ReadPackageVersion.outputs.version }}
+  DeleteTagAndRelease:
+    runs-on: ubuntu-latest
+    needs: ReadPackageVersion
+    steps:
+      - name: Delete current tag and release matching the version
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: ${{ needs.ReadPackageVersion.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      version: ${{ needs.ReadPackageVersion.outputs.version }}
 
   CreateTag:
     runs-on: ubuntu-latest
