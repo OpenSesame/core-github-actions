@@ -21,19 +21,20 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
 
-  DeleteTagAndRelease:
-    runs-on: ubuntu-latest
-    needs: ReadPackageVersion
-    steps:
-      - name: Delete current tag and release matching the version
-        uses: dev-drprasad/delete-tag-and-release@v0.2.0
-        with:
-          delete_release: true
-          tag_name: ${{ env.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    outputs:
-      version: ${{ needs.ReadPackageVersion.outputs.version }}
+  # FIXME: Package is outdated and not working properly
+  # DeleteTagAndRelease:
+  #   runs-on: ubuntu-latest
+  #   needs: ReadPackageVersion
+  #   steps:
+  #     - name: Delete current tag and release matching the version
+  #       uses: dev-drprasad/delete-tag-and-release@v0.2.0
+  #       with:
+  #         delete_release: true
+  #         tag_name: ${{ env.version }}
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #   outputs:
+  #     version: ${{ needs.ReadPackageVersion.outputs.version }}
 
   CreateTag:
     runs-on: ubuntu-latest
