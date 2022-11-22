@@ -1,12 +1,13 @@
 on:
   pull_request:
     branches: [main]
-    types: [opened]
+    # FIXME: Must trigger just on closed, test purposes only
+    types: [opened, closed, edited]
 
 jobs:
   ReadPackageVersion:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.opened
+    # if: github.event.pull_request.opened
     outputs:
       version: ${{ steps.tag_version.outputs.version }}
     steps:
@@ -29,7 +30,7 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
-          tag_name: ${{ needs.ReadPackageVersion.outputs.version }}
+          tag_name: ${{ env.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
