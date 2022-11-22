@@ -20,7 +20,7 @@ jobs:
         run: |
           version=v$(grep version package.json | awk -F \" '{print $4}')
           echo version: $version
-          echo "name=version" >> $GITHUB_ENV
+          echo "name=version" >> $GITHUB_OUTPUT
 
   DeleteTagAndRelease:
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
         uses: dev-drprasad/delete-tag-and-release@v0.2.0
         with:
           delete_release: true
-          tag_name: ${{ env.version }}
+          tag_name: ${{ needs.ReadPackageVersion.outputs.version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
