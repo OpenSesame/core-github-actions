@@ -13,6 +13,10 @@ inputs:
   node_auth_token:
     description: Node auth token environment variable
     required: false
+  skip_test:
+    description: Skip unit test and handle by its own
+    default: 'no'
+    required: false
 
 outputs:
   name_prefix:
@@ -59,6 +63,7 @@ runs:
 
     - name: Test
       shell: bash
+      if: ${{ inputs.skip_test == 'no' }}
       run: |
         echo "[>>>] npm run test --if-present"
         npm run test --if-present
