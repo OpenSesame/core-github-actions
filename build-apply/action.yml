@@ -18,11 +18,6 @@ inputs:
     default: 'no'
     required: false
 
-outputs:
-  name_prefix:
-    description: The computed name_prefix
-    value: ${{ steps.set_outputs.outputs.name_prefix }}
-
 runs:
   using: composite
   steps:
@@ -114,4 +109,4 @@ runs:
       run: |
         echo "[>>>] transform terraform outputs to environment variables"
         terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
-        echo "name_prefix=$(terraform output -raw name_prefix)" >> $GITHUB_OUTPUT
+
