@@ -16,7 +16,9 @@ jobs:
 
       - name: Read current package version
         id: version
-        run: echo "::set-output name=version::$(jq -r '.version' package.json)"
+        run: |
+          VERSION=$(jq -r '.version' package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     outputs:
       version: ${{ steps.version.outputs.version }}
