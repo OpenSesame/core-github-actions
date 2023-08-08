@@ -43,7 +43,6 @@ runs:
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
     - name: NPM Run Deploy
-      id: deploy
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
@@ -52,9 +51,6 @@ runs:
 
         echo pipe outputs.json into npm run deploy
         cat outputs.json | npm run deploy --if-present
-
-        API_ENDPOINT=$(jq -r '.tf_api_endpoint.value' outputs.json)
-        echo "api_endpoint=${API_ENDPOINT}" >> $GITHUB_ENV
 
     - name: NPM Run Contract Tests
       shell: bash
