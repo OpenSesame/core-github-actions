@@ -22,9 +22,6 @@ outputs:
   name_prefix:
     description: The computed name_prefix
     value: ${{ steps.set_outputs.outputs.name_prefix }}
-  api_endpoint:
-    description: The API endpoint
-    value: ${{ env.TF_ENDPOINT_API }}
 
 runs:
   using: composite
