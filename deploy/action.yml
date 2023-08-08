@@ -13,10 +13,6 @@ inputs:
   node_auth_token:
     description: "Node auth token environment variable"
     required: false
-outputs:
-  api_endpoint:
-    description: "The TF_API_ENDPOINT value"
-    value: ${{ steps.deploy.outputs.api_endpoint }}
 
 runs:
   using: "composite"
@@ -58,7 +54,7 @@ runs:
         cat outputs.json | npm run deploy --if-present
 
         API_ENDPOINT=$(jq -r '.tf_api_endpoint.value' outputs.json)
-        echo "api_endpoint=${API_ENDPOINT}" >> $GITHUB_OUTPUT
+        echo "api_endpoint=${API_ENDPOINT}" >> $GITHUB_ENV
 
     - name: NPM Run Contract Tests
       shell: bash
