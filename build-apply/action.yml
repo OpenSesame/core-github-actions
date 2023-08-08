@@ -115,4 +115,5 @@ runs:
         echo "[>>>] transform terraform outputs to environment variables"
         terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
         echo "name_prefix=${{ inputs.name_prefix }}" >> $GITHUB_OUTPUT
-        echo "[>>>] API Endpoint: $(jq -r '.api_endpoint.value' outputs.json)"
+        api_endpoint=$(terraform output api_endpoint)
+        echo $api_endpoint
