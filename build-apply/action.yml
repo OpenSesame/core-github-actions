@@ -40,6 +40,7 @@ runs:
 
     - name: Debug
       working-directory: terraform
+      shell: bash
       run: |
         echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
 
