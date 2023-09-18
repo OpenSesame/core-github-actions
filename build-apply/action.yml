@@ -98,7 +98,7 @@ runs:
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
-          echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
+        echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
         echo "[>>>] terraform init"
         terraform init -upgrade
 
