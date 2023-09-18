@@ -29,11 +29,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Debug
-      working-directory: terraform
-      run: |
-        echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
-
     - name: Configure Github Credentials
       shell: bash
       run: |
@@ -42,6 +37,11 @@ runs:
         echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
         ssh-keyscan github.com > ~/.ssh/known_hosts
         chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
+    - name: Debug
+      working-directory: terraform
+      run: |
+        echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
 
     - name: Npm CI
       shell: bash
