@@ -44,84 +44,84 @@ runs:
       run: |
         echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
 
-    - name: Npm CI
-      shell: bash
-      run: |
-        echo "[>>>] npm ci"
-        npm ci
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+    # - name: Npm CI
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] npm ci"
+    #     npm ci
+    #   env:
+    #     NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
-    - name: Lint
-      shell: bash
-      run: |
-        echo "[>>>] npm run lint --if-present"
-        npm run lint --if-present
+    # - name: Lint
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] npm run lint --if-present"
+    #     npm run lint --if-present
 
-    - name: Generate build env
-      shell: bash
-      run: |
-        echo "[>>>] npm run env:build --if-present"
-        npm run env:build --if-present
+    # - name: Generate build env
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] npm run env:build --if-present"
+    #     npm run env:build --if-present
 
-    - name: Build
-      shell: bash
-      run: |
-        echo "[>>>] npm run build --if-present"
-        npm run build --if-present
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
+    # - name: Build
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] npm run build --if-present"
+    #     npm run build --if-present
+    #   env:
+    #     NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
-    - name: Test
-      shell: bash
-      if: ${{ inputs.skip_test == 'no' }}
-      run: |
-        echo "[>>>] npm run test --if-present"
-        npm run test --if-present
+    # - name: Test
+    #   shell: bash
+    #   if: ${{ inputs.skip_test == 'no' }}
+    #   run: |
+    #     echo "[>>>] npm run test --if-present"
+    #     npm run test --if-present
 
-    - name: Read Secrets Into Env
-      shell: bash
-      run: |
-        echo "[>>>] read secrets into ./terraform/.env"
-        ./node_modules/.bin/core-build build-secrets > ./terraform/.env
+    # - name: Read Secrets Into Env
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] read secrets into ./terraform/.env"
+    #     ./node_modules/.bin/core-build build-secrets > ./terraform/.env
 
-    - name: Remove NodeJs devDependencies
-      shell: bash
-      run: |
-        echo "[>>>] npm run compact --if-present"
-        npm run compact --if-present
+    # - name: Remove NodeJs devDependencies
+    #   shell: bash
+    #   run: |
+    #     echo "[>>>] npm run compact --if-present"
+    #     npm run compact --if-present
 
-    - name: Install Python Dependencies
-      shell: bash
-      working-directory: terraform
-      run: |
-        if test -f "requirements.txt"; then
-          echo detected requirements.txt. installing dependencies with pip
-          pip install -r requirements.txt
-        fi
+    # - name: Install Python Dependencies
+    #   shell: bash
+    #   working-directory: terraform
+    #   run: |
+    #     if test -f "requirements.txt"; then
+    #       echo detected requirements.txt. installing dependencies with pip
+    #       pip install -r requirements.txt
+    #     fi
 
-    - name: Terraform Deploy
-      shell: bash
-      working-directory: terraform/${{ inputs.terraform_root }}
-      run: |
-        echo "[>>>] terraform init"
-        terraform init -upgrade
+    # - name: Terraform Deploy
+    #   shell: bash
+    #   working-directory: terraform/${{ inputs.terraform_root }}
+    #   run: |
+    #     echo "[>>>] terraform init"
+    #     terraform init -upgrade
 
-        echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
-        node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
+    #     echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
+    #     node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
-        echo "[>>>] terraform validate"
-        ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
+    #     echo "[>>>] terraform validate"
+    #     ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
 
-        echo "[>>>] terraform apply"
-        ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
+    #     echo "[>>>] terraform apply"
+    #     ../../node_modules/.bin/env-cmd -f ../.env terraform apply -auto-approve -no-color -input=false
 
-    - name: Set Outputs
-      id: set_outputs
-      shell: bash
-      working-directory: terraform/${{ inputs.terraform_root }}
-      run: |
-        echo "[>>>] transform terraform outputs to environment variables"
-        terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
-        echo "name_prefix=${{ inputs.name_prefix }}" >> $GITHUB_OUTPUT
-        echo "api_endpoint=$(terraform output api_endpoint)" >> $GITHUB_OUTPUT
+    # - name: Set Outputs
+    #   id: set_outputs
+    #   shell: bash
+    #   working-directory: terraform/${{ inputs.terraform_root }}
+    #   run: |
+    #     echo "[>>>] transform terraform outputs to environment variables"
+    #     terraform output -json | jq 'to_entries | map("TF_\(.key|ascii_upcase)=\(.value.value|tostring)") | .[]' -r >> $GITHUB_ENV
+    #     echo "name_prefix=${{ inputs.name_prefix }}" >> $GITHUB_OUTPUT
+    #     echo "api_endpoint=$(terraform output api_endpoint)" >> $GITHUB_OUTPUT
