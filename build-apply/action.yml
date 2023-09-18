@@ -29,6 +29,11 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Debug
+      working-directory: terraform
+      run: |
+        echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
+
     - name: Configure Github Credentials
       shell: bash
       run: |
@@ -98,7 +103,6 @@ runs:
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
-        echo "[>>>] Terraform root directory: ${{ inputs.terraform_root }}"
         echo "[>>>] terraform init"
         terraform init -upgrade
 
