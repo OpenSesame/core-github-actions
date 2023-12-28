@@ -1,8 +1,8 @@
 name: Terraform Plan Comment
 description: Create a terraform plan comment in the PR
 inputs:
-  terraform_plan:
-    description: The contents of the terraform plan
+  terraform_plan_path:
+    description: The path to the file containing the contents of the terraform plan
     required: true
   terraform_environment:
     description: Terraform environment
@@ -11,10 +11,20 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Download Terraform Plan Artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: terraform-plan
+        path: /tmp/terraform-plan
+
+    - name: Read Terraform Plan
+      id: read_plan
+      run: echo "TERRAFORM_PLAN=$(cat /tmp/terraform-plan/${{ inputs.terraform_plan_path }})" >> $GITHUB_ENV
+
     - name: Comment on PR
       uses: actions/github-script@v6
       env:
-        PLAN: "${{ inputs.terraform_plan }}"
+        PLAN: ${{ env.TERRAFORM_PLAN }}
       with:
         script: |
           const CODE_BLOCK = '```';
