@@ -1,8 +1,8 @@
 name: Terraform Plan Comment
 description: Create a terraform plan comment in the PR
 inputs:
-  terraform_plan_file:
-    description: The path to the file containing the contents of the terraform plan
+  terraform_plan:
+    description: The contents of the terraform plan
     required: true
   terraform_environment:
     description: Terraform environment
@@ -13,21 +13,20 @@ runs:
   steps:
     - name: Comment on PR
       uses: actions/github-script@v6
+      env:
+        PLAN: "${{ inputs.terraform_plan }}"
       with:
         script: |
-          const fs = require('fs');
           const CODE_BLOCK = '```';
-          const planPath = '${{ inputs.terraform_plan_file }}';
-          const planContents = fs.readFileSync(planPath, 'utf8');
 
           const output = `
-          ### Terraform Plan for ${{ inputs.terraform_environment }} 🔍
+          ### Terraform Plan ${{ inputs.terraform_environment }} 🔍
           <details>
-          <summary>Click to view plan details</summary>
+          <summary>Logs</summary>
 
-          ${CODE_BLOCK}terraform
-          ${planContents}
-          ${CODE_BLOCK}
+          ${ CODE_BLOCK }terraform
+          ${ process.env.PLAN }
+          ${ CODE_BLOCK }
           </details>
 
           *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
