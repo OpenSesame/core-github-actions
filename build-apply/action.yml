@@ -39,6 +39,7 @@ runs:
         chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
     - name: Check npm version
+      shell: bash
       run: npm --version
 
     - name: Npm CI
