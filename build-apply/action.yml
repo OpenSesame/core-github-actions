@@ -46,7 +46,6 @@ runs:
       shell: bash
       run: |
         echo "[>>>] npm ci"
-        npm install --package-lock-only
         npm ci
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
