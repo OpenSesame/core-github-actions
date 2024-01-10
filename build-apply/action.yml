@@ -42,6 +42,10 @@ runs:
       shell: bash
       run: npm --version
 
+    - name: run npm install
+      shell: bash
+      run: npm install
+
     - name: Npm CI
       shell: bash
       run: |
