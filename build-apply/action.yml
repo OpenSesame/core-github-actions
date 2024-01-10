@@ -45,6 +45,8 @@ runs:
     - name: run npm install
       shell: bash
       run: npm install
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
 
     - name: Npm CI
       shell: bash
