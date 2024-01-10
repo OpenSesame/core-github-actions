@@ -42,16 +42,11 @@ runs:
       shell: bash
       run: npm --version
 
-    - name: run npm install
-      shell: bash
-      run: npm install
-      env:
-        NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
-
     - name: Npm CI
       shell: bash
       run: |
         echo "[>>>] npm ci"
+        npm install --package-lock-only
         npm ci
       env:
         NODE_AUTH_TOKEN: ${{ inputs.node_auth_token }}
