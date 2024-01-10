@@ -34,7 +34,7 @@ runs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo '${{ secrets.ORG_READ_ONLY_SSH_KEY }}' > ~/.ssh/id_rsa
+        echo '${{ inputs.github_ssh_key }}' > ~/.ssh/id_rsa
         ssh-keyscan github.com > ~/.ssh/known_hosts
         chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
