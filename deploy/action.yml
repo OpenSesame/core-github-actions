@@ -13,6 +13,10 @@ inputs:
   node_auth_token:
     description: "Node auth token environment variable"
     required: false
+  run_contract_tests:
+    description: "Indicates whether the run contract tests step should be run"
+    required: false
+    default: 'true'
 
 runs:
   using: "composite"
@@ -52,7 +56,9 @@ runs:
         echo pipe outputs.json into npm run deploy
         cat outputs.json | npm run deploy --if-present
 
+
     - name: NPM Run Contract Tests
+      if: ${{inputs.run_contract_tests == 'true' }}
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
