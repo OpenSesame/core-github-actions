@@ -3,20 +3,8 @@ name: "Reusable - Deploy Feature Branch to Dev"
 on:
   workflow_call:
     inputs:
-      aws_region:
-        description: 'AWS region'
-        required: true
-        type: string
-      terraform_root:
-        description: 'Terraform root directory'
-        required: true
-        type: string
       terraform_workspace:
         description: 'Terraform workspace'
-        required: true
-        type: string
-      node_version:
-        description: 'Node.js version'
         required: true
         type: string
       role_session_name_suffix:
@@ -36,7 +24,6 @@ permissions:
 jobs:
   BuildAndApply:
     runs-on: ubuntu-latest
-    environment: dev
 
     steps:
       - id: get-role-arn
@@ -58,7 +45,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "16.x"
+          node-version: "20.x"
           registry-url: "https://npm.pkg.github.com"
 
       - name: Setup Terraform
@@ -72,7 +59,7 @@ jobs:
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
           terraform_root: dev
-          terraform_workspace: ${GITHUB_REF##*/}
+          terraform_workspace: ${{ inputs.terraform_workspace }}
           node_auth_token: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 
       - name: Deploy to Dev
@@ -80,4 +67,4 @@ jobs:
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
           terraform_root: dev
-          terraform_workspace: ${GITHUB_REF##*/}
+          terraform_workspace: ${{ inputs.terraform_workspace }}
