@@ -28,12 +28,6 @@ on:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
-      node_auth_token:
-        description: 'Node auth token for private packages'
-        required: true
-      github_ssh_key:
-        description: 'SSH key for GitHub'
-        required: true
 
 permissions:
   id-token: write
