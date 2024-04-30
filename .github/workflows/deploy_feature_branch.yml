@@ -28,6 +28,7 @@ permissions:
 jobs:
   BuildAndApply:
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
       - id: get-role-arn
