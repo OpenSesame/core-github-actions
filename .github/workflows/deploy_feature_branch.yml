@@ -19,14 +19,6 @@ on:
         description: 'Node.js version'
         required: true
         type: string
-      node_auth_token:
-        description: 'Node auth token for private packages'
-        required: true
-        type: string
-      github_ssh_key:
-        description: 'SSH key for GitHub'
-        required: true
-        type: string
       role_session_name_suffix:
         description: 'Suffix for the role session name'
         required: true
@@ -35,6 +27,12 @@ on:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+      node_auth_token:
+        description: 'Node auth token for private packages'
+        required: true
+      github_ssh_key:
+        description: 'SSH key for GitHub'
         required: true
 
 permissions:
@@ -57,7 +55,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
-          role-session-name: deployBranchDev-Run${{ github.run_id }}-@${{ github.actor }}
+          role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
           aws-region: ${{ steps.get-role-arn.outputs.region }}
 
       - name: Actions - Checkout Repo
