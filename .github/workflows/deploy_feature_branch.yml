@@ -132,6 +132,24 @@ jobs:
       TF_API_ENDPOINT: ${{ needs.BuildAndApply.outputs.api_endpoint }}
 
     steps:
+      - id: get-role-arn-dev
+        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        with:
+          domain: core
+          env: dev
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.get-role-arn-dev.outputs.role-arn }}
+          role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
+          aws-region: ${{ steps.get-role-arn-dev.outputs.region }}
+
+      - name: Authorize tests in DEV
+        run: |
+          node e2e/cli/authorize.js --dev
+          echo "IUM_ACCESS_TOKEN=$(cat ium.txt)" >> $GITHUB_ENV
+
       - name: Checkout Actions
         uses: actions/checkout@v3
 
@@ -154,24 +172,6 @@ jobs:
         run: |
           cd e2e
           npm ci
-
-      - id: get-role-arn-dev
-        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
-        with:
-          domain: core
-          env: dev
-          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ steps.get-role-arn-dev.outputs.role-arn }}
-          role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
-          aws-region: ${{ steps.get-role-arn-dev.outputs.region }}
-
-      - name: Authorize tests in DEV
-        run: |
-          node e2e/cli/authorize.js --dev
-          echo "IUM_ACCESS_TOKEN=$(cat ium.txt)" >> $GITHUB_ENV
 
       - id: get-role-arn-stage
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
