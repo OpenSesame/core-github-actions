@@ -155,7 +155,7 @@ jobs:
           cd e2e
           npm ci
 
-      - id: get-role-arn
+      - id: get-role-arn-dev
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
         with:
           domain: core
@@ -164,9 +164,9 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
+          role-to-assume: ${{ steps.get-role-arn-dev.outputs.role-arn }}
           role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
-          aws-region: ${{ steps.get-role-arn.outputs.region }}
+          aws-region: ${{ steps.get-role-arn-dev.outputs.region }}
 
       - name: Authorize tests in DEV
         run: |
@@ -182,9 +182,9 @@ jobs:
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
+          role-to-assume: ${{ steps.get-role-arn-stage.outputs.role-arn }}
           role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
-          aws-region: ${{ steps.get-role-arn.outputs.region }}
+          aws-region: ${{ steps.get-role-arn-stage.outputs.region }}
 
       - name: Authorize tests in STAGE
         run: |
