@@ -20,12 +20,24 @@ on:
         description: 'Slack Notification Title'
         required: false
         type: string
+      DEV_ROLE_ARN:
+        description: 'Role ARN for Dev'
+        required: false
+        type: string
+      STAGE_ROLE_ARN:
+        description: 'Role ARN for Stage'
+        required: false
+        type: string
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
       CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
+        required: true
+      CORE_DEV_AWS_ACCESS_KEY_ID:
+        required: true
+      CORE_DEV_AWS_SECRET_ACCESS_KEY:
         required: true
 
 permissions:
@@ -163,7 +175,7 @@ jobs:
           aws-access-key-id: ${{ secrets.CORE_DEV_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.CORE_DEV_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
-          role-to-assume: ${{ env.ROLE_ARN }}
+          role-to-assume: ${{ inputs.DEV_ROLE_ARN }}
           role-duration-seconds: 3600
 
       - name: Authorize tests in DEV
@@ -177,7 +189,7 @@ jobs:
           aws-access-key-id: ${{ secrets.CORE_STAGE_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.CORE_STAGE_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-west-1
-          role-to-assume: ${{ env.STAGE_ROLE_ARN }}
+          role-to-assume: ${{ inputs.STAGE_ROLE_ARN }}
           role-duration-seconds: 3600
 
       - name: Authorize tests in STAGE
