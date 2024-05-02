@@ -39,6 +39,10 @@ on:
         required: true
       CORE_DEV_AWS_SECRET_ACCESS_KEY:
         required: true
+      CORE_STAGE_AWS_ACCESS_KEY_ID:
+        required: true
+      CORE_STAGE_AWS_SECRET_ACCESS_KEY:
+        required: true
 
 permissions:
   id-token: write
