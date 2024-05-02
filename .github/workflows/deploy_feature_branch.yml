@@ -42,6 +42,98 @@ jobs:
       deploy_fargate: ${{ inputs.deploy_fargate }}
 
     steps:
+      - id: get-role-arn
+        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        with:
+          domain: core
+          env: dev
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
+          role-session-name: deployBranchDev-Run${{ inputs.role_session_name_suffix }}
+          aws-region: ${{ steps.get-role-arn.outputs.region }}
+
+      - name: Actions - Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://npm.pkg.github.com"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.3
+          terraform_wrapper: false
+
+      - name: Login to Amazon ECR
+        if: ${{ inputs.deploy_fargate }}
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Install IUM App Packages & Build App
+        if: ${{ inputs.deploy_fargate }}
+        run: |
+          cd lambdas/user-management-api
+          npm ci
+          npm run build
+
+      - name: Build And Apply Feature Branch to Dev
+        uses: opensesame/core-github-actions/build-apply@v1
+        with:
+          github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+          terraform_root: dev
+          terraform_workspace: ${{ inputs.terraform_workspace }}
+          node_auth_token: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+
+      - name: Get Feature Branch Prefix
+        if: ${{ inputs.deploy_fargate }}
+        id: get_branch_prefix
+        run: |
+          FEATURE_BRANCH_ENV=$(echo "${{ github.ref }}" | awk -F'/' '{print tolower($NF)}' | tr '_' '-' | cut -c 1-15 | sed 's/-*$//')
+          echo "FEATURE_BRANCH_ENV=$FEATURE_BRANCH_ENV" >> $GITHUB_ENV
+          echo "::set-output name=feature_branch_env::$FEATURE_BRANCH_ENV"
+
+      - name: Build, Tag, and Push IUM API Image to Dev ECR
+        if: ${{ inputs.deploy_fargate }}
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: latest
+          ECR_REPOSITORY: ${{ env.FEATURE_BRANCH_ENV }}-ium-ecr-repository
+        run: |
+          cd lambdas/user-management-api
+          docker build -t $ECR_REPOSITORY:latest --platform linux/arm64 -f Dockerfile .
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update IUM ECS Service to use new image
+        if: ${{ inputs.deploy_fargate }}
+        env:
+          ECR_CLUSTER: ${{ env.FEATURE_BRANCH_ENV }}-ium-ecr-cluster
+          ECS_SERVICE: ${{ env.FEATURE_BRANCH_ENV }}-ium-ecs-service
+        run: |
+          aws ecs update-service --cluster $ECR_CLUSTER --service $ECS_SERVICE --force-new-deployment
+
+      - name: Deploy to Dev
+        uses: opensesame/core-github-actions/deploy@v1
+        with:
+          github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+          terraform_root: dev
+          terraform_workspace: ${{ inputs.terraform_workspace }}
+
+  E2ETest:
+    if: ${{ needs.BuildAndApply.outputs.deploy_fargate }}
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: BuildAndApply
+    env:
+      TF_API_ENDPOINT: ${{ needs.BuildAndApply.outputs.api_endpoint }}
+
+    steps:
       - name: Checkout Actions
         uses: actions/checkout@v3
 
