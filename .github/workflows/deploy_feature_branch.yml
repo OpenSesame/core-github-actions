@@ -45,9 +45,9 @@ on:
         required: true
     outputs:
       name_prefix:
-        value: ${{ jobs.BuildAndApply.outputs.name_prefix }}
+        value: ${{ jobs.build_and_apply.outputs.name_prefix }}
       api_endpoint:
-        value: ${{ jobs.BuildAndApply.outputs.api_endpoint }}
+        value: ${{ jobs.build_and_apply.outputs.api_endpoint }}
       deploy_fargate:
         value: ${{ inputs.deploy_fargate }}
 
@@ -56,7 +56,7 @@ permissions:
   contents: read
 
 jobs:
-  BuildAndApply:
+  build_and_apply:
     runs-on: ubuntu-latest
     environment: dev
     outputs:

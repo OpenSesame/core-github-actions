@@ -28,6 +28,10 @@ on:
         description: 'Role ARN for Stage'
         required: false
         type: string
+      api_endpoint:
+        description: 'API Endpoint'
+        required: true
+        type: string
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -93,6 +97,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: stage
     needs: Authorize_Dev
+
+    env:
+      TF_API_ENDPOINT: ${{ inputs.api_endpoint }}
 
     steps:
       - id: get-role-arn
