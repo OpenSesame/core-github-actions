@@ -26,7 +26,7 @@ on:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
       CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: true
+        required: false
     outputs:
       name_prefix:
         value: ${{ jobs.build_and_apply.outputs.name_prefix }}
