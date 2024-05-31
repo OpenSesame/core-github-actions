@@ -63,7 +63,7 @@ runs:
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
         echo "[>>>] terraform init ✨"
-        terraform init -upgrade
+        terraform init
 
     - name: Terraform Select Workspace 🔍
       id: tf-select
@@ -72,6 +72,14 @@ runs:
       run: |
         echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }} 🔍"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
+
+    - name: Terraform Init With Upgrade✨
+      id: tf-init
+      shell: bash
+      working-directory: terraform/${{ inputs.terraform_root }}
+      run: |
+        echo "[>>>] terraform init ✨"
+        terraform init -upgrade
 
     - name: Terraform Validate 🕵️
       id: tf-validate
