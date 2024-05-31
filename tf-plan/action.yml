@@ -74,7 +74,7 @@ runs:
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
     - name: Terraform Init With Upgrade✨
-      id: tf-init
+      id: tf-init-upgrade
       shell: bash
       working-directory: terraform/${{ inputs.terraform_root }}
       run: |
