@@ -104,6 +104,9 @@ runs:
         echo "[>>>] select terraform workspace ${{ inputs.terraform_workspace }}"
         node ../../node_modules/.bin/core-build select-workspace -w ${{ inputs.terraform_workspace }}
 
+        echo "[>>>] terraform init ✨"
+        terraform init -upgrade
+
         echo "[>>>] terraform validate"
         ../../node_modules/.bin/env-cmd -f ../.env terraform validate -no-color
 
