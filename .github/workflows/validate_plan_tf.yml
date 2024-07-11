@@ -1,0 +1,152 @@
+name: TF Validate and Plan
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Environment to terraform validate and plan (dev, stage, prod)
+        type: string
+        required: true
+      commit-identifier:
+        description: "SHA or tag to validate and plan terraform, (optional) when omitted, the head of the selected branch is used"
+        type: string
+        required: true 
+      with-lock:
+        description: whether to lock the state file or not, (default - true)
+        type: boolean
+        default: true
+      write-artifact:
+        description: write the terraform plan to an artifact
+        type: boolean
+        required: false
+        default: false
+      workspace: 
+        description: workspace to use
+        type: string
+        required: true
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        required: true
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+    outputs:
+      plan-artifact-name:
+        description: the name of the plan artifact, if write-artifact is true
+        value: ${{ jobs.TF-Validate-Plan.outputs.plan-artifact-name}}
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ inputs.environment }}
+
+permissions:
+  id-token: write  # required by configure-aws-credentials
+  contents: read
+
+env:
+  TERRAFORM_ROOT: ${{ inputs.environment }}
+  TERRAFORM_WORKSPACE: ${{ inputs.environment }}
+
+jobs: 
+  TF-Validate-Plan:
+    name: Terraform Validate and Plan
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults: # runs all steps in this directory
+      run:
+        working-directory: ./terraform/${{ inputs.environment }}
+    outputs:
+      plan-artifact-name: ${{ steps.set-plan-artifact-name.outputs.artifact_name }}
+    
+    steps:
+      - name: Validate Environment
+        working-directory: /
+        # checks environment with regex
+        run: |
+          if [[ ! "${{ inputs.environment }}" =~ ^(dev|stage|prod)$ ]]; then
+            echo "Error: Invalid environment '${{ inputs.environment }}'. Environment values are 'dev', 'stage' or 'prod'."
+            exit 1
+          fi 
+
+      - id: get-role-arn
+        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        with:
+          domain: core
+          env: ${{ inputs.environment }}
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
+          role-session-name: ${{ inputs.workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}
+          aws-region: ${{ steps.get-role-arn.outputs.region }}
+
+      - name: Checkout Actions
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit-identifier }}
+
+      - name: Configure Github Credentials
+        id: configure-credentials
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo '${{ secrets.ORG_READ_ONLY_SSH_KEY }}' > ~/.ssh/id_rsa
+          ssh-keyscan github.com > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.4
+          terraform_wrapper: false # required to access terraform outputs after apply
+
+      - name: Terraform Init
+        run: terraform init -upgrade
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Select or create terraform workplace
+        run: terraform workspace select -or-create ${{ env.TERRAFORM_WORKSPACE }}
+
+      - name: Terrafrom Re-Init
+        run: terraform init -upgrade
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          export TF_VAR_github_personal_access_token="${{ secrets.ORG_GITHUB_PACKAGES_READ_WRITE_TOKEN }}"
+          terraform plan -lock=${{ inputs.with-lock }} -out=tfplan
+      
+      - name: Write Plans to Run Comment
+        id: write-plans
+        run: |
+          if [ -f tfplan ]; then
+            echo "#### $(basename "$(pwd)") plan" >> $GITHUB_STEP_SUMMARY
+            terraform show tfplan -no-color > tfplan.txt
+            echo "<details>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary>Click to show plan</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "~~~ terraform" >> $GITHUB_STEP_SUMMARY
+            cat tfplan.txt >> $GITHUB_STEP_SUMMARY
+            echo "~~~" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Warning: No plan file found in $(pwd)" >> $GITHUB_STEP_SUMMARY
+            echo "skipping writing plans to run comment" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Set Plan Artifact Name
+        id: set-plan-artifact-name
+        if: ${{ inputs.write-artifact }}
+        run: echo "artifact_name=${{ inputs.environment }}-tfplan-${{ github.run_id }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Plans to Artifact
+        id: plan-artifact
+        if: ${{ inputs.write-artifact }}
+        uses: actions/upload-artifact@v4.3.3
+        with:
+          name: ${{steps.set-plan-artifact-name.outputs.artifact_name}}
+          path: terraform/${{ inputs.environment }}/tfplan.txt
+  
