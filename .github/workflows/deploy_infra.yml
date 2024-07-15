@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: Environment to deploy (dev, stage, prod)
+        description: Github action environment 
         type: string
         required: true
       commit-identifier:
@@ -16,8 +16,8 @@ on:
         type: string
         required: false
         default: unnamed
-      workspace: 
-        description: workspace to use
+      terraform-workspace: 
+        description: Terrafrom workspace that is used
         type: string
         required: true
     secrets:
@@ -37,7 +37,7 @@ permissions:
 
 env:
   TERRAFORM_ROOT: ${{ inputs.environment }}
-  TERRAFORM_WORKSPACE: ${{ inputs.workspace }}
+  TERRAFORM_WORKSPACE: ${{ inputs.terraform-workspace }}
   TF_INPUT: false
   TF_IN_AUTOMATION: true
 
@@ -77,8 +77,8 @@ jobs:
             exit 1
           fi
 
-  Terraform-Apply:
-    name: Terraform Apply
+  Deploy-Terraform:
+    name: Deploy Terraform
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment}}
     defaults:
@@ -96,7 +96,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
-          role-session-name: ${{ inputs.workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}
+          role-session-name: ${{ github.repository }}-${{ inputs.environment }}-Run${{ github.run_id }}
           aws-region: ${{ steps.get-role-arn.outputs.region }}
 
       - name: Checkout Actions
@@ -132,7 +132,7 @@ jobs:
   Notify-Slack:
     name:
     runs-on: ubuntu-latest
-    needs: [Terraform-Apply]
+    needs: [Deploy-Terraform]
     steps:
       - uses: ravsamhq/notify-slack-action@v2
         if: always()
