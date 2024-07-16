@@ -21,7 +21,7 @@ on:
         required: false
         default: false
       terraform-workspace: 
-        description: Terrafrom workspace that is used
+        description: Terraform workspace that is used
         type: string
         required: true
     secrets:

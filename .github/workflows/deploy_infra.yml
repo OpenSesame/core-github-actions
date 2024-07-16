@@ -17,7 +17,7 @@ on:
         required: false
         default: unnamed
       terraform-workspace: 
-        description: Terrafrom workspace that is used
+        description: Terraform workspace that is used
         type: string
         required: true
       terraform-root:
