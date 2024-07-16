@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       environment:
-        description: Github action environment
+        description: Github action environment and AWS account type
         type: string
         required: true
       commit-identifier:
