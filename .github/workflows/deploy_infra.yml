@@ -20,6 +20,10 @@ on:
         description: Terrafrom workspace that is used
         type: string
         required: true
+      terraform-root:
+        description: Root directory of terraform, default to 'terraform/${ inputs.environment }'
+        type: string
+        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -36,7 +40,7 @@ permissions:
   contents: read
 
 env:
-  TERRAFORM_ROOT: ${{ inputs.environment }}
+  TERRAFORM_ROOT: terraform/${{ inputs.environment }}   
   TERRAFORM_WORKSPACE: ${{ inputs.terraform-workspace }}
   TF_INPUT: false
   TF_IN_AUTOMATION: true
@@ -46,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       commit-tag: ${{ steps.get-commit-tag.outputs.commit-tag }}
+      TERRAFORM_ROOT: ${{ steps.set-env.outputs.TERRAFORM_ROOT }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.6
@@ -56,6 +61,16 @@ jobs:
         id: get-commit-tag
         run: |
           echo "commit-tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Determine Terraform Root
+        id: set-env
+        run: |
+          if [ -n "${{ inputs.terraform-root }}" ]; then
+            echo "TERRAFORM_ROOT=${{ inputs.terraform-root }}" >> $GITHUB_ENV
+            echo "::set-output name=TERRAFORM_ROOT::${{ inputs.terraform-root }}"
+          else
+            echo "TERRAFORM_ROOT=terraform/${{ inputs.environment }}" >> $GITHUB_ENV
+            echo "::set-output name=TERRAFORM_ROOT::terraform/${{ inputs.environment }}"
 
       - name: Markdown Summary
         run: |
@@ -68,6 +83,7 @@ jobs:
           echo -e "${{ toJson(inputs) }}\n" >> $GITHUB_STEP_SUMMARY
           echo "**Release Tag**: ${{ inputs.release-tag }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit Tag**: ${{ steps.get-commit-tag.outputs.commit-tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Terraform Root**: ${{ env.TERRAFORM_ROOT }} " >> $GITHUB_STEP_SUMMARY
           echo "*Note: Workflow Ref & Sha represent the branch and commit of the workflow defintion. This may not be the same as the branch/commit checked out supplying the code. The 'SHA or tag of tests to run' aka commit-identifier, is what specifies the test defintions. If a commit-identifier is not supplied, the head of the selected branch is used.*" >> $GITHUB_STEP_SUMMARY
 
       - name: Validate Environment
@@ -81,9 +97,10 @@ jobs:
     name: Deploy Terraform
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment}}
+    needs: Setup
     defaults:
       run:
-        working-directory: terraform/${{ inputs.environment }}
+        working-directory: ${{ needs.Setup.outputs.TERRAFORM_ROOT }}
 
     steps:
       - id: get-role-arn
