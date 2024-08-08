@@ -30,7 +30,7 @@ on:
 concurrency: ${{ github.workflow }}-deploy-environments
 
 env:
-  TERRAFORM_ROOT: terraform/dev
+  TERRAFORM_ROOT: terraform/${{ inputs.environment }}
   TERRAFORM_WORKSPACE: ${{ inputs.terraform-workspace }}
 
 permissions:
@@ -39,7 +39,7 @@ permissions:
 
 jobs:
   ValidatePlanEnvironment:
-    uses: opensesame/core-github-actions/.github/workflows/validate_plan_tf.yml
+    uses: .github/workflows/validate_plan_tf.yml
     with:
       environment: ${{ inputs.environment }}
       commit-identifier: ${{ inputs.commit-identifier }}
@@ -53,7 +53,7 @@ jobs:
   DeployEnvironment:
     name: Apply Environment
     needs: ValidatePlanEnvironment
-    uses: opensesame/core-github-actions/.github/workflows/deploy_infra.yml
+    uses: .github/workflows/deploy_infra.yml
     with: 
       environment: ${{ inputs.environment }}
       commit-identifier: ${{ inputs.commit-identifier }}
