@@ -1,0 +1,125 @@
+name: Deploy to Dev, Stage, and Prod
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
+        type: string
+        required: true
+      terraform-workspace:
+        description: Terraform workspace that is used
+        type: string
+        required: true
+      terraform-root: 
+        description: Root directory of terraform, default to 'terraform/${ inputs.environment }'
+        type: string
+        required: false
+    secrets: 
+      ORG_READ_ONLY_SSH_KEY: 
+        required: true
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
+        required: true
+
+concurrency: ${{ github.workflow }}-deploy_dev_stage_prod
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+
+jobs:
+  Setup:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged }}
+    outputs:
+      release-tag: ${{ steps.releaseTag.outputs.release-tag }}
+
+    steps:
+      - name: Set Release Tag
+        id: releaseTag
+        run: echo "release-tag=$(date +'%Y.%m.%d-%H-%M')" >> $GITHUB_OUTPUT
+
+  DeployDev:
+    name: Apply Dev
+    needs: [Setup]
+    uses: .github/workflows/deploy_environment.yml
+    with:
+      environment: dev
+      commit-identifier: ${{ inputs.commit-identifier }}
+      release-tag: ${{ needs.Setup.outputs.release-tag }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+
+  DeployStage:
+    name: Apply Stage
+    needs: [Setup, DeployDev]
+    uses: .github/workflows/deploy_environment.yml
+    with:
+      environment: stage
+      commit-identifier: ${{ inputs.commit-identifier }}
+      release-tag: ${{ needs.Setup.outputs.release-tag }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+
+  DeployProd:
+    name: Apply Prod
+    needs: [Setup, DeployDev, DeployStage]
+    uses: .github/workflows/deploy_environment.yml
+    with:
+      environment: prod
+      commit-identifier: ${{ inputs.commit-identifier }}
+      release-tag: ${{ needs.Setup.outputs.release-tag }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+
+  CreateRelease:
+    name: Create New Release
+    needs: [Setup, DeployProd]
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged }}
+
+    steps:
+      - name: Checkout Actions
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          fetch-depth: "0"
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ needs.Setup.outputs.release-tag }}
+          commit: ${{ inputs.commit-identifier }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  ReportStatus:
+    name: Report Status on PR
+    runs-on: ubuntu-latest
+    needs: [DeployDev, DeployStage, DeployProd, CreateRelease]
+    if: always()
+    env:
+      BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            # :page_with_curl: Status Report :page_with_curl:
+            **Deploy to Stage Status:** This job has ${{ needs.DeployStage.result == 'success' && 'passed! :heavy_check_mark:' ||
+              needs.DeployStage.result == 'failure' && 'failed. :x:' || needs.DeployStage.result == 'skipped' && 'skipped. :warning:' || 'canceled. :no_entry_sign:'}}
+            **Deploy to Prod Status:** This job has ${{ needs.DeployProd.result == 'success' && 'passed! :heavy_check_mark:' ||
+              needs.DeployProd.result == 'failure' && 'failed. :x:' || needs.DeployProd.result == 'skipped' && 'skipped. :warning:' || 'canceled. :no_entry_sign:'}}
+            **Create Release:** This job has ${{ needs.CreateRelease.result == 'success' && 'passed! :heavy_check_mark:' ||
+              needs.CreateRelease.result == 'failure' && 'failed. :x:' || needs.CreateRelease.result == 'skipped' && 'skipped. :warning:' || 'canceled. :no_entry_sign:'}}
+            [Click here to view the job](${{ env.BUILD_URL }})
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token-user-login: "github-actions[bot]"

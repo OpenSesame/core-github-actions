@@ -1,0 +1,46 @@
+name: TF Validate and Plan for all environments
+
+# runs workflow on push and if any changes are detected in any .tf files
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: "SHA or tag to validate and plan terraform, (optional) when omitted, the head of the selected branch is used"
+        type: string
+        required: true 
+      terraform-workspace:
+        description: Terraform workspace that is used
+        type: string
+        required: true
+      terraform-root:  
+        description: Root directory of terraform, default to 'terraform/${ inputs.environment }'
+        type: string
+        required: false
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        required: true
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+
+jobs: 
+  Validate-Plan:
+    uses: .github/workflows/validate_plan_tf.yml
+    strategy:
+      fail-fast: false # continues to run jobs even if one fails
+      matrix:
+        include:
+          - environment: "dev"
+            with-lock: false
+          - environment: "stage"
+            with-lock: false
+          - environment: "prod"
+            with-lock: false
+    with:
+      environment: ${{ matrix.environment }}
+      commit-identifier: ${{ inputs.commit-identifier }}
+      with-lock: ${{ matrix.with-lock }}
+      terraform-workspace: ${{ inputs.terraform-workspace }}
+      terraform-root: ${{ inputs.terraform-root }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}

@@ -1,0 +1,64 @@
+name: Deploy Branch to Environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Github action environment and AWS account type
+        type: string
+        required: true
+      commit-identifier:
+        description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
+        type: string
+        required: true
+      terraform-workspace:
+        description: Terraform workspace that is used
+        type: string
+        required: true
+      terraform-root:
+        description: Root directory of terraform, default to 'terraform/${ inputs.environment }'
+        type: string
+        required: false
+    secrets: 
+      ORG_READ_ONLY_SSH_KEY: 
+        required: true
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
+        required: true
+
+concurrency: ${{ github.workflow }}-deploy-environments
+
+env:
+  TERRAFORM_ROOT: terraform/${{ inputs.environment }}
+  TERRAFORM_WORKSPACE: ${{ inputs.terraform-workspace }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  ValidatePlanEnvironment:
+    uses: .github/workflows/validate_plan_tf.yml
+    with:
+      environment: ${{ inputs.environment }}
+      commit-identifier: ${{ inputs.commit-identifier }}
+      with-lock: false
+      terraform-workspace: ${{ inputs.terraform-workspace }}
+      terraform-root: ${{ inputs.terraform-root }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+
+  DeployEnvironment:
+    name: Apply Environment
+    needs: ValidatePlanEnvironment
+    uses: .github/workflows/deploy_infra.yml
+    with: 
+      environment: ${{ inputs.environment }}
+      commit-identifier: ${{ inputs.commit-identifier }}
+      terraform-root: ${{ inputs.terraform-root }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
