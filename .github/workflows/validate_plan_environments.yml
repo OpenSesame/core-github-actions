@@ -24,7 +24,7 @@ on:
 
 jobs: 
   Validate-Plan:
-    uses: opensesame/core-github-actions/.github/workflows/validate_plan_tf.yml
+    uses: .github/workflows/validate_plan_tf.yml
     strategy:
       fail-fast: false # continues to run jobs even if one fails
       matrix:
