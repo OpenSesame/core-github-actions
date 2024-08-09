@@ -54,7 +54,7 @@ jobs:
   DeployEnvironment:
     name: Call to deploy to ${{ inputs.environment }} environment
     needs: ValidatePlanEnvironment
-    uses: .github/workflows/deploy_infra.yml
+    uses: ./.github/workflows/deploy_infra.yml
     with: 
       environment: ${{ inputs.environment }}
       terraform-workspace: ${{ inputs.terraform-workspace }}
