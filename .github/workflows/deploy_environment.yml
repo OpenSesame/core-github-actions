@@ -40,7 +40,7 @@ permissions:
 jobs:
   ValidatePlanEnvironment:
     name: Call to validate and plan for ${{ inputs.environment }} environment
-    uses: .github/workflows/validate_plan_tf.yml
+    uses: ./.github/workflows/validate_plan_tf.yml
     with:
       environment: ${{ inputs.environment }}
       commit-identifier: ${{ inputs.commit-identifier }}
