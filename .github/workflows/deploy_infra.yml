@@ -71,6 +71,7 @@ jobs:
           else
             echo "TERRAFORM_ROOT=terraform/${{ inputs.environment }}" >> $GITHUB_ENV
             echo "::set-output name=TERRAFORM_ROOT::terraform/${{ inputs.environment }}"
+          fi
 
       - name: Markdown Summary
         run: |

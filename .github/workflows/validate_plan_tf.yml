@@ -67,6 +67,7 @@ jobs:
             echo "::set-output name=TERRAFORM_ROOT::${{ inputs.terraform-root }}"
           else
             echo "::set-output name=TERRAFORM_ROOT::terraform/${{ inputs.environment }}"
+          fi
 
   TF-Validate-Plan:
     name: Validate and Plan for ${{ inputs.environment }}
