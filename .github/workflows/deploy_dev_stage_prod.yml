@@ -51,6 +51,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
+      terraform-root: ${{ inputs.terraform-root }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
@@ -65,6 +66,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
+      terraform-root: ${{ inputs.terraform-root }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
@@ -79,6 +81,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
+      terraform-root: ${{ inputs.terraform-root }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
