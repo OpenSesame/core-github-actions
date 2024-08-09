@@ -69,7 +69,7 @@ jobs:
             echo "::set-output name=TERRAFORM_ROOT::terraform/${{ inputs.environment }}"
 
   TF-Validate-Plan:
-    name: Plan-Terraform
+    name: Validate and Plan for ${{ inputs.environment }}
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: Setup
