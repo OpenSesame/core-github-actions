@@ -25,7 +25,7 @@ on:
 jobs: 
   Validate-Plan:
     name: Call Validate and Plan for all environments
-    uses: ./.github/workflows/validate_plan_tf.yml@feature/CORE-3908-fixing
+    uses: ./.github/workflows/validate_plan_tf.yml
     strategy:
       fail-fast: false # continues to run jobs even if one fails
       matrix:
