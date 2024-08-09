@@ -48,6 +48,7 @@ jobs:
     uses: .github/workflows/deploy_environment.yml
     with:
       environment: dev
+      terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
     secrets:
@@ -61,6 +62,7 @@ jobs:
     uses: .github/workflows/deploy_environment.yml
     with:
       environment: stage
+      terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
     secrets:
@@ -74,6 +76,7 @@ jobs:
     uses: .github/workflows/deploy_environment.yml
     with:
       environment: prod
+      terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Setup.outputs.release-tag }}
     secrets:

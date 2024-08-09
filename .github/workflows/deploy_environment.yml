@@ -56,6 +56,7 @@ jobs:
     uses: .github/workflows/deploy_infra.yml
     with: 
       environment: ${{ inputs.environment }}
+      terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       terraform-root: ${{ inputs.terraform-root }}
     secrets:
