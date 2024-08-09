@@ -114,7 +114,7 @@ jobs:
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
-          role-session-name: ${{ github.repository }}-${{ inputs.environment }}-Run${{ github.run_id }}
+          role-session-name: ${{ inputs.terraform-workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}
           aws-region: ${{ steps.get-role-arn.outputs.region }}
 
       - name: Checkout Actions
