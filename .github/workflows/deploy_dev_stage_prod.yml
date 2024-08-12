@@ -45,7 +45,7 @@ jobs:
   DeployDev:
     name: Apply Dev
     needs: [Setup]
-    uses: .github/workflows/deploy_environment.yml
+    uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: dev
       terraform-workspace: ${{ inputs.terraform-workspace }}
@@ -60,7 +60,7 @@ jobs:
   DeployStage:
     name: Apply Stage
     needs: [Setup, DeployDev]
-    uses: .github/workflows/deploy_environment.yml
+    uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: stage
       terraform-workspace: ${{ inputs.terraform-workspace }}
@@ -75,7 +75,7 @@ jobs:
   DeployProd:
     name: Apply Prod
     needs: [Setup, DeployDev, DeployStage]
-    uses: .github/workflows/deploy_environment.yml
+    uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: prod
       terraform-workspace: ${{ inputs.terraform-workspace }}
