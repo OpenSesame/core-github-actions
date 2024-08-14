@@ -94,8 +94,8 @@ jobs:
             exit 1
           fi
 
-  Deploy-Terraform:
-    name: Deploy Terraform
+  Terraform-Apply:
+    name: Terraform Apply
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment}}
     needs: Setup
@@ -144,13 +144,13 @@ jobs:
       - name: Select Workspace
         run: terraform workspace select -or-create ${{ env.TERRAFORM_WORKSPACE }}
 
-      - name: Apply Terraform
+      - name: Apply Terraform 
         run: terraform apply -auto-approve -input=false
 
   Notify-Slack:
     name:
     runs-on: ubuntu-latest
-    needs: [Deploy-Terraform]
+    needs: [Terraform-Apply]
     steps:
       - uses: ravsamhq/notify-slack-action@v2
         if: always()

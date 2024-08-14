@@ -70,7 +70,7 @@ jobs:
           fi
 
   TF-Validate-Plan:
-    name: Validate and Plan for ${{ inputs.environment }}
+    name: Validate and Plan
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     needs: Setup
