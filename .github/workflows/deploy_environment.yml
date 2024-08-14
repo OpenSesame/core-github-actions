@@ -11,6 +11,11 @@ on:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
         required: true
+      release-tag:
+        description: release name to apply to resources
+        type: string
+        required: false
+        default: unnamed
       terraform-workspace:
         description: Terraform workspace that is used
         type: string
@@ -60,6 +65,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       terraform-root: ${{ inputs.terraform-root }}
+      release-tag: ${{ inputs.release-tag }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
