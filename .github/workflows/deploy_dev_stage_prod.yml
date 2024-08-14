@@ -33,7 +33,7 @@ permissions:
 jobs:
   Setup:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged }}
+    if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
     outputs:
       release-tag: ${{ steps.releaseTag.outputs.release-tag }}
 
@@ -91,7 +91,7 @@ jobs:
     name: Create New Release
     needs: [Setup, DeployProd]
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.merged }}
+    if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
 
     steps:
       - name: Checkout Actions
