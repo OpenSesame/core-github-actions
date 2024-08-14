@@ -27,7 +27,7 @@ on:
       CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
         required: true
 
-concurrency: ${{ github.workflow }}-deploy-environments
+concurrency: ${{ github.workflow }}-deploy-environments-${{ inputs.environment }}
 
 env:
   TERRAFORM_ROOT: terraform/${{ inputs.environment }}
