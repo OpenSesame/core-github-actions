@@ -1,0 +1,42 @@
+name: TF Validate/Plan ENV Roots
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: SHA or tag for terraform validate and plan, (optional) when omitted, the head of the selected branch is used
+        type: string
+        required: true
+      terraform-workspace:
+        description: Terraform Workspace, (optional) when omitted, the environment is used
+        type: string
+        required: false
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        required: true
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+
+jobs:
+  TF-Validate-Plan-Roots:
+    name: TF Validate/Plan ENV Roots
+    uses: ./.github/workflows/tf_validate_plan_single_root.yml
+    strategy:
+      fail-fast: false # continues to run jobs even if one fails
+      matrix:
+        include:
+          - environment: dev
+            with-lock: false
+          - environment: stage
+            with-lock: false
+          - environment: prod
+            with-lock: false
+    with:
+      environment: ${{ matrix.environment }}
+      commit-identifier: ${{ inputs.commit-identifier }}
+      with-lock: ${{ matrix.with-lock }}
+      terraform-workspace: ${{ inputs.terraform-workspace || matrix.environment }}
+      terraform-root: terraform/${{ matrix.environment }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
