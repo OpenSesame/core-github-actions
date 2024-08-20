@@ -27,7 +27,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  Setup:
+  Set-Release-Tag:
     runs-on: ubuntu-latest
     if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
     outputs:
@@ -40,13 +40,13 @@ jobs:
 
   DeployDev:
     name: Apply Dev
-    needs: [Setup]
+    needs: [Set-Release-Tag]
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: dev
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
       commit-identifier: ${{ inputs.commit-identifier }}
-      release-tag: ${{ needs.Setup.outputs.release-tag }}
+      release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/dev
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -55,13 +55,13 @@ jobs:
 
   DeployStage:
     name: Apply Stage
-    needs: [Setup, DeployDev]
+    needs: [Set-Release-Tag, DeployDev]
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: stage
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage'}}
       commit-identifier: ${{ inputs.commit-identifier }}
-      release-tag: ${{ needs.Setup.outputs.release-tag }}
+      release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/stage
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -70,13 +70,13 @@ jobs:
 
   DeployProd:
     name: Apply Prod
-    needs: [Setup, DeployStage]
+    needs: [Set-Release-Tag, DeployStage]
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: prod
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
       commit-identifier: ${{ inputs.commit-identifier }}
-      release-tag: ${{ needs.Setup.outputs.release-tag }}
+      release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/prod
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -85,7 +85,7 @@ jobs:
 
   CreateRelease:
     name: Create New Release
-    needs: [Setup, DeployProd]
+    needs: [Set-Release-Tag, DeployProd]
     runs-on: ubuntu-latest
 
     steps:
@@ -98,7 +98,7 @@ jobs:
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ needs.Setup.outputs.release-tag }}
+          tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
           commit: ${{ inputs.commit-identifier }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
