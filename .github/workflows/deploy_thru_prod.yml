@@ -11,6 +11,10 @@ on:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
         required: false
+      terraform-version:
+        description: Terraform version to use, (default - 1.8.4)
+        type: string
+        default: 1.8.4
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -48,6 +52,7 @@ jobs:
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/dev
+      terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
@@ -63,6 +68,7 @@ jobs:
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/stage
+      terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
@@ -78,6 +84,7 @@ jobs:
       commit-identifier: ${{ inputs.commit-identifier }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
       terraform-root: terraform/prod
+      terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
