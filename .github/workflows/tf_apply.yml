@@ -25,9 +25,9 @@ on:
         type: string
         required: true
       terraform-version:
-        description: Terraform version to use, (default - 1.8.4)
+        description: Terraform version to use
         type: string
-        default: 1.8.4
+        required: true
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
