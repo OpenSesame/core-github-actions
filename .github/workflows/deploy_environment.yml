@@ -24,6 +24,10 @@ on:
         description: Root directory of terraform
         type: string
         required: true
+      terraform-version:
+        description: Terraform version to use, (default - 1.8.4)
+        type: string
+        default: 1.8.4
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -48,6 +52,7 @@ jobs:
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace }}
       terraform-root: ${{ inputs.terraform-root }}
+      terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
@@ -61,6 +66,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       terraform-root: ${{ inputs.terraform-root }}
+      terraform-version: ${{ inputs.terraform-version }}
       release-tag: ${{ inputs.release-tag }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
