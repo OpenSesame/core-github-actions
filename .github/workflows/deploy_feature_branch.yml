@@ -91,7 +91,7 @@ jobs:
           npm run build
 
       - name: Build And Apply Feature Branch to Dev
-        uses: opensesame/core-github-actions/build-apply@v1
+        uses: opensesame/core-github-actions/build-apply@v3
         id: build_apply
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -128,7 +128,7 @@ jobs:
           aws ecs update-service --cluster $ECR_CLUSTER --service $ECS_SERVICE --force-new-deployment
 
       - name: Deploy to Dev
-        uses: opensesame/core-github-actions/deploy@v1
+        uses: opensesame/core-github-actions/deploy@v3
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
           terraform_root: dev
