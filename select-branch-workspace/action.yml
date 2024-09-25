@@ -1,11 +1,14 @@
 name: Sanitize Branch Name for Terraform Workspace
 description: Removes everything before the final "/" from the branch name and limits the characters.
 inputs:
-  branch_name:
+  branch-name:
     description: The name of the branch to be sanitized
     required: true
+  working-directory:
+    description: the directory the step should be run from
+    required: true
 outputs:
-  workspace_name:
+  workspace-name:
     description: "Branch name after the final forward slash"
     value: ${{ steps.sanitize_branch.outputs.sanitized_branch_name }}
 
@@ -17,8 +20,10 @@ runs:
       shell: bash
       run: |
         pwd
+        cd ${{ inputs.working-directory }}
+        pwd
         terraform workspace list
-        SANITIZED_BRANCH_NAME=$(echo ${{ inputs.branch_name }} | sed 's/.*\///' | sed 's/\(^.\{1,50\}\).*/\1/')
+        SANITIZED_BRANCH_NAME=$(echo ${{ inputs.branch-name }} | sed 's/.*\///' | sed 's/\(^.\{1,50\}\).*/\1/')
         echo "Sanitized branch name: $SANITIZED_BRANCH_NAME"
         terraform workspace select -or-create $SANITIZED_BRANCH_NAME
         echo "sanitized_branch_name=$SANITIZED_BRANCH_NAME" >> $GITHUB_OUTPUT
