@@ -16,6 +16,8 @@ runs:
       id: sanitize_branch
       shell: bash
       run: |
+        pwd
+        terraform workspace list
         SANITIZED_BRANCH_NAME=$(echo ${{ inputs.branch_name }} | sed 's/.*\///' | sed 's/\(^.\{1,50\}\).*/\1/')
         echo "Sanitized branch name: $SANITIZED_BRANCH_NAME"
         terraform workspace select -or-create $SANITIZED_BRANCH_NAME
