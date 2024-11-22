@@ -6,7 +6,12 @@ on:
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
+      oidc-domain:
+        description: 'OIDC Domain. Defaults to "core" when omitted'
+        required: false
+        type: string
+        default: 'core'
       terraform-workspace:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
@@ -15,6 +20,18 @@ on:
         description: Terraform version to use
         type: string
         required: true
+      terraform-root-dev:
+        description: Root directory of terraform dev. When omitted, terraform/dev is used
+        type: string
+        required: false
+      terraform-root-stage:
+        description: Root directory of terraform stage. When omitted, terraform/stage is used
+        type: string
+        required: false
+      terraform-root-prod:
+        description: Root directory of terraform prod. When omitted, terraform/prod is used
+        type: string
+        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -48,10 +65,11 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: dev
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/dev
+      terraform-root: ${{ inputs.terraform-root-dev || 'terraform/dev' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -64,10 +82,11 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: stage
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage'}}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/stage
+      terraform-root: ${{ inputs.terraform-root-stage || 'terraform/stage' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -80,10 +99,11 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: prod
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/prod
+      terraform-root: ${{ inputs.terraform-root-prod || 'terraform/prod' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -99,14 +119,14 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref:  ${{ inputs.commit-identifier || github.sha }}
           fetch-depth: "0"
 
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-          commit: ${{ inputs.commit-identifier }}
+          commit:  ${{ inputs.commit-identifier || github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
   ReportStatus:
