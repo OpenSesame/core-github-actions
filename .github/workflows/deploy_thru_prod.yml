@@ -6,7 +6,7 @@ on:
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       terraform-workspace:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
@@ -15,6 +15,10 @@ on:
         description: Terraform version to use
         type: string
         required: true
+      terraform-root:
+        description: Root directory of terraform. When omitted, terraform/<env> is used
+        type: string
+        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -49,9 +53,9 @@ jobs:
     with:
       environment: dev
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/dev
+      terraform-root: ${{ inputs.terraform-root || 'terraform/dev' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -65,9 +69,9 @@ jobs:
     with:
       environment: stage
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage'}}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/stage
+      terraform-root: ${{ inputs.terraform-root || 'terraform/stage' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -81,9 +85,9 @@ jobs:
     with:
       environment: prod
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: terraform/prod
+      terraform-root: ${{ inputs.terraform-root || 'terraform/prod' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -99,14 +103,14 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref:  ${{ inputs.commit-identifier || github.sha }}
           fetch-depth: "0"
 
       - name: Create release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-          commit: ${{ inputs.commit-identifier }}
+          commit:  ${{ inputs.commit-identifier || github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
   ReportStatus:

@@ -6,7 +6,7 @@ on:
       commit-identifier:
         description: SHA or tag for terraform validate and plan, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       terraform-workspace:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
@@ -15,6 +15,10 @@ on:
         description: Terraform version to use
         type: string
         required: true
+      terraform-root:
+        description: Root directory of terraform. When omitted, terraform/<env> is used
+        type: string
+        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -37,10 +41,10 @@ jobs:
             with-lock: false
     with:
       environment: ${{ matrix.environment }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       with-lock: ${{ matrix.with-lock }}
       terraform-workspace: ${{ inputs.terraform-workspace || matrix.environment }}
-      terraform-root: terraform/${{ matrix.environment }}
+      terraform-root: ${{ inputs.terraform-root || 'terraform/${{ matrix.environment }}' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
