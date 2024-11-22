@@ -23,7 +23,7 @@ on:
         type: string
       deploy_fargate:
         description: 'Deploy Fargate'
-        required: true
+        required: false
         default: false
         type: boolean
       slack_notification_title:
