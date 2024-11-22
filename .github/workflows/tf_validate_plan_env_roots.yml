@@ -15,8 +15,16 @@ on:
         description: Terraform version to use
         type: string
         required: true
-      terraform-root:
-        description: Root directory of terraform. When omitted, terraform/<env> is used
+      terraform-root-dev:
+        description: Root directory of terraform dev. When omitted, terraform/dev is used
+        type: string
+        required: false
+      terraform-root-stage:
+        description: Root directory of terraform stage. When omitted, terraform/stage is used
+        type: string
+        required: false
+      terraform-root-prod:
+        description: Root directory of terraform prod. When omitted, terraform/prod is used
         type: string
         required: false
     secrets:
@@ -26,25 +34,43 @@ on:
         required: true
 
 jobs:
-  TF-Validate-Plan-Roots:
-    name: TF Validate/Plan ENV Roots
+  ValidatePlanDev:
+    name: TF Validate/Plan Dev
     uses: ./.github/workflows/tf_validate_plan_single_root.yml
-    strategy:
-      fail-fast: false # continues to run jobs even if one fails
-      matrix:
-        include:
-          - environment: dev
-            with-lock: false
-          - environment: stage
-            with-lock: false
-          - environment: prod
-            with-lock: false
     with:
-      environment: ${{ matrix.environment }}
+      environment: dev
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
-      with-lock: ${{ matrix.with-lock }}
-      terraform-workspace: ${{ inputs.terraform-workspace || matrix.environment }}
-      terraform-root: ${{ inputs.terraform-root || 'terraform/${{ matrix.environment }}' }}
+      with-lock: false
+      terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
+      terraform-root: ${{ inputs.terraform-root-dev || 'terraform/dev' }}
+      terraform-version: ${{ inputs.terraform-version }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+
+  ValidatePlanStage:
+    name: TF Validate/Plan Stage
+    uses: ./.github/workflows/tf_validate_plan_single_root.yml
+    with:
+      environment: stage
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
+      with-lock: false
+      terraform-workspace: ${{ inputs.terraform-workspace || 'stage' }}
+      terraform-root: ${{ inputs.terraform-root-stage || 'terraform/stage' }}
+      terraform-version: ${{ inputs.terraform-version }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+    
+  ValidatePlanProd:
+    name: TF Validate/Plan Prod
+    uses: ./.github/workflows/tf_validate_plan_single_root.yml
+    with:
+      environment: prod
+      commit-identifier: ${{ inputs.commit-identifier || github.sha }}
+      with-lock: false
+      terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
+      terraform-root: ${{ inputs.terraform-root-prod || 'terraform/prod' }}
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
