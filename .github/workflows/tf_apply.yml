@@ -7,6 +7,11 @@ on:
         description: Github action environment and AWS account type
         type: string
         required: true
+      oidc_domain:
+        description: 'OIDC Domain. Defaults to "core" when omitted'
+        required: false
+        type: string
+        default: 'core'
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
@@ -78,7 +83,7 @@ jobs:
       - id: get-role-arn
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
         with:
-          domain: core
+          domain: ${{ inputs.oidc_domain }}
           env: ${{ inputs.environment }}
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
@@ -119,7 +124,7 @@ jobs:
         run: terraform apply -auto-approve -input=false
 
   Notify-Slack:
-    name:
+    name: 'Notify Slack'
     runs-on: ubuntu-latest
     needs: [TF-Apply]
     steps:
