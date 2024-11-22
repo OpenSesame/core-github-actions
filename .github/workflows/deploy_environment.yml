@@ -16,7 +16,7 @@ on:
         type: string
         required: false
         default: unnamed
-      oidc_domain:
+      oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
         type: string
@@ -53,7 +53,7 @@ jobs:
     uses: ./.github/workflows/tf_validate_plan_single_root.yml
     with:
       environment: ${{ inputs.environment }}
-      oidc_domain: ${{ inputs.oidc_domain }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       commit-identifier: ${{ inputs.commit-identifier }}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace }}
@@ -69,7 +69,7 @@ jobs:
     uses: ./.github/workflows/tf_apply.yml
     with:
       environment: ${{ inputs.environment }}
-      oidc_domain: ${{ inputs.oidc_domain }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       terraform-root: ${{ inputs.terraform-root }}

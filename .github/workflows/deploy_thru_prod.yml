@@ -7,7 +7,7 @@ on:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
         required: false
-      oidc_domain:
+      oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
         type: string
@@ -65,7 +65,7 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: dev
-      oidc_domain: ${{ inputs.oidc_domain }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
@@ -82,7 +82,7 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: stage
-      oidc_domain: ${{ inputs.oidc_domain }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage'}}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
@@ -99,7 +99,7 @@ jobs:
     uses: ./.github/workflows/deploy_environment.yml
     with:
       environment: prod
-      oidc_domain: ${{ inputs.oidc_domain }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}

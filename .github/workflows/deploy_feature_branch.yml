@@ -7,7 +7,7 @@ on:
         description: 'Terraform workspace'
         required: true
         type: string
-      oidc_domain:
+      oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
         type: string
@@ -58,7 +58,7 @@ jobs:
       - id: get-role-arn
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
         with:
-          domain: ${{ inputs.oidc_domain }}
+          domain: ${{ inputs.oidc-domain }}
           env: dev
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
