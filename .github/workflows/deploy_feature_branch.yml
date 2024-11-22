@@ -7,6 +7,11 @@ on:
         description: 'Terraform workspace'
         required: true
         type: string
+      terraform-root-dev:
+        description: 'Root directory of terraform dev. When omitted, terraform/dev is used'
+        required: false
+        type: string
+        default: 'terraform/dev'
       oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
@@ -100,7 +105,7 @@ jobs:
         id: build_apply
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-          terraform_root: dev
+          terraform_root: ${{ inputs.terraform-root-dev }}
           terraform_workspace: ${{ inputs.terraform_workspace }}
           node_auth_token: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 
@@ -136,5 +141,5 @@ jobs:
         uses: opensesame/core-github-actions/deploy@v1
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-          terraform_root: dev
+          terraform_root: ${{ inputs.terraform-root-dev }}
           terraform_workspace: ${{ inputs.terraform_workspace }}
