@@ -7,6 +7,11 @@ on:
         description: SHA or tag for terraform validate and plan, (optional) when omitted, the head of the selected branch is used
         type: string
         required: false
+      oidc_domain:
+        description: 'OIDC Domain. Defaults to "core" when omitted'
+        required: false
+        type: string
+        default: 'core'
       terraform-workspace:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
@@ -40,6 +45,7 @@ jobs:
     with:
       environment: dev
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
+      oidc_domain: ${{ inputs.oidc_domain }}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
       terraform-root: ${{ inputs.terraform-root-dev || 'terraform/dev' }}
@@ -54,6 +60,7 @@ jobs:
     with:
       environment: stage
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
+      oidc_domain: ${{ inputs.oidc_domain }}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage' }}
       terraform-root: ${{ inputs.terraform-root-stage || 'terraform/stage' }}
@@ -68,6 +75,7 @@ jobs:
     with:
       environment: prod
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
+      oidc_domain: ${{ inputs.oidc_domain }}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
       terraform-root: ${{ inputs.terraform-root-prod || 'terraform/prod' }}
