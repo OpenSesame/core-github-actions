@@ -15,7 +15,7 @@ on:
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       release-tag:
         description: release name to apply to resources
         type: string
@@ -96,7 +96,7 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref: ${{ inputs.commit-identifier || github.sha }}
 
       - name: Configure Github Credentials
         id: configure-credentials
@@ -134,7 +134,7 @@ jobs:
           status: ${{ job.status }}
           token: ${{ secrets.GITHUB_TOKEN }}
           notification_title: "<{repo_url}|{repo}> {workflow}"
-          message_format: "Release ${{ inputs.release-tag }}\ndeployed commit ${{ inputs.commit-identifier }}\n{emoji} ${{ inputs.environment }} {status_message}"
+          message_format: "Release ${{ inputs.release-tag }}\ndeployed commit ${{ inputs.commit-identifier || github.sha }}\n{emoji} ${{ inputs.environment }} {status_message}"
           footer: "Workflow: {run_url}|View"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}

@@ -1,4 +1,4 @@
-name: "Reusable - Deploy Feature Branch to Dev"
+name: "POC - Deploy Feature Branch to Dev"
 
 on:
   workflow_call:

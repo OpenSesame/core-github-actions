@@ -15,7 +15,7 @@ on:
       commit-identifier:
         description: SHA or tag to validate and plan terraform, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       with-lock:
         description: whether to lock the state file or not, (default - true)
         type: boolean
@@ -85,7 +85,7 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref: ${{ inputs.commit-identifier || github.sha }}
 
       - name: Configure Github Credentials
         id: configure-credentials
