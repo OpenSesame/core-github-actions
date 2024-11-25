@@ -10,7 +10,7 @@ on:
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       release-tag:
         description: release name to apply to resources
         type: string
@@ -54,7 +54,7 @@ jobs:
     with:
       environment: ${{ inputs.environment }}
       oidc-domain: ${{ inputs.oidc-domain }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha}}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace }}
       terraform-root: ${{ inputs.terraform-root }}
@@ -71,7 +71,7 @@ jobs:
       environment: ${{ inputs.environment }}
       oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha}}
       terraform-root: ${{ inputs.terraform-root }}
       terraform-version: ${{ inputs.terraform-version }}
       release-tag: ${{ inputs.release-tag }}
