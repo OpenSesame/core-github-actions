@@ -20,25 +20,13 @@ on:
         description: Terraform version to use
         type: string
         required: true
-      terraform-root-dev:
-        description: Root directory of terraform dev. When omitted, terraform/dev is used
-        type: string
-        required: false
-      terraform-root-stage:
-        description: Root directory of terraform stage. When omitted, terraform/stage is used
-        type: string
-        required: false
-      terraform-root-prod:
-        description: Root directory of terraform prod. When omitted, terraform/prod is used
-        type: string
-        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
       CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: true
+        required: false
 
 concurrency: ${{ github.repository }}
 
@@ -69,7 +57,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace || 'dev' }}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: ${{ inputs.terraform-root-dev || 'terraform/dev' }}
+      terraform-root: 'terraform/dev'
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -86,7 +74,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace || 'stage'}}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: ${{ inputs.terraform-root-stage || 'terraform/stage' }}
+      terraform-root: 'terraform/stage'
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -103,7 +91,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace || 'prod' }}
       commit-identifier: ${{ inputs.commit-identifier || github.sha }}
       release-tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-      terraform-root: ${{ inputs.terraform-root-prod || 'terraform/prod' }}
+      terraform-root: 'terraform/prod'
       terraform-version: ${{ inputs.terraform-version }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
