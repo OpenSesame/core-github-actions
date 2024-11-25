@@ -7,7 +7,7 @@ on:
         description: Github action environment and AWS account type
         type: string
         required: true
-      oidc_domain:
+      oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
         type: string
@@ -15,7 +15,7 @@ on:
       commit-identifier:
         description: SHA or tag to validate and plan terraform, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       with-lock:
         description: whether to lock the state file or not, (default - true)
         type: boolean
@@ -72,7 +72,7 @@ jobs:
       - id: get-role-arn
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
         with:
-          domain: ${{ inputs.oidc_domain }}
+          domain: ${{ inputs.oidc-domain }}
           env: ${{ inputs.environment }}
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
@@ -85,7 +85,7 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref: ${{ inputs.commit-identifier || github.sha }}
 
       - name: Configure Github Credentials
         id: configure-credentials

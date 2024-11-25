@@ -10,12 +10,17 @@ on:
       commit-identifier:
         description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
         type: string
-        required: true
+        required: false
       release-tag:
         description: release name to apply to resources
         type: string
         required: false
         default: unnamed
+      oidc-domain:
+        description: 'OIDC Domain. Defaults to "core" when omitted'
+        required: false
+        type: string
+        default: 'core'
       terraform-workspace:
         description: Terraform Workspace
         type: string
@@ -48,7 +53,8 @@ jobs:
     uses: ./.github/workflows/tf_validate_plan_single_root.yml
     with:
       environment: ${{ inputs.environment }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      oidc-domain: ${{ inputs.oidc-domain }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha}}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace }}
       terraform-root: ${{ inputs.terraform-root }}
@@ -63,8 +69,9 @@ jobs:
     uses: ./.github/workflows/tf_apply.yml
     with:
       environment: ${{ inputs.environment }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace }}
-      commit-identifier: ${{ inputs.commit-identifier }}
+      commit-identifier: ${{ inputs.commit-identifier || github.sha}}
       terraform-root: ${{ inputs.terraform-root }}
       terraform-version: ${{ inputs.terraform-version }}
       release-tag: ${{ inputs.release-tag }}
