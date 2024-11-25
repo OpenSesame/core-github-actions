@@ -39,7 +39,7 @@ on:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
       CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.repository }}-${{ inputs.environment }}-TF-Apply
