@@ -33,16 +33,17 @@ on:
         description: Terraform version to use
         type: string
         required: true
-      slack_webhook_url:
+      notify-slack:
         required: false
-        type: string
+        type: boolean
+        default: true
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
-      # CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-      #   required: false
+      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
+        required: false
 
 concurrency:
   group: ${{ github.repository }}-${{ inputs.environment }}-TF-Apply
@@ -130,7 +131,7 @@ jobs:
     name: 'Notify Slack'
     runs-on: ubuntu-latest
     needs: [TF-Apply]
-    if: inputs.slack_webhook_url != '' # Run only if the secret is not empty
+    if: ${{ inputs.notify-slack }}
     steps:
       - uses: ravsamhq/notify-slack-action@v2
         if: always()
@@ -141,5 +142,4 @@ jobs:
           message_format: "Release ${{ inputs.release-tag }}\ndeployed commit ${{ inputs.commit-identifier || github.sha }}\n{emoji} ${{ inputs.environment }} {status_message}"
           footer: "Workflow: {run_url}|View"
         env:
-          SLACK_WEBHOOK_URL: ${{ inputs.slack_webhook_url }}
-          # SLACK_WEBHOOK_URL: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+          SLACK_WEBHOOK_URL: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
