@@ -75,7 +75,8 @@ jobs:
       terraform-root: ${{ inputs.terraform-root }}
       terraform-version: ${{ inputs.terraform-version }}
       release-tag: ${{ inputs.release-tag }}
+      slack-webhook-url: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
-      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+      # CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
