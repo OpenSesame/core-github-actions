@@ -13,9 +13,9 @@ on:
         type: string
         default: 'core'
       commit-identifier:
-        description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
+        description: SHA or tag to apply
         type: string
-        required: false
+        required: true
       release-tag:
         description: release name to apply to resources
         type: string
@@ -33,17 +33,11 @@ on:
         description: Terraform version to use
         type: string
         required: true
-      notify-slack:
-        required: false
-        type: boolean
-        default: true
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
-      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: false
 
 concurrency:
   group: ${{ github.repository }}-${{ inputs.environment }}-TF-Apply
@@ -70,7 +64,7 @@ jobs:
           echo "**Inputs**" >> $GITHUB_STEP_SUMMARY
           echo -e "${{ toJson(inputs) }}\n" >> $GITHUB_STEP_SUMMARY
           echo "**Release Tag**: ${{ inputs.release-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "*Note: Workflow Ref & Sha represent the branch and commit of the workflow defintion. This may not be the same as the branch/commit checked out supplying the code. The 'SHA or tag to apply' aka commit-identifier, is what specifies the code. If a commit-identifier is not supplied, the head of the selected branch is used.*" >> $GITHUB_STEP_SUMMARY
+          echo "*Note: Workflow Ref & Sha represent the branch and commit of the workflow defintion. This may not be the same as the branch/commit checked out supplying the code. The 'SHA or tag to apply' aka commit-identifier, is what specifies the code.*" >> $GITHUB_STEP_SUMMARY
 
   TF-Apply:
     name: Terraform Apply
@@ -100,7 +94,7 @@ jobs:
       - name: Checkout Actions
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier || github.sha }}
+          ref: ${{ inputs.commit-identifier }}
 
       - name: Configure Github Credentials
         id: configure-credentials
@@ -126,20 +120,3 @@ jobs:
 
       - name: Apply Terraform
         run: terraform apply -auto-approve -input=false
-
-  Notify-Slack:
-    name: 'Notify Slack'
-    runs-on: ubuntu-latest
-    needs: [TF-Apply]
-    if: ${{ inputs.notify-slack }}
-    steps:
-      - uses: ravsamhq/notify-slack-action@v2
-        if: always()
-        with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          notification_title: "<{repo_url}|{repo}> {workflow}"
-          message_format: "Release ${{ inputs.release-tag }}\ndeployed commit ${{ inputs.commit-identifier || github.sha }}\n{emoji} ${{ inputs.environment }} {status_message}"
-          footer: "Workflow: {run_url}|View"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}

@@ -4,9 +4,9 @@ on:
   workflow_call:
     inputs:
       commit-identifier:
-        description: SHA or tag for terraform validate and plan, (optional) when omitted, the head of the selected branch is used
+        description: SHA or tag for terraform validate and plan
         type: string
-        required: false
+        required: true
       oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
