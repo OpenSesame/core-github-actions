@@ -8,7 +8,7 @@ on:
         type: string
         required: true
       commit-identifier:
-        description: SHA or tag to apply, (optional) when omitted, the head of the selected branch is used
+        description: SHA or tag to apply
         type: string
         required: true
       release-tag:
@@ -16,6 +16,11 @@ on:
         type: string
         required: false
         default: unnamed
+      oidc-domain:
+        description: 'OIDC Domain. Defaults to "core" when omitted'
+        required: false
+        type: string
+        default: 'core'
       terraform-workspace:
         description: Terraform Workspace
         type: string
@@ -33,8 +38,7 @@ on:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
-      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: true
+
 
 concurrency: ${{ github.repository }}-${{ inputs.environment }}
 
@@ -48,6 +52,7 @@ jobs:
     uses: ./.github/workflows/tf_validate_plan_single_root.yml
     with:
       environment: ${{ inputs.environment }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       commit-identifier: ${{ inputs.commit-identifier }}
       with-lock: false
       terraform-workspace: ${{ inputs.terraform-workspace }}
@@ -63,6 +68,7 @@ jobs:
     uses: ./.github/workflows/tf_apply.yml
     with:
       environment: ${{ inputs.environment }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       terraform-workspace: ${{ inputs.terraform-workspace }}
       commit-identifier: ${{ inputs.commit-identifier }}
       terraform-root: ${{ inputs.terraform-root }}
@@ -71,4 +77,4 @@ jobs:
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
-      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK: ${{ secrets.CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK }}
+

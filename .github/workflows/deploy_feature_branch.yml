@@ -1,4 +1,4 @@
-name: "Reusable - Deploy Feature Branch to Dev"
+name: "POC - Deploy Feature Branch to Dev"
 
 on:
   workflow_call:
@@ -7,7 +7,12 @@ on:
         description: 'Terraform workspace'
         required: true
         type: string
-      oidc_domain:
+      terraform-root:
+        description: 'Root directory of terraform dev. When omitted, terraform/dev is used'
+        required: false
+        type: string
+        default: 'terraform/dev'
+      oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
         required: false
         type: string
@@ -18,20 +23,14 @@ on:
         type: string
       deploy_fargate:
         description: 'Deploy Fargate'
-        required: true
+        required: false
         default: false
         type: boolean
-      slack_notification_title:
-        description: 'Slack Notification Title'
-        required: false
-        type: string
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
-      CORE_ENG_DEPLOYMENTS_SLACK_WEBHOOK:
-        required: false
 
     outputs:
       name_prefix:
@@ -58,7 +57,7 @@ jobs:
       - id: get-role-arn
         uses: OpenSesame/gha-oidc-access/get-role-arn@v2
         with:
-          domain: ${{ inputs.oidc_domain }}
+          domain: ${{ inputs.oidc-domain }}
           env: dev
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
@@ -100,7 +99,7 @@ jobs:
         id: build_apply
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-          terraform_root: dev
+          terraform_root: ${{ inputs.terraform-root }}
           terraform_workspace: ${{ inputs.terraform_workspace }}
           node_auth_token: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 
@@ -136,5 +135,5 @@ jobs:
         uses: opensesame/core-github-actions/deploy@v1
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-          terraform_root: dev
+          terraform_root: ${{ inputs.terraform-root }}
           terraform_workspace: ${{ inputs.terraform_workspace }}
