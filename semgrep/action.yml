@@ -195,7 +195,7 @@ runs:
           **Severity threshold**: \`${{ inputs.fail_severity }}\`${summaryText}
 
           ---
-          <sub>🔍 Scanned with custom IdP security rules | 🤖 Powered by Semgrep</sub>`;
+          <sub>🤖 Powered by Semgrep</sub>`;
 
           // Try to find existing comment to update
           const { data: comments } = await github.rest.issues.listComments({
