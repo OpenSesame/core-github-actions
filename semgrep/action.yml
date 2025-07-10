@@ -1,0 +1,249 @@
+name: Semgrep CE Scan
+description: Run Semgrep security scanning with configurable options and reporting
+
+inputs:
+  branch_name:
+    description: The name of the branch where lint is running
+    required: false
+  semgrep_config:
+    description: Rulesets to run with Semgrep
+    required: false
+    default: p/default
+  fail_severity:
+    description: Severity level that causes the action to fail
+    required: false
+    default: error
+  filter_mode:
+    description: Scan mode (diff, full, baseline)
+    required: false
+    default: diff
+  reporter:
+    description: How to report results (github-pr-review for inline, github-pr-check for summary)
+    required: false
+    default: github-pr-review
+  github_token:
+    description: GitHub token for API access and reviewdog
+    required: true
+
+outputs:
+  total_findings:
+    description: Total number of findings from the scan
+    value: ${{ steps.semgrep_scan.outputs.total_findings }}
+  error_count:
+    description: Number of error-level findings
+    value: ${{ steps.semgrep_scan.outputs.error_count }}
+  warning_count:
+    description: Number of warning-level findings
+    value: ${{ steps.semgrep_scan.outputs.warning_count }}
+  info_count:
+    description: Number of info-level findings
+    value: ${{ steps.semgrep_scan.outputs.info_count }}
+  scan_status:
+    description: Overall scan status (success, warning, error)
+    value: ${{ steps.determine_status.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Semgrep
+      shell: bash
+      run: |
+        echo "📦 Installing Semgrep..."
+        python3 -m pip install semgrep
+
+    - name: Set up git for diff scanning
+      if: inputs.filter_mode == 'diff'
+      shell: bash
+      run: |
+        # Configure git for the container
+        git config --global --add safe.directory $GITHUB_WORKSPACE
+
+        # For PR context, we need to fetch the base branch
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          echo "Setting up PR diff context..."
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          echo "BASE_REF=origin/${{ github.base_ref }}" >> $GITHUB_ENV
+        else
+          echo "Setting up push diff context..."
+          git fetch origin main:main 2>/dev/null || git fetch origin master:master || echo "No main/master branch found"
+          echo "BASE_REF=origin/main" >> $GITHUB_ENV
+        fi
+
+    - name: Set up Reviewdog
+      uses: reviewdog/action-setup@v1
+      with:
+        reviewdog_version: latest
+
+    - name: Install jq
+      shell: bash
+      run: |
+        if ! command -v jq &> /dev/null; then
+          echo "📦 Installing jq..."
+          sudo apt-get update && sudo apt-get install -y jq
+        fi
+
+    - name: Run Semgrep scan
+      id: semgrep_scan
+      shell: bash
+      run: |
+        echo "▶️ Running Semgrep with config $SEMGREP_RULES"
+        echo "📎 Scan mode: $FILTER_MODE | ⛔ Fail level: $FAIL_LEVEL | 📝 Reporter: $REPORTER"
+
+        # Determine semgrep command based on filter mode
+        if [ "$FILTER_MODE" = "diff" ]; then
+          if [ -n "$BASE_REF" ]; then
+            echo "🔍 Scanning diff against $BASE_REF"
+            SEMGREP_CMD="semgrep --config=\"$SEMGREP_RULES\" --severity=${FAIL_LEVEL^^} --baseline-commit=\"$BASE_REF\" --json"
+          else
+            echo "⚠️ No base ref found, falling back to full scan"
+            SEMGREP_CMD="semgrep --config=\"$SEMGREP_RULES\" --severity=${FAIL_LEVEL^^} --json"
+          fi
+        elif [ "$FILTER_MODE" = "baseline" ]; then
+          echo "🔍 Scanning with baseline comparison"
+          SEMGREP_CMD="semgrep --config=\"$SEMGREP_RULES\" --severity=${FAIL_LEVEL^^} --baseline-commit=origin/main --json"
+        else
+          echo "🔍 Full scan mode"
+          SEMGREP_CMD="semgrep --config=\"$SEMGREP_RULES\" --severity=${FAIL_LEVEL^^} --json"
+        fi
+
+        # Run semgrep and capture results
+        eval $SEMGREP_CMD > semgrep_results.json || true
+
+        # Count total findings and by severity
+        TOTAL_FINDINGS=$(jq '.results | length' semgrep_results.json)
+        ERROR_COUNT=$(jq '[.results[] | select(.extra.severity == "ERROR")] | length' semgrep_results.json)
+        WARNING_COUNT=$(jq '[.results[] | select(.extra.severity == "WARNING")] | length' semgrep_results.json)
+        INFO_COUNT=$(jq '[.results[] | select(.extra.severity == "INFO")] | length' semgrep_results.json)
+
+        echo "total_findings=$TOTAL_FINDINGS" >> $GITHUB_OUTPUT
+        echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
+        echo "warning_count=$WARNING_COUNT" >> $GITHUB_OUTPUT
+        echo "info_count=$INFO_COUNT" >> $GITHUB_OUTPUT
+
+        # Show scan summary
+        echo "📊 Scan Results:"
+        echo "   Total: $TOTAL_FINDINGS findings"
+        echo "   Errors: $ERROR_COUNT"
+        echo "   Warnings: $WARNING_COUNT"
+        echo "   Info: $INFO_COUNT"
+
+        # Format results for reviewdog (only if we have findings)
+        if [ "$TOTAL_FINDINGS" -gt 0 ]; then
+          jq -r '.results[] | "\(.extra.severity[0:1]):\(.path):\(.end.line) \(.extra.message)"' semgrep_results.json > reviewdog_input.txt
+        else
+          touch reviewdog_input.txt
+        fi
+
+        echo "✅ Semgrep scan completed"
+      env:
+        SEMGREP_RULES: ${{ inputs.semgrep_config }}
+        FILTER_MODE: ${{ inputs.filter_mode }}
+        FAIL_LEVEL: ${{ inputs.fail_severity }}
+        REPORTER: ${{ inputs.reporter }}
+
+    - name: Report findings with reviewdog
+      if: steps.semgrep_scan.outputs.total_findings > 0
+      shell: bash
+      run: |
+        echo "📝 Posting findings via reviewdog..."
+        cat reviewdog_input.txt | reviewdog \
+            -efm="%t:%f:%l %m" \
+          -name="semgrep" \
+          -reporter="$REPORTER" \
+          -filter-mode="nofilter" \
+          -fail-level="$FAIL_LEVEL"
+      env:
+        REVIEWDOG_GITHUB_API_TOKEN: ${{ inputs.github_token }}
+        SEMGREP_RULES: ${{ inputs.semgrep_config }}
+        FILTER_MODE: ${{ inputs.filter_mode }}
+        FAIL_LEVEL: ${{ inputs.fail_severity }}
+        REPORTER: ${{ inputs.reporter }}
+
+    - name: Post success comment to PR
+      if: github.event_name == 'pull_request' || github.event.pull_request
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ inputs.github_token }}
+        script: |
+          const { total_findings, error_count, warning_count, info_count } = ${{ toJson(steps.semgrep_scan.outputs) }};
+
+          let emoji = "✅";
+          let status = "passed";
+          let summaryText = "";
+          let scanMode = "${{ inputs.filter_mode }}";
+
+          if (total_findings > 0) {
+            emoji = error_count > 0 ? "❌" : "⚠️";
+            status = error_count > 0 ? "found issues" : "found warnings";
+
+            const parts = [];
+            if (error_count > 0) parts.push(`${error_count} error${error_count === 1 ? '' : 's'}`);
+            if (warning_count > 0) parts.push(`${warning_count} warning${warning_count === 1 ? '' : 's'}`);
+            if (info_count > 0) parts.push(`${info_count} info`);
+
+            summaryText = `\n\n**Findings**: ${parts.join(', ')}`;
+          } else {
+            summaryText = scanMode === 'diff' ?
+              "\n\n🎉 No security issues found in changed code!" :
+              "\n\n🎉 No security issues found!";
+          }
+
+          const comment = `## ${emoji} Semgrep Security Scan ${status.charAt(0).toUpperCase() + status.slice(1)}
+
+          **Configuration**: \`${{ inputs.semgrep_config }}\`
+          **Scan mode**: \`${scanMode}\` ${scanMode === 'diff' ? '(changed code only)' : ''}
+          **Severity threshold**: \`${{ inputs.fail_severity }}\`${summaryText}
+
+          ---
+          <sub>🤖 Powered by Semgrep</sub>`;
+
+          // Try to find existing comment to update
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+
+          const existingComment = comments.find(comment =>
+            comment.body.includes('## ') && comment.body.includes('Semgrep Security Scan')
+          );
+
+          if (existingComment) {
+            // Update existing comment
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existingComment.id,
+              body: comment
+            });
+          } else {
+            // Create new comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: comment
+            });
+          }
+
+    - name: Determine overall status
+      id: determine_status
+      shell: bash
+      run: |
+        ERROR_COUNT=${{ steps.semgrep_scan.outputs.error_count }}
+        WARNING_COUNT=${{ steps.semgrep_scan.outputs.warning_count }}
+
+        if [ "$ERROR_COUNT" -gt 0 ]; then
+          echo "status=error" >> $GITHUB_OUTPUT
+        elif [ "$WARNING_COUNT" -gt 0 ]; then
+          echo "status=warning" >> $GITHUB_OUTPUT
+        else
+          echo "status=success" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Fail on errors
+      if: steps.semgrep_scan.outputs.error_count > 0
+      shell: bash
+      run: |
+        echo "❌ Semgrep found ${{ steps.semgrep_scan.outputs.error_count }} error(s)"
+        exit 1
