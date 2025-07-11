@@ -125,19 +125,38 @@ jobs:
         id: write-plans
         run: |
           if [ -f tfplan ]; then
-            echo "#### $(basename "$(pwd)") plan" >> $GITHUB_STEP_SUMMARY
+            # Get workspace name for display
+            WORKSPACE_NAME=$(basename "$(pwd)")
+
             terraform show tfplan -no-color > tfplan.txt
+            
+            # Create beautiful header with emoji and styling
+            echo "## 🚀 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Workspace:** \`$WORKSPACE_NAME\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Terraform Version:** \`${{ inputs.terraform-version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Create collapsible section with better styling
             echo "<details>" >> $GITHUB_STEP_SUMMARY
-            echo "<summary>Click to show plan</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "<summary><strong>📋 Click to view detailed Terraform plan</strong></summary>" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "~~~ terraform" >> $GITHUB_STEP_SUMMARY
             cat tfplan.txt >> $GITHUB_STEP_SUMMARY
             echo "~~~" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "</details>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
           else
-            echo "Warning: No plan file found in $(pwd)" >> $GITHUB_STEP_SUMMARY
-            echo "skipping writing plans to run comment" >> $GITHUB_STEP_SUMMARY
+            echo "## ⚠️ Warning" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No Terraform plan file found in \`$(pwd)\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "This may indicate an issue with the Terraform plan generation." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Set Plan Artifact Name
