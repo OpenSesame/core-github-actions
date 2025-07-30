@@ -72,7 +72,7 @@ runs:
     - name: Set up Reviewdog
       uses: reviewdog/action-setup@v1
       with:
-        reviewdog_version: latest
+        reviewdog_version: v0.20.3
 
     - name: Install jq
       shell: bash
