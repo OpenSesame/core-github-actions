@@ -9,7 +9,7 @@ on:
         required: true
       oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        required: true
         type: string
         default: 'core'
       commit-identifier:

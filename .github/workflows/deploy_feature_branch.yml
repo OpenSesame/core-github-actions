@@ -14,7 +14,7 @@ on:
         default: 'terraform/dev'
       oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        required: true
         type: string
         default: 'core'
       role_session_name_suffix:

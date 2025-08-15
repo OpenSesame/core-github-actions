@@ -18,7 +18,7 @@ on:
         default: unnamed
       oidc-domain:
         description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        required: true
         type: string
         default: 'core'
       terraform-workspace:
