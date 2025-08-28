@@ -8,10 +8,9 @@ on:
         type: string
         required: true
       oidc-domain:
-        description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        description: 'OIDC Domain. Ex: "core" or "reveng"'
+        required: true
         type: string
-        default: 'core'
       terraform-workspace:
         description: Terraform Workspace, (optional) when omitted, the environment is used
         type: string
@@ -50,4 +49,3 @@ jobs:
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
-  
