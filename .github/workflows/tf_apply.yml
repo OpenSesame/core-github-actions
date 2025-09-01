@@ -8,10 +8,9 @@ on:
         type: string
         required: true
       oidc-domain:
-        description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        description: 'OIDC Domain. Ex: "core" or "reveng"'
+        required: true
         type: string
-        default: 'core'
       commit-identifier:
         description: SHA or tag to apply
         type: string

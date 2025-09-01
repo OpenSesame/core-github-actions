@@ -1,4 +1,4 @@
-name: "POC - Deploy Feature Branch to Dev"
+name: "Deploy Feature Branch to Dev"
 
 on:
   workflow_call:
@@ -13,10 +13,9 @@ on:
         type: string
         default: 'terraform/dev'
       oidc-domain:
-        description: 'OIDC Domain. Defaults to "core" when omitted'
-        required: false
+        description: 'OIDC Domain. Ex: "core" or "reveng"'
+        required: true
         type: string
-        default: 'core'
       role_session_name_suffix:
         description: 'Suffix for the role session name'
         required: true
