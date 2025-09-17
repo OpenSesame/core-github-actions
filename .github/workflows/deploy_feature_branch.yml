@@ -84,7 +84,7 @@ jobs:
       - name: Login to Amazon ECR
         if: ${{ inputs.deploy_fargate }}
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Install IUM App Packages & Build App
         if: ${{ inputs.deploy_fargate }}
