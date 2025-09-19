@@ -46,6 +46,7 @@ jobs:
       terraform-workspace: ${{ inputs.terraform-workspace || matrix.environment }}
       terraform-root: terraform/${{ matrix.environment }}
       terraform-version: ${{ inputs.terraform-version }}
+      oidc-domain: ${{ inputs.oidc-domain }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
