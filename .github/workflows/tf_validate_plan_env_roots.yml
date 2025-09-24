@@ -42,6 +42,7 @@ jobs:
     with:
       environment: ${{ matrix.environment }}
       commit-identifier: ${{ inputs.commit-identifier }}
+      oidc-domain: ${{ inputs.oidc-domain }}
       with-lock: ${{ matrix.with-lock }}
       terraform-workspace: ${{ inputs.terraform-workspace || matrix.environment }}
       terraform-root: terraform/${{ matrix.environment }}
