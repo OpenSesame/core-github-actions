@@ -32,7 +32,7 @@ on:
 jobs:
   TF-Validate-Plan-Roots:
     name: TF Validate/Plan ENV Roots
-    uses: opensesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@beta
+    uses: ./.github/workflows/tf_validate_plan_single_root.yml
     strategy:
       fail-fast: false # continues to run jobs even if one fails
       matrix:
