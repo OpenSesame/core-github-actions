@@ -52,6 +52,7 @@ jobs:
       terraform-root: terraform/${{ matrix.environment }}
       terraform-version: ${{ inputs.terraform-version }}
       build-artifact-directory: ${{ inputs.build-artifact-directory }}
+      oidc-domain: ${{ inputs.oidc-domain }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
