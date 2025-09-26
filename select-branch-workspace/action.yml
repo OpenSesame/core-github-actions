@@ -1,0 +1,26 @@
+name: Sanitize Branch Name for Terraform Workspace
+description: Removes everything before the final "/" from the branch name and limits the characters.
+inputs:
+  branch_name:
+    description: The name of the branch to be sanitized
+    required: true
+outputs:
+  workspace_name:
+    description: "Branch name after the final forward slash"
+    value: ${{ steps.sanitize_branch.outputs.sanitized_branch_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Sanitize input branch
+      id: sanitize_branch
+      shell: bash
+      run: |
+        SANITIZED_BRANCH_NAME=$(echo ${{ github.ref_name }} | sed 's/.*\///' | sed 's/\(^.\{1,50\}\).*/\1/')
+        echo "Sanitized branch name: $SANITIZED_BRANCH_NAME"
+        terraform workspace select -or-create $SANITIZED_BRANCH_NAME
+        echo "sanitized_branch_name=$SANITIZED_BRANCH_NAME" >> $GITHUB_OUTPUT
+
+    # sed 's/.*\///' removes everything before the final slash
+    # sed 's/\(^.\{1,50\}\).*/\1/' #Character limit is 50. Terraform workspace allows up to 90 characters
+    # TODO: Remove special characters. Eg sed 's/[#$%*@]//g'
