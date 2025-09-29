@@ -20,7 +20,7 @@ on:
         type: string
         required: true
       build-artifact-directory:
-        description: Optional directory to create before running terraform plan. Path should be relative to the terraform envirionment root directories
+        description: Optional directory to create before running terraform plan. Path should be relative to the terraform environment root directories. Example - "../../lambdas/auth-api/dist/out-tsc"
         type: string
         required: false
     secrets:
