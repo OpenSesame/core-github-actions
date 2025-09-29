@@ -35,6 +35,10 @@ on:
         description: Terraform version to use
         type: string
         required: true
+      build-artifact-directory:
+        description: Optional directory to create before running terraform plan. Path should be relative to the terraform-root supplied. Example - "../../lambdas/auth-api/dist/out-tsc"
+        type: string
+        required: false
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -102,6 +106,11 @@ jobs:
           terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: false # required to access terraform outputs after apply
 
+      # Step to create the directory if the build-artifact-directory input is provided
+      - name: Ensure Build Artifact Directory Exists
+        if: ${{ inputs.build-artifact-directory != '' }}
+        run: mkdir -p ${{ inputs.build-artifact-directory }}
+
       - name: Terraform Init
         run: terraform init -upgrade
 
@@ -111,7 +120,7 @@ jobs:
       - name: Select Workplace
         run: terraform workspace select -or-create ${{ inputs.terraform-workspace }}
 
-      - name: Terrafrom Re-Init
+      - name: Terraform Re-Init
         run: terraform init -upgrade
 
       - name: Terraform Plan

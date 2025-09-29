@@ -1,0 +1,47 @@
+name: Select Branch-based Terraform Workspace
+description: Removes everything before the final "/" from the branch name and limits the characters.
+inputs:
+  branch-name:
+    description: The name of the branch to be sanitized
+    required: true
+  working-directory:
+    description: the directory the step should be run from
+    required: true
+outputs:
+  workspace-name:
+    description: "Branch name after the final forward slash"
+    value: ${{ steps.sanitize_branch.outputs.sanitized_branch_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Write Existing workspaces
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        printf "Existing workspaces:\n"
+        terraform workspace list
+        printf "\n\n\n"
+
+
+    - name: Sanitize input branch
+      id: sanitize_branch
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        BRANCH_NAME: ${{ inputs.branch-name }}
+      run: |
+        printf "Input branch name: "$BRANCH_NAME" \n"
+        SANITIZED_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/.*\///' | sed 's/\(^.\{1,50\}\).*/\1/')
+        printf "Sanitized branch name: "$SANITIZED_BRANCH_NAME" \n\n"
+        echo "sanitized_branch_name=$SANITIZED_BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+    # sed 's/.*\///' removes everything before the final slash
+    # sed 's/\(^.\{1,50\}\).*/\1/' #Character limit is 50. Terraform workspace allows up to 90 characters
+    # TODO: Remove special characters. Eg sed 's/[#$%*@]//g'
+
+    - name: Select Workspace
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        terraform workspace select -or-create "${{ steps.sanitize_branch.outputs.sanitized_branch_name }}"
