@@ -36,7 +36,7 @@ on:
         type: string
         required: true
       build-artifact-directory:
-        description: Optional directory to create before running terraform plan. Path should be relative to the terraform-root supplied. Example - "../../lambdas/auth-api/dist/out-tsc"
+        description: Optional directories to create before running terraform plan. Path should be relative to the terraform-root supplied. Example - "../../lambdas/auth-api/dist/out-tsc" Use multi-line string if multiple directories are needed.
         type: string
         required: false
     secrets:
@@ -107,9 +107,20 @@ jobs:
           terraform_wrapper: false # required to access terraform outputs after apply
 
       # Step to create the directory if the build-artifact-directory input is provided
-      - name: Ensure Build Artifact Directory Exists
+      - name: Ensure Build Artifact Directories Exist
         if: ${{ inputs.build-artifact-directory != '' }}
-        run: mkdir -p ${{ inputs.build-artifact-directory }}
+        env:
+          BUILD_ARTIFACT_DIRECTORY: ${{ inputs.build-artifact-directory }}
+        run: |
+          set -Eeuo pipefail
+          trap 'echo "::error::failed at line $LINENO: $BASH_COMMAND"' ERR
+          printf 'Directories input:\n---\n%s\n---\n' "$BUILD_ARTIFACT_DIRECTORY"
+          while IFS= read -r dir; do
+            dir="$(printf '%s' "$dir" | tr -d '\r' | xargs)"  # strip CR, trim
+            [ -z "$dir" ] && continue
+            echo "Creating: [$dir]"
+            mkdir -p -- "$dir"
+          done <<< "$BUILD_ARTIFACT_DIRECTORY"
 
       - name: Terraform Init
         run: terraform init -upgrade
@@ -131,6 +142,10 @@ jobs:
 
       - name: Write Plans to Run Comment
         id: write-plans
+        env:
+          TF_ENVIRONMENT: ${{ inputs.environment }}
+          TF_ROOT: ${{ inputs.terraform-root }}
+          TF_VERSION: ${{ inputs.terraform-version }}
         run: |
           if [ -f tfplan ]; then
             # Get workspace name for display
@@ -142,8 +157,9 @@ jobs:
             echo "## 🚀 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Workspace:** \`$WORKSPACE_NAME\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Environment:** \`${{ inputs.environment }}\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Terraform Version:** \`${{ inputs.terraform-version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**AWS Environment:** \`$TF_ENVIRONMENT\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Terraform Root:** \`$TF_ROOT\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Terraform Version:** \`$TF_VERSION\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
 
             # Create collapsible section with better styling
