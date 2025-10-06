@@ -11,7 +11,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Comment on PR
+    - name: Upsert PR comment (Terraform plan)
       uses: actions/github-script@v7
       with:
         script: |
@@ -20,8 +20,13 @@ runs:
           const planPath = '${{ inputs.terraform_plan_file }}';
           const planContents = fs.readFileSync(planPath, 'utf8');
 
-          const output = `
+          // 👇 Add a stable marker so we can find/update the same comment
+          const MARK = `<!-- tf-plan:${{ inputs.terraform_environment }} -->`;
+
+          const body = `
+          ${MARK}
           ### Terraform Plan for ${{ inputs.terraform_environment }} 🔍
+
           <details>
           <summary>Click to view plan details</summary>
 
@@ -31,11 +36,30 @@ runs:
           </details>
 
           *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`, Workflow: \`${{ github.workflow }}\`*
+          Run: [#${process.env.GITHUB_RUN_NUMBER}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
           `;
 
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
+          // Upsert by marker to avoid duplicates
+          const { data: comments } = await github.rest.issues.listComments({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            body: output
+            issue_number: context.issue.number,
+            per_page: 100,
           });
+
+          const existing = comments.find(c => c.body && c.body.includes(MARK));
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
+          }
