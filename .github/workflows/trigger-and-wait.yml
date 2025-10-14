@@ -9,6 +9,10 @@ on:
       repo:
         type: string
         required: true
+      github_token:
+        description: Token with repo + workflow scope (PAT/App token) for the target repo
+        type: string
+        required: true
       workflow_file:
         type: string
         required: true           # e.g., run_e2e.yml
@@ -33,9 +37,6 @@ on:
       github_user:
         type: string
         required: false
-    secrets:
-      token:
-        required: true
     outputs:
       downstream_run_id:
         value: ${{ jobs.trigger.outputs.downstream_run_id }}
