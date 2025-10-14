@@ -69,7 +69,7 @@ jobs:
           REPO: ${{ inputs.repo }}
           WORKFLOW_FILE: ${{ inputs.workflow_file }}
           REF: ${{ inputs.ref }}
-          TOKEN: ${{ secrets.token }}
+          TOKEN: ${{ inputs.github_token }}
           WAIT_INTERVAL: ${{ inputs.wait_interval }}
           PROPAGATE_FAILURE: ${{ inputs.propagate_failure }}
           TRIGGER_WORKFLOW: ${{ inputs.trigger_workflow }}
