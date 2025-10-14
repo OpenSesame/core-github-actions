@@ -1,0 +1,156 @@
+name: Trigger workflow and wait
+
+on:
+  workflow_call:
+    inputs:
+      owner:
+        type: string
+        required: true
+      repo:
+        type: string
+        required: true
+      workflow_file:
+        type: string
+        required: true           # e.g., run_e2e.yml
+      ref:
+        type: string
+        default: main
+      environment:
+        type: string
+        required: true           # dev|stage|prod
+      wait_interval:
+        type: number
+        default: 20
+      propagate_failure:
+        type: boolean
+        default: true
+      trigger_workflow:
+        type: boolean
+        default: true
+      wait_workflow:
+        type: boolean
+        default: true
+      github_user:
+        type: string
+        required: false
+    secrets:
+      token:
+        required: true
+    outputs:
+      downstream_run_id:
+        value: ${{ jobs.trigger.outputs.downstream_run_id }}
+      downstream_html_url:
+        value: ${{ jobs.trigger.outputs.downstream_html_url }}
+      conclusion:
+        value: ${{ jobs.trigger.outputs.conclusion }}
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      downstream_run_id: ${{ steps.run.outputs.downstream_run_id }}
+      downstream_html_url: ${{ steps.run.outputs.downstream_html_url }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+    steps:
+      - name: Ensure jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Dispatch and wait
+        id: run
+        env:
+          API_URL: https://api.github.com
+          SERVER_URL: https://github.com
+          OWNER: ${{ inputs.owner }}
+          REPO: ${{ inputs.repo }}
+          WORKFLOW_FILE: ${{ inputs.workflow_file }}
+          REF: ${{ inputs.ref }}
+          TOKEN: ${{ secrets.token }}
+          WAIT_INTERVAL: ${{ inputs.wait_interval }}
+          PROPAGATE_FAILURE: ${{ inputs.propagate_failure }}
+          TRIGGER_WORKFLOW: ${{ inputs.trigger_workflow }}
+          WAIT_WORKFLOW: ${{ inputs.wait_workflow }}
+          GITHUB_USER: ${{ inputs.github_user }}
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          accept='Accept: application/vnd.github+json'
+          auth="Authorization: Bearer ${TOKEN}"
+
+          # Build inputs for downstream
+          if [ "${ENVIRONMENT}" = "prod" ]; then
+            IDENTITY_DOMAIN="identity"
+          else
+            IDENTITY_DOMAIN="identity-${ENVIRONMENT}"
+          fi
+          inputs_json=$(jq -nc --arg env "$ENVIRONMENT" --arg dom "$IDENTITY_DOMAIN" \
+            '{environment:$env, identity_domain:$dom}')
+
+          api() {
+            local path=$1; shift
+            curl --fail-with-body -sSL "${API_URL}/repos/${OWNER}/${REPO}/actions/${path}" \
+              -H "$accept" -H "$auth" -H 'Content-Type: application/json' "$@"
+          }
+
+          SINCE=$(date -u -Iseconds -d "@$(( $(date +%s) - 120 ))")
+
+          get_runs() {
+            local q="event=workflow_dispatch&created=>=${SINCE}&per_page=100"
+            if [ -n "${GITHUB_USER:-}" ]; then q="${q}&actor=${GITHUB_USER}"; fi
+            api "workflows/${WORKFLOW_FILE}/runs?${q}" | jq -r '.workflow_runs[].id' | sort
+          }
+
+          old_runs="$(get_runs)"
+
+          if [ "${TRIGGER_WORKFLOW}" = "true" ]; then
+            echo "Dispatching ${WORKFLOW_FILE} on ${OWNER}/${REPO}@${REF} with inputs ${inputs_json}"
+            api "workflows/${WORKFLOW_FILE}/dispatches" \
+              --data "{\"ref\":\"${REF}\",\"inputs\":${inputs_json}}"
+          else
+            echo "Skipping dispatch (trigger_workflow=false)"
+          fi
+
+          if [ "${WAIT_WORKFLOW}" != "true" ]; then
+            echo "Skipping wait (wait_workflow=false)"
+            exit 0
+          fi
+
+          new_runs="$old_runs"
+          for i in {1..60}; do
+            new_runs="$(get_runs)"
+            diff=$(comm -13 <(echo "$old_runs") <(echo "$new_runs") || true)
+            if [ -n "$diff" ]; then
+              downstream_run_id="$(echo "$diff" | tail -n1)"
+              break
+            fi
+            echo "Waiting for run to start... (${i})"
+            sleep "${WAIT_INTERVAL}"
+          done
+
+          if [ -z "${downstream_run_id:-}" ]; then
+            echo "Timed out waiting for downstream run to start" >&2
+            exit 1
+          fi
+
+          downstream_html_url="${SERVER_URL}/${OWNER}/${REPO}/actions/runs/${downstream_run_id}"
+          echo "downstream_run_id=${downstream_run_id}" >> "$GITHUB_OUTPUT"
+          echo "downstream_html_url=${downstream_html_url}" >> "$GITHUB_OUTPUT"
+          echo "Started: ${downstream_html_url}"
+
+          status=""
+          conclusion="null"
+          while [ "$status" != "completed" ] && [ "$conclusion" = "null" ]; do
+            sleep "${WAIT_INTERVAL}"
+            run_json="$(api "runs/${downstream_run_id}")"
+            status="$(echo "$run_json" | jq -r '.status')"
+            conclusion="$(echo "$run_json" | jq -r '.conclusion')"
+            echo "status=${status} conclusion=${conclusion}"
+          done
+
+          echo "conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+          if [ "${PROPAGATE_FAILURE}" = "true" ] && [ "$conclusion" != "success" ]; then
+            exit 1
+          fi
