@@ -9,10 +9,6 @@ on:
       repo:
         type: string
         required: true
-      github_token:
-        description: Token with repo + workflow scope (PAT/App token) for the target repo
-        type: string
-        required: true
       workflow_file:
         type: string
         required: true           # e.g., run_e2e.yml
@@ -44,6 +40,9 @@ on:
         value: ${{ jobs.trigger.outputs.downstream_html_url }}
       conclusion:
         value: ${{ jobs.trigger.outputs.conclusion }}
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
 
 jobs:
   trigger:
@@ -69,7 +68,7 @@ jobs:
           REPO: ${{ inputs.repo }}
           WORKFLOW_FILE: ${{ inputs.workflow_file }}
           REF: ${{ inputs.ref }}
-          TOKEN: ${{ inputs.github_token }}
+          TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
           WAIT_INTERVAL: ${{ inputs.wait_interval }}
           PROPAGATE_FAILURE: ${{ inputs.propagate_failure }}
           TRIGGER_WORKFLOW: ${{ inputs.trigger_workflow }}
