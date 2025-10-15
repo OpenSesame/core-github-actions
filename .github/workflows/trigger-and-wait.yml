@@ -4,33 +4,43 @@ on:
   workflow_call:
     inputs:
       owner:
+        description: GitHub org (e.g., OpenSesame).
         type: string
         required: true
       repo:
+        description: Name of the target repository (e.g., identity-auth).
         type: string
         required: true
       workflow_file:
+        description: Name of the target workflow to run (e.g., run_e2e.yml).
         type: string
-        required: true           # e.g., run_e2e.yml
+        required: true
       ref:
+        description: Git ref in the target repo (e.g., branch, tag, or commit SHA).
         type: string
         default: main
       environment:
+        description: Environment to run (e.g., dev, stage, prod).
         type: string
-        required: true           # dev|stage|prod
+        required: true
       wait_interval:
+        description: Seconds to wait between polling attempts for the downstream run status.
         type: number
         default: 20
       propagate_failure:
+        description: If true, this job fails when the downstream workflow finishes with a non-success conclusion.
         type: boolean
         default: true
       trigger_workflow:
+        description: If true, dispatch a new downstream run; if false, only wait for a matching in-flight run.
         type: boolean
         default: true
       wait_workflow:
+        description: If true, wait until the downstream run completes; if false, exit after dispatching.
         type: boolean
         default: true
       github_user:
+        description: Optional actor filter; only consider downstream runs triggered by this GitHub username.
         type: string
         required: false
     outputs:
