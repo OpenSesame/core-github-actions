@@ -40,7 +40,7 @@ on:
         type: boolean
         default: true
       github_user:
-        description: Optional actor filter; only consider downstream runs triggered by this GitHub username.
+        description: GitHub username.
         type: string
         required: false
     outputs:
@@ -86,17 +86,15 @@ jobs:
           GITHUB_USER: ${{ inputs.github_user }}
           ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          # Set strict bash flags and stop on errors, undefined vars, and pipeline failures
+          # Set strict bash flags
           set -euo pipefail
 
-          # Set IDENTITY_DOMAIN value
           if [ "${ENVIRONMENT}" = "prod" ]; then
             IDENTITY_DOMAIN="identity"
           else
             IDENTITY_DOMAIN="identity-${ENVIRONMENT}"
           fi
 
-          # Create JSON payload using jq
           inputs_json=$(jq -nc --arg env "$ENVIRONMENT" --arg dom "$IDENTITY_DOMAIN" \
             '{environment:$env, identity_domain:$dom}')
 
@@ -113,14 +111,13 @@ jobs:
           # Look back 2 minutes to avoid clock-skew issues when detecting the new run
           SINCE=$(date -u -Iseconds -d "@$(( $(date +%s) - 120 ))")
 
-          # Return a sorted list of recent run IDs for this workflow 
+          # Helper method to return a sorted list of recent run
           get_runs() {
             local q="event=workflow_dispatch&created=>=${SINCE}&per_page=100"
             if [ -n "${GITHUB_USER:-}" ]; then q="${q}&actor=${GITHUB_USER}"; fi
             api "workflows/${WORKFLOW_FILE}/runs?${q}" | jq -r '.workflow_runs[].id' | sort
           }
 
-          # Snapshot the current set of runs before we dispatch a new one.
           old_runs="$(get_runs)"
 
           # Dispatch workflow
@@ -132,13 +129,12 @@ jobs:
             echo "Skipping dispatch (trigger_workflow=false)"
           fi
 
-          # Exit early if we're not supposed to wait for the run.
           if [ "${WAIT_WORKFLOW}" != "true" ]; then
             echo "Skipping wait (wait_workflow=false)"
             exit 0
           fi
 
-          # Poll until we see a *new* run appear after our snapshot.
+          # Poll until we see a *new* run appear
           new_runs="$old_runs"
           for i in {1..60}; do
             new_runs="$(get_runs)"
@@ -151,19 +147,17 @@ jobs:
             sleep "${WAIT_INTERVAL}"
           done
 
-          # Error if no new run appeared within the loop.
           if [ -z "${downstream_run_id:-}" ]; then
             echo "Timed out waiting for downstream run to start" >&2
             exit 1
           fi
 
-          # Publish run ID and URL.
           downstream_html_url="${SERVER_URL}/${OWNER}/${REPO}/actions/runs/${downstream_run_id}"
           echo "downstream_run_id=${downstream_run_id}" >> "$GITHUB_OUTPUT"
           echo "downstream_html_url=${downstream_html_url}" >> "$GITHUB_OUTPUT"
           echo "Started: ${downstream_html_url}"
 
-          # Poll the downstream run until it completes.
+          # Poll run status until it completes.
           status=""
           conclusion="null"
           while [ "$status" != "completed" ] && [ "$conclusion" = "null" ]; do
@@ -174,7 +168,6 @@ jobs:
             echo "status=${status} conclusion=${conclusion}"
           done
 
-          # Surface final conclusion.
           echo "conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
           if [ "${PROPAGATE_FAILURE}" = "true" ] && [ "$conclusion" != "success" ]; then
             exit 1
