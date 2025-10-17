@@ -1,0 +1,142 @@
+name: Trigger workflow and wait
+
+on:
+  workflow_call:
+    inputs:
+      owner:
+        description: The owner of the repository where the workflow is contained.
+        type: string
+        required: true
+      repo:
+        description: The repository where the workflow is contained.
+        type: string
+        required: true
+      workflow_file:
+        description: Name of the target workflow to run (e.g., run_e2e.yml).
+        type: string
+        required: true
+      commit-identifier:
+        description: Git ref in the target repo (branch, tag, or commit SHA).
+        type: string
+        default: main
+      wait_interval:
+        description: Seconds to wait between polling attempts for the downstream run status.
+        type: number
+        default: 20
+      client_payload:
+        description: JSON string to pass as workflow_dispatch inputs (e.g. {"environment":"dev","identity_domain":"identity-dev"})
+        type: string
+        required: true
+    outputs:
+      downstream_run_id:
+        value: ${{ jobs.trigger.outputs.downstream_run_id }}
+      downstream_html_url:
+        value: ${{ jobs.trigger.outputs.downstream_html_url }}
+      conclusion:
+        value: ${{ jobs.trigger.outputs.conclusion }}
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    outputs:
+      downstream_run_id: ${{ steps.run.outputs.downstream_run_id }}
+      downstream_html_url: ${{ steps.run.outputs.downstream_html_url }}
+      conclusion: ${{ steps.run.outputs.conclusion }}
+    steps:
+      - name: Ensure jq
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+      - name: Dispatch and wait
+        id: run
+        env:
+          API_URL: https://api.github.com
+          SERVER_URL: https://github.com
+          OWNER: ${{ inputs.owner }}
+          REPO: ${{ inputs.repo }}
+          WORKFLOW_FILE: ${{ inputs.workflow_file }}
+          REF: ${{ inputs.commit-identifier }}
+          TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+          WAIT_INTERVAL: ${{ inputs.wait_interval }}
+          CLIENT_PAYLOAD: ${{ inputs.client_payload }}
+        run: |
+          set -euo pipefail
+
+          accept='Accept: application/vnd.github+json'
+          auth="Authorization: Bearer ${TOKEN}"
+
+          api() {
+            local path=$1; shift
+            curl --fail-with-body -sSL "${API_URL}/repos/${OWNER}/${REPO}/actions/${path}" \
+              -H "$accept" -H "$auth" -H 'Content-Type: application/json' "$@"
+          }
+
+          # Validate JSON payload
+          if ! printf '%s' "$CLIENT_PAYLOAD" | jq -c . >/dev/null 2>&1; then
+            echo "Error: client_payload is not valid JSON" >&2
+            exit 1
+          fi
+
+          # Look back 2 minutes to avoid clock-skew issues when detecting the new run
+          SINCE=$(date -u -Iseconds -d "@$(( $(date +%s) - 120 ))")
+
+          get_runs() {
+            local q="event=workflow_dispatch&created=>=${SINCE}&per_page=100"
+            api "workflows/${WORKFLOW_FILE}/runs?${q}" | jq -r '.workflow_runs[].id' | sort
+          }
+
+          old_runs="$(get_runs)"
+
+          # Dispatch workflow
+          echo "Dispatching ${WORKFLOW_FILE} on ${OWNER}/${REPO}@${REF} with inputs [redacted]"
+          api "workflows/${WORKFLOW_FILE}/dispatches" \
+            --data "{\"ref\":\"${REF}\",\"inputs\":${CLIENT_PAYLOAD}}"
+
+          # Wait for a NEW run to appear
+          for i in {1..60}; do
+            new_runs="$(get_runs)"
+            diff=$(comm -13 <(echo "$old_runs") <(echo "$new_runs") || true)
+            if [ -n "$diff" ]; then
+              downstream_run_id="$(echo "$diff" | tail -n1)"
+              break
+            fi
+            echo "Waiting for run to start... (${i})"
+            sleep "${WAIT_INTERVAL}"
+          done
+
+          if [ -z "${downstream_run_id:-}" ]; then
+            echo "Timed out waiting for downstream run to start" >&2
+            exit 1
+          fi
+
+          downstream_html_url="${SERVER_URL}/${OWNER}/${REPO}/actions/runs/${downstream_run_id}"
+          echo "downstream_run_id=${downstream_run_id}"     >> "$GITHUB_OUTPUT"
+          echo "downstream_html_url=${downstream_html_url}" >> "$GITHUB_OUTPUT"
+          echo "Started: ${downstream_html_url}"
+
+          # Poll until completion
+          status=""
+          conclusion="null"
+          while [ "$status" != "completed" ] && [ "$conclusion" = "null" ]; do
+            sleep "${WAIT_INTERVAL}"
+            run_json="$(api "runs/${downstream_run_id}")"
+            status="$(echo "$run_json" | jq -r '.status')"
+            conclusion="$(echo "$run_json" | jq -r '.conclusion')"
+            echo "status=${status} conclusion=${conclusion}"
+          done
+
+          echo "conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
+
+          if [ "$conclusion" != "success" ]; then
+            exit 1
+          fi
