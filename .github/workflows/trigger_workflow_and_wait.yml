@@ -4,45 +4,29 @@ on:
   workflow_call:
     inputs:
       owner:
-        description: GitHub org (e.g., OpenSesame).
+        description: The owner of the repository where the workflow is contained.
         type: string
         required: true
       repo:
-        description: Name of the target repository (e.g., identity-auth).
+        description: The repository where the workflow is contained.
         type: string
         required: true
       workflow_file:
         description: Name of the target workflow to run (e.g., run_e2e.yml).
         type: string
         required: true
-      ref:
-        description: Git ref in the target repo (e.g., branch, tag, or commit SHA).
+      commit-identifier:
+        description: Git ref in the target repo (branch, tag, or commit SHA).
         type: string
         default: main
-      environment:
-        description: Environment to run (e.g., dev, stage, prod).
-        type: string
-        required: true
       wait_interval:
         description: Seconds to wait between polling attempts for the downstream run status.
         type: number
         default: 20
-      propagate_failure:
-        description: If true, this job fails when the downstream workflow finishes with a non-success conclusion.
-        type: boolean
-        default: true
-      trigger_workflow:
-        description: If true, dispatch a new downstream run; if false, only wait for a matching in-flight run.
-        type: boolean
-        default: true
-      wait_workflow:
-        description: If true, wait until the downstream run completes; if false, exit after dispatching.
-        type: boolean
-        default: true
-      github_user:
-        description: GitHub username.
+      client_payload:
+        description: JSON string to pass as workflow_dispatch inputs (e.g. {"environment":"dev","identity_domain":"identity-dev"})
         type: string
-        required: false
+        required: true
     outputs:
       downstream_run_id:
         value: ${{ jobs.trigger.outputs.downstream_run_id }}
@@ -53,6 +37,10 @@ on:
     secrets:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   trigger:
@@ -77,28 +65,13 @@ jobs:
           OWNER: ${{ inputs.owner }}
           REPO: ${{ inputs.repo }}
           WORKFLOW_FILE: ${{ inputs.workflow_file }}
-          REF: ${{ inputs.ref }}
+          REF: ${{ inputs.commit-identifier }}
           TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
           WAIT_INTERVAL: ${{ inputs.wait_interval }}
-          PROPAGATE_FAILURE: ${{ inputs.propagate_failure }}
-          TRIGGER_WORKFLOW: ${{ inputs.trigger_workflow }}
-          WAIT_WORKFLOW: ${{ inputs.wait_workflow }}
-          GITHUB_USER: ${{ inputs.github_user }}
-          ENVIRONMENT: ${{ inputs.environment }}
+          CLIENT_PAYLOAD: ${{ inputs.client_payload }}
         run: |
-          # Set strict bash flags
           set -euo pipefail
 
-          if [ "${ENVIRONMENT}" = "prod" ]; then
-            IDENTITY_DOMAIN="identity"
-          else
-            IDENTITY_DOMAIN="identity-${ENVIRONMENT}"
-          fi
-
-          inputs_json=$(jq -nc --arg env "$ENVIRONMENT" --arg dom "$IDENTITY_DOMAIN" \
-            '{environment:$env, identity_domain:$dom}')
-
-          # Headers and Helper method to call the GH Actions API
           accept='Accept: application/vnd.github+json'
           auth="Authorization: Bearer ${TOKEN}"
 
@@ -108,34 +81,28 @@ jobs:
               -H "$accept" -H "$auth" -H 'Content-Type: application/json' "$@"
           }
 
+          # Validate JSON payload
+          if ! printf '%s' "$CLIENT_PAYLOAD" | jq -c . >/dev/null 2>&1; then
+            echo "Error: client_payload is not valid JSON" >&2
+            exit 1
+          fi
+
           # Look back 2 minutes to avoid clock-skew issues when detecting the new run
           SINCE=$(date -u -Iseconds -d "@$(( $(date +%s) - 120 ))")
 
-          # Helper method to return a sorted list of recent run
           get_runs() {
             local q="event=workflow_dispatch&created=>=${SINCE}&per_page=100"
-            if [ -n "${GITHUB_USER:-}" ]; then q="${q}&actor=${GITHUB_USER}"; fi
             api "workflows/${WORKFLOW_FILE}/runs?${q}" | jq -r '.workflow_runs[].id' | sort
           }
 
           old_runs="$(get_runs)"
 
           # Dispatch workflow
-          if [ "${TRIGGER_WORKFLOW}" = "true" ]; then
-            echo "Dispatching ${WORKFLOW_FILE} on ${OWNER}/${REPO}@${REF} with inputs ${inputs_json}"
-            api "workflows/${WORKFLOW_FILE}/dispatches" \
-              --data "{\"ref\":\"${REF}\",\"inputs\":${inputs_json}}"
-          else
-            echo "Skipping dispatch (trigger_workflow=false)"
-          fi
+          echo "Dispatching ${WORKFLOW_FILE} on ${OWNER}/${REPO}@${REF} with inputs [redacted]"
+          api "workflows/${WORKFLOW_FILE}/dispatches" \
+            --data "{\"ref\":\"${REF}\",\"inputs\":${CLIENT_PAYLOAD}}"
 
-          if [ "${WAIT_WORKFLOW}" != "true" ]; then
-            echo "Skipping wait (wait_workflow=false)"
-            exit 0
-          fi
-
-          # Poll until we see a *new* run appear
-          new_runs="$old_runs"
+          # Wait for a NEW run to appear
           for i in {1..60}; do
             new_runs="$(get_runs)"
             diff=$(comm -13 <(echo "$old_runs") <(echo "$new_runs") || true)
@@ -153,11 +120,11 @@ jobs:
           fi
 
           downstream_html_url="${SERVER_URL}/${OWNER}/${REPO}/actions/runs/${downstream_run_id}"
-          echo "downstream_run_id=${downstream_run_id}" >> "$GITHUB_OUTPUT"
+          echo "downstream_run_id=${downstream_run_id}"     >> "$GITHUB_OUTPUT"
           echo "downstream_html_url=${downstream_html_url}" >> "$GITHUB_OUTPUT"
           echo "Started: ${downstream_html_url}"
 
-          # Poll run status until it completes.
+          # Poll until completion
           status=""
           conclusion="null"
           while [ "$status" != "completed" ] && [ "$conclusion" = "null" ]; do
@@ -169,6 +136,7 @@ jobs:
           done
 
           echo "conclusion=${conclusion}" >> "$GITHUB_OUTPUT"
-          if [ "${PROPAGATE_FAILURE}" = "true" ] && [ "$conclusion" != "success" ]; then
+
+          if [ "$conclusion" != "success" ]; then
             exit 1
           fi
