@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "davidanson.vscode-markdownlint",
+        "eamodio.gitlens",
+        "esbenp.prettier-vscode",
+        "github.vscode-github-actions",
+        "mhutchie.git-graph",
+        "streetsidesoftware.code-spell-checker",
+        "redhat.vscode-yaml"
+    ]
+}
