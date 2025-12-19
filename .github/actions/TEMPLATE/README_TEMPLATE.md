@@ -1,16 +1,17 @@
-# <action-name> Action
+# {action-name} Action
 
 ## 🧭 Summary
 
 <!-- Brief description of what this action does -->
 
-## Scope/Limitations 
+## Scope/Limitations
 
 <!-- Describe supported scenarios and known constraints -->
 
 ## 🔒 Permissions
 
-<!-- Adjust for the permissions nencessry for the action -->
+<!-- Adjust for the permissions necessary for the action -->
+
 The following GHA permissions are required to use this step:
 
 ```yaml
@@ -26,24 +27,23 @@ permissions:
 - `gh` — GitHub CLI
 - `jq` — JSON processor
 
-> Both tools are preinstalled on GitHub-hosted Ubuntu runners.  
+> Both tools are preinstalled on GitHub-hosted Ubuntu runners.
 > If running in a container or on a self-hosted runner, they must be installed manually.
 -->
 
-
 ## ⚙️ Inputs
 
-| Name           | Required | Description                                                               |
-| -------------- | -------- | ------------------------------------------------------------------------- |
-| `input-name`   | ✅/❌ |    |
-| `input-name`   | ✅/❌ |    |
+| Name         | Required | Description |
+| ------------ | -------- | ----------- |
+| `input-name` | ✅/❌    |             |
+| `input-name` | ✅/❌    |             |
 
 ## 📤 Outputs
 
-| Name        | Description                                                   |
-| ----------- | ------------------------------------------------------------- |
-| `output-name` |  |
-| `poutput-name` |  |
+| Name          | Description |
+| ------------- | ----------- |
+| `output-name` |             |
+| `output-name` |             |
 
 ## 🚀 Usage
 

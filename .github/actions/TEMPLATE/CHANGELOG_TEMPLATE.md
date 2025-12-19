@@ -1,8 +1,8 @@
-# <action-name> action Changelog
+# {action-name} action Changelog
 
-All notable changes to the **<action-name>** action are documented in this file.
+All notable changes to the **{action-name}** action are documented in this file.
 
-## v<version> 
+## v{semver}
 
 ### Added
 

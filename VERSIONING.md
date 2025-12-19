@@ -131,15 +131,19 @@ Each released version must have a heading that includes the version label
 ## X.Y.Z
 
 ### Added
+
 - ...
 
 ### Changed
+
 - ...
 
 ### Fixed
+
 - ...
 
 ### Removed
+
 - ...
 ```
 
@@ -147,7 +151,7 @@ Minimum requirements:
 
 - The header must contain `## X.Y.Z` exactly (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
-(version:<component-name>:vX.Y.Z).
+  (version:<component-name>:vX.Y.Z).
 
 The rest of the content (sections and bullets) is for humans, but strongly recommended.
 

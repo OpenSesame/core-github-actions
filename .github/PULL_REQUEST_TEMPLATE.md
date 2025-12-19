@@ -14,11 +14,11 @@ Versioned components live under `./github/actions`
 
 Does this PR modify a versioned component?
 
-- [ ] **No** — label this PR with `version:untracked`  
-- [ ] **Yes**  
-  - Add a version label: `version:<component-name>:vX.Y.Z`  
-  - Ensure the component’s `CHANGELOG.md` includes a `## vX.Y.Z` entry  
-  - Use `version:untracked` **only** if changes do *not* alter behavior, inputs, or outputs
+- [ ] **No** — label this PR with `version:untracked`
+- [ ] **Yes**
+  - Add a version label: `version:<component-name>:vX.Y.Z`
+  - Ensure the component’s `CHANGELOG.md` includes a `## vX.Y.Z` entry
+  - Use `version:untracked` **only** if changes do _not_ alter behavior, inputs, or outputs
 
 **If version labels are incorrect or missing, automated version validation will fail and block merge.**
 

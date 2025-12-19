@@ -1,0 +1,34 @@
+{
+  "name": "core-github-actions",
+  "version": "1.0.0",
+  "description": "Core Team's reusable GitHub Actions",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OpenSesame/core-github-actions.git"
+  },
+  "author": "Core Services Team @ OpenSesame",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/OpenSesame/core-github-actions#readme",
+  "devDependencies": {
+    "@eslint/js": "9.39.2",
+    "@eslint/json": "0.14.0",
+    "@eslint/markdown": "7.5.1",
+    "eslint": "9.39.2",
+    "globals": "16.5.0",
+    "husky": "9.0.11",
+    "jest": "30.2.0",
+    "prettier": "3.7.4",
+    "semgrep": "0.0.1"
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "test": "jest",
+    "watch": "jest --watch",
+    "audit": "npm audit --audit-level=high --omit=dev",
+    "lint:check": "eslint *.js --ext .js,.json",
+    "lint:fix": "eslint *.js --ext .js,.json --fix",
+    "format:check": "prettier --check './*.js' './*.mjs' './*.json' './*.md' '.github/actions/**/*.*'",
+    "format:fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' '.github/actions/**/*.*'",
+    "scan": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json .github/actions/"
+  }
+}

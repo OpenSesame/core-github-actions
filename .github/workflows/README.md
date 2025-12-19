@@ -7,4 +7,3 @@
 
 - **Internal workflows** (used only by this repository and never exposed via `workflow_call`)  
   must be prefixed with: `internal_`
-  
