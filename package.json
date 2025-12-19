@@ -27,8 +27,9 @@
     "audit": "npm audit --audit-level=high --omit=dev",
     "lint:check": "eslint *.js --ext .js,.json",
     "lint:fix": "eslint *.js --ext .js,.json --fix",
-    "format:check": "prettier --check './*.js' './*.mjs' './*.json' './*.md' '.github/actions/**/*.*'",
-    "format:fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' '.github/actions/**/*.*'",
-    "scan": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json .github/actions/"
+    "format:check": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "format:fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "scan": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
+    "ci": "npm run audit && npm run test && npm run lint:check && npm run format:check && npm run scan"
   }
 }

@@ -24,4 +24,12 @@ export default defineConfig([
     language: 'json/json5',
     extends: ['json/recommended'],
   },
+  {
+    files: ['**/*.test.js'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+  },
 ]);
