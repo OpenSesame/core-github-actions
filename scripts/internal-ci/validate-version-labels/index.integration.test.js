@@ -1,12 +1,12 @@
 const { versionLabelPrefix, untrackedLabel } = require('.');
 
-describe('main module integration', () => {
+describe('validate-version-labels main module integration', () => {
   const fs = require('fs');
   const path = require('path');
   const { spawnSync } = require('child_process');
   const tmp = require('os').tmpdir();
   const scriptPath = path.resolve(__dirname, 'index.js');
-  const projectRoot = path.resolve(__dirname, '../../..'); // adjust as needed
+  const projectRoot = path.resolve(__dirname, '../../..');
 
   function parseGithubOutput(file) {
     return Object.fromEntries(
