@@ -1,6 +1,6 @@
 # PR Summary
 
-Jira: [https://opensesame.atlassian.net/browse/CORE-XXXX]
+Jira: <https://opensesame.atlassian.net/browse/CORE-XXXX>
 
 ## Description of Changes
 

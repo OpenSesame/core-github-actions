@@ -120,7 +120,7 @@ jobs:
             if (process.env.HAS_UNTRACKED_VERSION === 'true') {
               summary += '- No Tags will be created on main after merge.\n';
             } else {
-              summary += 'The following tags will be created on main after merge:\n';
+              summary += 'The following tags will be created on main after merge:\n\n';
               const components = process.env.VALID_COMPONENTS.split(',');
               for (const component_version of components) {
                 summary += `🏷️  \`${component_version.trim()}\`\n`;
@@ -129,7 +129,7 @@ jobs:
 
             const body = `<!-- version-summary -->
             ## Version Tags
-            ${summary}
+            ${summary.trim()}
 
             [View run](${runUrl})
             `;

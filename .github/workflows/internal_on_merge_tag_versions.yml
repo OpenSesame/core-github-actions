@@ -55,28 +55,21 @@ jobs:
       - name: Get Version Tags
         id: get_tags
         run: |
-          const fs = require('fs');
-          const { getLabelArray, versionLabelPrefix, untrackedLabel, componentVersionRegEx } = require('./path/to/validate-version-labels');
-
-          rawLabels = fs.readFileSync('all_labels.txt', 'utf8');
-          getLabelArray = function(labels) {
-          const hasUntracked = labels.includes(untrackedLabel);
-          const componentTags = labels.filter(label => componentVersionRegEx.test(label)).map(label => label.slice(versionLabelPrefix.length));
-
-          echo `HAS_UNTRACKED=${hasUntracked}` >> $GITHUB_OUTPUT;
-          echo `componentTags=${componentTags.join(',')}` >> $GITHUB_OUTPUT;
+          node scripts/internal-ci/get-version-tags/index.js all_labels.txt
 
       - name: Untracked Version Check
-        if: ${{ steps.get_tags.outputs.HAS_UNTRACKED == 'true' }}
+        if: ${{ steps.get_tags.outputs.hasUntracked == 'true' }}
         run: |
           const message = "Untracked version label detected. Skipping tag creation."
           echo "ℹ️ $message" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Untracked Version::$message"
 
       - name: Create Version Tags
-        if: ${{ steps.get_tags.outputs.HAS_UNTRACKED != 'true' }}
+        if: ${{ steps.get_tags.outputs.hasUntracked != 'true' }}
+        env:
+          COMPONENT_TAGS: ${{ steps.get_tags.outputs.componentTags }}
         run: |
-          IFS=',' read -r -a tagsArray <<< "${{ steps.get_tags.outputs.componentTags }}"
+          IFS=',' read -r -a tagsArray <<< "${{ env.COMPONENT_TAGS }}"
           for tag in "${tagsArray[@]}"; do
             git tag "$tag"
             git push origin "$tag"
