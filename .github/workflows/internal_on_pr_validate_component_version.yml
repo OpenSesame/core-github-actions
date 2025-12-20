@@ -100,7 +100,7 @@ jobs:
           else
             echo -e "The following tags will be created on main after merge\n" >> "$GITHUB_STEP_SUMMARY"
             echo "${{ env.VALID_COMPONENTS }}" | tr ',' '\n' | while read -r component_version; do
-              echo "🏷️ \`$component_version\`" >> "$GITHUB_STEP_SUMMARY"
+              echo "🏷️  \`$component_version\`" >> "$GITHUB_STEP_SUMMARY"
             done
           fi
 
@@ -123,7 +123,7 @@ jobs:
               summary += 'The following tags will be created on main after merge:\n';
               const components = process.env.VALID_COMPONENTS.split(',');
               for (const component_version of components) {
-                summary += `- 🏷️ \`${component_version.trim()}\`\n`;
+                summary += `🏷️  \`${component_version.trim()}\`\n`;
               }
             }
 
@@ -131,7 +131,7 @@ jobs:
             ## Version Tags
             ${summary}
 
-            [View run](${runUrl});
+            [View run](${runUrl})
             `;
 
             // Upsert by hidden marker to avoid duplicate comments

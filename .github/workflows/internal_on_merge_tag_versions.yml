@@ -1,0 +1,84 @@
+name: Set Version Tags
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  no-merge:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: No Merge Detected
+        run: |
+          const message = "Pull request was closed without merge. No version tags will be created."
+          echo "ℹ️ $message" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=No Merge::$message"
+
+  set-version-tags:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: .nvmrc
+
+      - name: Get all labels from PR
+        id: get_labels
+        run: |
+          echo "## PR Labels" >> "$GITHUB_STEP_SUMMARY"
+
+          ## Newline separated list of all labels on the PR
+          all_labels=$(jq -r '.pull_request.labels[].name' < "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+
+          if [ -z "$all_labels" ]; then
+            echo "- (none)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=No Labels::No Labels were found on this PR. A version label is required."
+            exit 1
+          else
+            while IFS= read -r lbl; do
+            [ -z "$lbl" ] && continue
+            echo "- \`$lbl\`" >> "$GITHUB_STEP_SUMMARY"
+            done <<< "$all_labels"
+          fi
+
+          echo "$all_labels" > all_labels.txt
+
+      - name: Get Version Tags
+        id: get_tags
+        run: |
+          const fs = require('fs');
+          const { getLabelArray, versionLabelPrefix, untrackedLabel, componentVersionRegEx } = require('./path/to/validate-version-labels');
+
+          rawLabels = fs.readFileSync('all_labels.txt', 'utf8');
+          getLabelArray = function(labels) {
+          const hasUntracked = labels.includes(untrackedLabel);
+          const componentTags = labels.filter(label => componentVersionRegEx.test(label)).map(label => label.slice(versionLabelPrefix.length));
+
+          echo `HAS_UNTRACKED=${hasUntracked}` >> $GITHUB_OUTPUT;
+          echo `componentTags=${componentTags.join(',')}` >> $GITHUB_OUTPUT;
+
+      - name: Untracked Version Check
+        if: ${{ steps.get_tags.outputs.HAS_UNTRACKED == 'true' }}
+        run: |
+          const message = "Untracked version label detected. Skipping tag creation."
+          echo "ℹ️ $message" >> "$GITHUB_STEP_SUMMARY"
+          echo "::notice title=Untracked Version::$message"
+
+      - name: Create Version Tags
+        if: ${{ steps.get_tags.outputs.HAS_UNTRACKED != 'true' }}
+        run: |
+          IFS=',' read -r -a tagsArray <<< "${{ steps.get_tags.outputs.componentTags }}"
+          for tag in "${tagsArray[@]}"; do
+            git tag "$tag"
+            git push origin "$tag"
+            echo "✅ Created and pushed tag: $tag" >> "$GITHUB_STEP_SUMMARY"
+          done
