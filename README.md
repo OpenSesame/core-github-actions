@@ -89,7 +89,7 @@ Each action:
 - Has its own README.md
 - Maintains a component-level CHANGELOG.md
 - Must follow the repository-wide versioning rules in VERSIONING.md
-- Requires version labels on PRs (e.g., version:pr-open-check:v1.0.0)
+- Requires version labels on PRs (e.g., version:pr-open-check/1.0.0)
 
 Versioning ensures that consumers can safely upgrade without unexpected breaking changes.
 

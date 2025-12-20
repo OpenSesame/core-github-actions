@@ -41,14 +41,14 @@ describe('getVersionLabelArray', () => {
 const versionLabels = [
   `${versionLabelPrefix}`, //incomplete version label
   `${untrackedLabel}`, // valid untracked label
-  `${versionLabelPrefix}valid/version:v1.0.0`, // valid label
+  `${versionLabelPrefix}valid/version/1.0.0`, // valid label
   'invalid-label', // completely invalid label
-  `${versionLabelPrefix}v1.0.0`, // missing component info
-  `${versionLabelPrefix}invalid:v1.0.0`, // doesn't follow component-type/component-name format
+  `${versionLabelPrefix}/1.0.0`, // missing component info
+  `${versionLabelPrefix}invalid/1.0.0`, // doesn't follow component-type/component-name format
   `${versionLabelPrefix}invalid/version`, // missing version
-  `${versionLabelPrefix}invalid/version:v1.0`, // not full semver
-  `${versionLabelPrefix}invalid/version:v1.0.0-extra`, // don't support build metadata
-  `${versionLabelPrefix}invalid/version:1.0.0`, // missing 'v' prefix
+  `${versionLabelPrefix}invalid/version/1.0`, // not full semver
+  `${versionLabelPrefix}invalid/version/1.0.0-extra`, // don't support build metadata
+  `${versionLabelPrefix}invalid/version/v1.0.0`, // has 'v' prefix
 ];
 
 describe('getInvalidVersionLabels', () => {
@@ -57,12 +57,12 @@ describe('getInvalidVersionLabels', () => {
     expect(invalidLabels).toEqual([
       `${versionLabelPrefix}`,
       'invalid-label',
-      `${versionLabelPrefix}v1.0.0`,
-      `${versionLabelPrefix}invalid:v1.0.0`,
+      `${versionLabelPrefix}/1.0.0`,
+      `${versionLabelPrefix}invalid/1.0.0`,
       `${versionLabelPrefix}invalid/version`,
-      `${versionLabelPrefix}invalid/version:v1.0`,
-      `${versionLabelPrefix}invalid/version:v1.0.0-extra`,
-      `${versionLabelPrefix}invalid/version:1.0.0`,
+      `${versionLabelPrefix}invalid/version/1.0`,
+      `${versionLabelPrefix}invalid/version/1.0.0-extra`,
+      `${versionLabelPrefix}invalid/version/v1.0.0`,
     ]);
   });
 });
@@ -70,7 +70,7 @@ describe('getInvalidVersionLabels', () => {
 describe('getComponentVersionLabels', () => {
   it('should extract valid component version labels', () => {
     const componentLabels = getComponentVersionLabels(versionLabels);
-    expect(componentLabels).toEqual([`${versionLabelPrefix}valid/version:v1.0.0`]);
+    expect(componentLabels).toEqual([`${versionLabelPrefix}valid/version/1.0.0`]);
   });
 });
 
@@ -78,8 +78,8 @@ describe('getComponentVersionLabels', () => {
 describe('parseComponentVersionLabels', () => {
   it('should parse component version labels into a map', () => {
     const componentLabels = [
-      `${versionLabelPrefix}typeA/componentA:v1.2.3`,
-      `${versionLabelPrefix}typeA/componentB:v2.3.4`,
+      `${versionLabelPrefix}typeA/componentA/1.2.3`,
+      `${versionLabelPrefix}typeA/componentB/2.3.4`,
     ];
     const componentVersionMap = parseComponentVersionLabels(componentLabels);
     expect(componentVersionMap).toEqual({

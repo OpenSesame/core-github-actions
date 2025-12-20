@@ -19,7 +19,7 @@ describe('validate-version-labels main module integration', () => {
   }
 
   it('accepts stdin, succeeds with valid component version label, and writes correct env values', () => {
-    const labelInput = `${versionLabelPrefix}actions/pr-open-check:v1.0.0`;
+    const labelInput = `${versionLabelPrefix}actions/pr-open-check/1.0.0`;
     const outputFile = path.join(tmp, 'gha_output.txt');
     const result = spawnSync('node', [scriptPath], {
       cwd: projectRoot,
@@ -39,8 +39,8 @@ describe('validate-version-labels main module integration', () => {
   });
 
   it('accepts a file argument, fails with invalid label, and writes correct env values', () => {
-    const invalidComponent = `${versionLabelPrefix}actions/invalid-component:v1.0.0`;
-    const missingChangelog = `${versionLabelPrefix}actions/pr-open-check:v0.0.0`;
+    const invalidComponent = `${versionLabelPrefix}actions/invalid-component/1.0.0`;
+    const missingChangelog = `${versionLabelPrefix}actions/pr-open-check/0.0.0`;
     const invalidLabel = `${versionLabelPrefix}invalid-label`;
     const labelFile = path.join(tmp, 'labels.txt');
     fs.writeFileSync(

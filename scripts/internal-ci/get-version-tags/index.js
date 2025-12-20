@@ -3,7 +3,7 @@
 ///
 /// Outputs:
 ///   HAS_UNTRACKED=true|false
-///   componentTags=type/name:vX.Y.Z,...
+///   componentTags=type/name/X.Y.Z,...
 /// Usage:
 ///   node scripts/internal-ci/get-version-tags/index.js <labels-file>
 

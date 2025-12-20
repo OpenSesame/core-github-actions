@@ -3,7 +3,7 @@
 //
 // Usage:
 //   node validate-version-labels.js <labels-file>
-//   echo -e "version:type/foo:v1.2.3\nversion:type/bar:v2.0.0\nother" | node scripts/internal-ci/validate-version-labels.js
+//   echo -e "version:type/foo/1.2.3\nversion:type/bar/2.0.0\nother" | node scripts/internal-ci/validate-version-labels.js
 //
 // Inputs:
 //   - Newline-separated list of label strings (from file or stdin)
@@ -17,7 +17,7 @@
 //       componentVersionLabels: comma-separated list of valid component version labels
 //       invalidComponents: comma-separated list of invalid component paths
 //       missingChangelogs: comma-separated list of components missing changelog entries
-//       validComponents: comma-separated list of valid components with versions in format component-path:vX.Y.Z
+//       validComponents: comma-separated list of valid components with versions in format component-path/X.Y.Z
 //   - Exits with code 1 on validation failure, 0 on success
 
 const fs = require('fs');
@@ -32,10 +32,10 @@ function getLabelArray(rawLabels) {
 
 const versionLabelPrefix = 'version:';
 const untrackedLabel = `${versionLabelPrefix}untracked`; // Special label for untracked versions, 'version:untracked'
-const semverPattern = 'v\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern vX.Y.Z, e.g., v1.2.3
-// Pattern for valid version label: version:component-type/component-name:vX.Y.Z where type and name correspond to the path of the component under the repo root
+const semverPattern = '\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern e.g., v1.2.3
+// Pattern for valid version label: version:component-type/component-name/X.Y.Z where type and name correspond to the path of the component under the repo root
 const componentVersionRegEx = new RegExp(
-  `^${versionLabelPrefix}[a-z0-9_-]+/[a-z0-9_-]+:${semverPattern}$`
+  `^${versionLabelPrefix}[a-z0-9_-]+/[a-z0-9_-]+/${semverPattern}$`
 );
 
 function getVersionLabelArray(labels) {
@@ -57,12 +57,16 @@ function getComponentVersionLabels(versionLabels) {
 function parseComponentVersionLabels(componentVersionLabels) {
   const componentVersionMap = {};
   componentVersionLabels.forEach(label => {
-    // Example label: version:type/name:vX.Y.Z
+    // Example label: version:type/name/X.Y.Z
     const parts = label.split(':');
-    if (parts.length === 3) {
-      const componentPath = parts[1]; // type/name
-      const version = parts[2].slice(1); // X.Y.Z, drop the leading 'v'
-      componentVersionMap[componentPath] = version;
+    if (parts.length === 2) {
+      const componentPath = parts[1]; // type/name/X.Y.Z
+      const lastSlashIndex = componentPath.lastIndexOf('/');
+      if (lastSlashIndex !== -1) {
+        const component = componentPath.substring(0, lastSlashIndex);
+        const version = componentPath.substring(lastSlashIndex + 1);
+        componentVersionMap[component] = version;
+      }
     }
   });
   return componentVersionMap;
@@ -213,7 +217,7 @@ if (require.main === module) {
     fs.appendFileSync(
       githubOutput,
       `validComponents=${Object.entries(validComponentMap)
-        .map(([k, v]) => `${k}:v${v}`)
+        .map(([k, v]) => `${k}/${v}`)
         .join(',')}\n`
     );
   }

@@ -64,7 +64,7 @@ PRs that modify a versioned component must include a label per component modifie
 
 **Format**
 
-`version:<component-name>:vX.Y.Z`
+`version:<component-name>/X.Y.Z`
 
 - `<component-name>` is the folder name under `./github`
 - `X.Y.Z` is the semantic version being released for that component
@@ -72,7 +72,7 @@ PRs that modify a versioned component must include a label per component modifie
 **Example**
 
 ```text
-version:actions/pr-open-check:v1.1.0
+version:actions/pr-open-check/1.1.0
 ```
 
 Multiple version labels are allowed on a PR.
@@ -151,13 +151,13 @@ Minimum requirements:
 
 - The header must contain `## X.Y.Z` exactly (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
-  (version:<component-name>:vX.Y.Z).
+  (version:<component-name>/X.Y.Z).
 
 The rest of the content (sections and bullets) is for humans, but strongly recommended.
 
 ### Interaction with Labels
 
-For versioned releases, A label like `version:actions/pr-open-check:v1.2.0`
+For versioned releases, A label like `version:actions/pr-open-check/1.2.0`
 requires that CHANGELOG.md under `.github/actions/pr-open-check/` contain a `## 1.2.0` entry.
 
 Validation will fail if:
