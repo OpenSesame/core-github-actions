@@ -1,10 +1,14 @@
-npm audit
-npm test
-
+# fix files but they aren't staged yet
 npm run lint:fix
 npm run format:fix
 
+#stash unstaged changes, run tests and checks
+git stash -k -u || { echo "Stash failed"; exit 1; }
+npm audit
+npm test
 npm run lint:check
 npm run format:check
-
 npm run scan
+
+#pop unstaged changes back
+git stash pop -q || { echo "Stash pop failed, you may have conflicts to resolve."; exit 1; }
