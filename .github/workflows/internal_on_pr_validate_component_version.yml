@@ -13,7 +13,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   validate-version-labels:
@@ -54,7 +54,7 @@ jobs:
         id: validate
         run: node scripts/internal-ci/validate-version-labels/index.js all_labels.txt
 
-      - name: Validation Summary
+      - name: Validation Job Summary
         if: ${{ always() }}
         env:
           NO_LABELS: ${{ steps.get_labels.outcome == 'failure' }}
@@ -89,7 +89,7 @@ jobs:
             echo "**Component Versions**: ${{ env.COMPONENT_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Tags
+      - name: Tags Job Summary
         env:
           HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
           VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
@@ -103,3 +103,58 @@ jobs:
               echo "🏷️ \`$component_version\`" >> "$GITHUB_STEP_SUMMARY"
             done
           fi
+
+      - name: Tags PR Summary
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
+          VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            let summary = '';
+
+            if (process.env.HAS_UNTRACKED_VERSION === 'true') {
+              summary += '- No Tags will be created on main after merge.\n';
+            } else {
+              summary += 'The following tags will be created on main after merge:\n';
+              const components = process.env.VALID_COMPONENTS.split(',');
+              for (const component_version of components) {
+                summary += `- 🏷️ \`${component_version.trim()}\`\n`;
+              }
+            }
+
+            const body = `<!-- version-summary -->
+            ## Version Tags
+            ${summary}
+
+            [View run](${runUrl});
+            `;
+
+            // Upsert by hidden marker to avoid duplicate comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+
+            const existing = comments.find(c => c.body && c.body.includes("<!-- version-summary -->"));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
