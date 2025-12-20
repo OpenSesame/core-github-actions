@@ -4,8 +4,8 @@ inputs:
   github-token:
     description: GitHub token with repo scope (use GITHUB_TOKEN)
     required: true
-  branch:
-    description: Branch to search (defaults to current ref_name)
+  commit-identifier:
+    description: Commit SHA to search for
     required: false
 outputs:
   pr_exists:
@@ -24,34 +24,37 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
-        BRANCH: ${{ inputs.branch || github.ref_name }}
+        COMMIT: ${{ inputs.commit-identifier }}
       run: |
         set -Eeuo pipefail
 
-        # Guard: gh must exist
-        if ! command -v gh >/dev/null 2>&1; then
-          echo "gh CLI not found; assuming no open PR for branch '$BRANCH'" >&2
+        # Guard: curl and jq must exist
+        if ! command -v curl >/dev/null 2>&1; then
+          echo "curl not found; assuming no open PR for commit '$COMMIT'" >&2
           echo "pr_exists=false"  >> "$GITHUB_OUTPUT"
           echo "pr_number="       >> "$GITHUB_OUTPUT"
           echo "pr_url="          >> "$GITHUB_OUTPUT"
           exit 0
         fi
-
-        # Guard: jq must exist
         if ! command -v jq >/dev/null 2>&1; then
-          echo "jq not found; assuming no open PR for branch '$BRANCH'" >&2
+          echo "jq not found; assuming no open PR for commit '$COMMIT'" >&2
           echo "pr_exists=false"  >> "$GITHUB_OUTPUT"
           echo "pr_number="       >> "$GITHUB_OUTPUT"
           echo "pr_url="          >> "$GITHUB_OUTPUT"
           exit 0
         fi
 
-        # Query GH for an open PR on this branch.
-        # If gh fails for any reason, fall back to empty JSON array.
-        pr_json=$(gh pr list --state open --head "$BRANCH" --json number,url || true)
+        # Get repo info from GITHUB_REPOSITORY
+        REPO_FULL=${GITHUB_REPOSITORY}
+        OWNER=$(echo "$REPO_FULL" | cut -d'/' -f1)
+        REPO=$(echo "$REPO_FULL" | cut -d'/' -f2)
 
-        pr_number=$(jq -r '.[0].number // empty' <<<"$pr_json")
-        pr_url=$(jq -r '.[0].url // empty' <<<"$pr_json")
+        # Query GitHub API for PRs containing the commit
+        api_url="https://api.github.com/repos/$OWNER/$REPO/commits/$COMMIT/pulls"
+        pr_json=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.groot-preview+json" "$api_url" || true)
+
+        pr_number=$(jq -r '[.[] | select(.state == "open")][0].number // empty' <<<"$pr_json")
+        pr_url=$(jq -r '[.[] | select(.state == "open")][0].html_url // empty' <<<"$pr_json")
 
         if [[ -n "$pr_number" ]]; then
           echo "pr_exists=true"   >> "$GITHUB_OUTPUT"

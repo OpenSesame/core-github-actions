@@ -2,17 +2,17 @@
 
 ## 🧭 Summary
 
-Finds an open pull request associated with a given branch, typically the one triggering a workflow.
+Finds an open pull request associated with a given commit, typically the one triggering a workflow.
 Used to determine whether a PR exists and to provide its number and URL for usage in later steps (e.g., posting summaries or comments).
 
 - Outputs are written to $GITHUB_OUTPUT so they can be consumed by subsequent steps.
-- Returns pr_exists=false when no open PR matches the given branch.
+- Returns pr_exists=false when no open PR includes the given commit.
 
 This allows conditional steps later in the workflow to skip PR updates cleanly.
 
 ## Scope/Limitations
 
-This action detects open pull requests **only for branches within the same repository**.  
+This action detects open pull requests **only for commits within the same repository**.  
 It does not detect PRs originating from forks.
 
 ## 🔒 Permissions
@@ -35,18 +35,18 @@ permissions:
 
 ## ⚙️ Inputs
 
-| Name           | Required | Description                                                               |
-| -------------- | -------- | ------------------------------------------------------------------------- |
-| `github-token` | ✅       | GitHub token with `repo` read access (`secrets.GITHUB_TOKEN` is fine).    |
-| `branch`       | ❌       | Branch name to check. Defaults to the current branch (`github.ref_name`). |
+| Name                | Required | Description                                                            |
+| ------------------- | -------- | ---------------------------------------------------------------------- |
+| `github-token`      | ✅       | GitHub token with `repo` read access (`secrets.GITHUB_TOKEN` is fine). |
+| `commit-identifier` | ✅       | If you don't allow specifying other commits, pass in (`github.sha`).   |
 
 ## 📤 Outputs
 
-| Name        | Description                                                   |
-| ----------- | ------------------------------------------------------------- |
-| `pr_exists` | `"true"` or `"false"` — whether a PR is open for this branch. |
-| `pr_number` | The PR number, if one exists.                                 |
-| `pr_url`    | The PR’s web URL, if one exists.                              |
+| Name        | Description                                                        |
+| ----------- | ------------------------------------------------------------------ |
+| `pr_exists` | `"true"` or `"false"` — whether a PR is open including the commit. |
+| `pr_number` | The PR number, if one exists.                                      |
+| `pr_url`    | The PR’s web URL, if one exists.                                   |
 
 ## 🚀 Usage
 
@@ -56,6 +56,7 @@ permissions:
   uses: ./.github/actions/pr-check-open
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
+    commit-identifier: ${{ github.sha }}
 ```
 
 Example outputs available to later steps:
@@ -75,8 +76,11 @@ run: echo "Found PR #${{ steps.pr_check.outputs.pr_number }}"
 
 ## 🧠 Notes
 
-- Using the GitHub CLI (`gh`), internally the step runs the following command to detect an open pull request by head branch name.
+- Uses the GitHub API via `curl`, internally the step runs the following commands to detect an open pull request including the commit.
+- It does rely on the `groot-preview`
 
 ```bash
-gh pr list --state open --head <branch> --json number,url
+api_url="https://api.github.com/repos/$OWNER/$REPO/commits/$COMMIT/pulls"
+pr_json=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.groot-preview+json" "$api_url" || true)
+pr_number=$(jq -r '[.[] | select(.state == "open")][0].number // empty' <<<"$pr_json")
 ```

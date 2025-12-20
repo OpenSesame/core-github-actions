@@ -88,25 +88,10 @@ jobs:
 
       - name: Check for open PR (by commit)
         id: pr_check
-        uses: actions/github-script@v7
+        uses: ./.github/actions/pr-open-check
         with:
-          script: |
-            const { owner, repo } = context.repo;
-            const ref = '${{ inputs.commit_identifier }}'; // required input
-            // Commit → PRs endpoint (needs the 'groot' preview)
-            const res = await github.request('GET /repos/{owner}/{repo}/commits/{ref}/pulls', {
-              owner, repo, ref,
-              mediaType: { previews: ['groot'] }
-            });
-            const pr = res.data.find(p => p.state === 'open');
-            core.setOutput('pr_exists', pr ? 'true' : 'false');
-            if (pr) {
-              core.info(`Found open PR #${pr.number} for commit ${ref}`);
-              core.setOutput('pr_number', pr.number.toString());
-              core.setOutput('pr_url', pr.html_url);
-            } else {
-              core.info(`No open PR found for commit ${ref}`);
-            }
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-identifier: ${{ inputs.commit_identifier }}
 
       - name: Compute baseline (for diff/baseline)
         if: ${{ inputs.scan_mode != 'full' }}
