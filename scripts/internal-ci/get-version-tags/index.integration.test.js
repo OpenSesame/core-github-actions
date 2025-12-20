@@ -38,7 +38,7 @@ describe('get-version-tags main module integration', () => {
   });
 
   it('outputs correct values when component version labels are provided', () => {
-    const componentLabel = `${versionLabelPrefix}actions/pr-open-check:v1.0.0`;
+    const componentLabel = `${versionLabelPrefix}actions/pr-open-check/1.0.0`;
     const labelInput = `${componentLabel}`;
     const unique = Date.now() + Math.random();
     const labelFile = path.join(tmp, `labels-${unique}.txt`);
@@ -51,7 +51,7 @@ describe('get-version-tags main module integration', () => {
     });
     const outputs = parseGithubOutput(outputFile);
     expect(outputs.hasUntracked).toBe('false');
-    expect(outputs.componentTags).toBe('actions/pr-open-check:v1.0.0');
+    expect(outputs.componentTags).toBe('actions/pr-open-check/1.0.0');
     expect(result.status).toBe(0);
     fs.unlinkSync(labelFile);
     fs.unlinkSync(outputFile);
