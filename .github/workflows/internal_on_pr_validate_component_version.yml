@@ -1,0 +1,98 @@
+name: Validate PR Version Labels
+
+on:
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - synchronize
+      - edited
+      - labeled # important to catch version label additions
+      - unlabeled
+      - reopened
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-version-labels:
+    name: Validate PR Version Labels
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Get all labels from PR
+        id: get_labels
+        run: |
+          echo "## PR Labels" >> "$GITHUB_STEP_SUMMARY"
+
+          ## Newline separated list of all labels on the PR
+          all_labels=$(jq -r '.pull_request.labels[].name' < "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+
+          if [ -z "$all_labels" ]; then
+            echo "- (none)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=No Labels::No Labels were found on this PR. A version label is required."
+            exit 1
+          else
+            while IFS= read -r lbl; do
+            [ -z "$lbl" ] && continue
+            echo "- \`$lbl\`" >> "$GITHUB_STEP_SUMMARY"
+            done <<< "$all_labels"
+          fi
+
+          echo "$all_labels" > all_labels.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Label Validation
+        id: validate
+        run: node scripts/internal-ci/validate-version-labels.js all_labels.txt
+
+      - name: Validation Summary
+        if: ${{ always() }}
+        env:
+          NO_LABELS: ${{ steps.get_labels.outcome == 'failure' }}
+          IS_VALID: ${{ steps.validate.outputs.isValid }}
+          VALIDATION_MESSAGE: ${{ steps.validate.outputs.validationMessage }}
+          INVALID_VERSION_LABELS: ${{ steps.validate.outputs.invalidVersionLabels }}
+          HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
+          COMPONENT_VERSION_LABELS: ${{ steps.validate.outputs.componentVersionLabels }}
+        run: |
+          echo "## Validation Outcome" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ env.NO_LABELS }}" === "true" ]; then
+            echo "❌ No labels found on the PR. Add at least one version label." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "${{ env.IS_VALID }}" === "false" ]; then
+            echo "❌ Version label validation failed." >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "${{ env.VALIDATION_MESSAGE }}" ]; then
+              echo "${{ env.VALIDATION_MESSAGE }}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -n "${{ env.INVALID_VERSION_LABELS }}" ]; then
+              echo "Invalid version labels: ${{ env.INVALID_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "✅ Version label validation passed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "**Untracked Version**: ${{ env.HAS_UNTRACKED_VERSION }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "${{ env.COMPONENT_VERSION_LABELS }}" ]; then
+            echo "**Component Versions**: ${{ env.COMPONENT_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Tags
+        env:
+          HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
+        run: |
+          echo "## Tags" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ env.HAS_UNTRACKED_VERSION }}" = "true" ]; then
+            echo "- No Tags will be created on main" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # TODO: Add more tag information here in the future

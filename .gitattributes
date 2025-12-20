@@ -1,8 +1,13 @@
+# Normalize all text files to LF in the repo; always check out with LF
 * text eol=lf
+
+# Binary assets (no diffs)
 *.zip binary
-*.ico binary
 *.png binary
 *.gif binary
 *.jpg binary
 *.jpeg binary
-*.svg binary
+*.ico binary
+
+# SVG is text (keep diffs readable)
+*.svg text

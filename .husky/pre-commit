@@ -1,0 +1,10 @@
+npm audit
+npm test
+
+npm run lint:fix
+npm run format:fix
+
+npm run lint:check
+npm run format:check
+
+npm run scan

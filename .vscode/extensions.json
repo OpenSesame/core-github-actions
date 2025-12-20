@@ -1,0 +1,26 @@
+{
+  "recommendations": [
+    // Core development
+    "esbenp.prettier-vscode", // Prettier formatter (optional/disabled if not enforcing)
+    "dbaeumer.vscode-eslint", // ESLint linting and autofix
+    "semgrep.semgrep", // Semgrep for static analysis
+    "editorconfig.editorconfig", // for formatting consistency
+
+    // GitHub Actions support
+    "github.vscode-github-actions",
+
+    // YAML support (also used in GHA)
+    "redhat.vscode-yaml",
+
+    // Git/GitHub helpers
+    "eamodio.gitlens", // Git blame, etc.
+    "github.vscode-pull-request-github", // For managing PRs in VSCode
+    "mhutchie.git-graph", // Visualize Git history
+
+    // Optional but helpful
+    "yzhang.markdown-all-in-one", // Markdown support
+    "davidanson.vscode-markdownlint", // Markdown linting
+    "streetsidesoftware.code-spell-checker", // Lightweight spell checker for comments/docs
+    "kisstkondoros.vscode-codemetrics" // Code metrics viewer
+  ]
+}
