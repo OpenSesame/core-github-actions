@@ -2,6 +2,23 @@
 
 All notable changes to the **pr-open-check** composite action will be documented in this file.
 
+## 2.0.0 - Detect via API instead of CLI
+
+### Added
+
+- New required input: commit-identifier
+- Guard for missing curl dependency
+
+### Changed
+
+- Action now detects open PRs containing a specific commit, not by branch name.
+- PR search is performed using the GitHub API (via curl + jq), replacing the previous gh CLI approach.
+
+### Removed
+
+- branch input removed (no longer needed).
+- All usage of gh CLI removed.
+
 ## 1.0.0 — Initial Release
 
 - Added support for detecting whether a branch has an open pull request in the same repository.
