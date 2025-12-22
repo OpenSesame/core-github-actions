@@ -16,11 +16,19 @@ on:
         type: boolean
         default: true
       semgrep_config:
-        description: 'Rulesets to run with Semgrep (space or newline separated)'
+        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list. Default is "p/default"
         type: string
-        default: 'p/default'
+        default: p/default
       semgrep_targets:
-        description: 'Files or directories to scan (space or newline separated; default: entire repo)'
+        description: les/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
+        type: string
+        default: .
+      extra_args:
+        description: 'Additional arguments to pass to Semgrep (e.g., --exclude, --timeout). Optional.'
+        type: string
+        default: ''
+      semgrep_version:
+        description: 'Semgrep version to install. Default: latest.'
         type: string
         default: ''
       fail_severity:
@@ -107,7 +115,14 @@ jobs:
         run: node scripts/shared/normalize-push-baseline.js
 
       - name: Install Semgrep
-        run: python3 -m pip install semgrep
+        env:
+          SEMGREP_VERSION: ${{ inputs.semgrep_version }}
+        run: |
+          if [ -n "$SEMGREP_VERSION" ]; then
+            python3 -m pip install semgrep==$SEMGREP_VERSION
+          else
+            python3 -m pip install semgrep
+          fi
 
       - name: Set up Reviewdog
         uses: reviewdog/action-setup@v1
@@ -150,26 +165,34 @@ jobs:
 
           echo "▶️ Semgrep config: ${SEMGREP_CONFIG}"
           echo "▶️ Semgrep targets: ${SEMGREP_TARGETS}"
+          echo "▶️ Extra args: ${EXTRA_ARGS}"
           echo "🔎 Scan mode: ${SCAN_MODE}"
           [ "${SCAN_MODE}" = "full" ] && echo "⚠️ Full scan may be slow for large repositories"
           [ "${SCAN_MODE}" != "full" ] && echo "📍 Baseline commit: ${BASELINE}"
           echo "⛔ Fail level: ${FAIL_LEVEL}"
 
-          # Build config args
-          CONFIG_ARGS=()
-          while read -r config; do
-            [ -n "$config" ] && CONFIG_ARGS+=(--config="$config")
-          done <<< "${SEMGREP_CONFIG}"
+          # Parse configs as YAML array, newline, or space separated
+          parse_list() {
+            python3 -c 'import sys, yaml; print("\n".join(yaml.safe_load(sys.stdin)))' 2>/dev/null || cat
+          }
 
-          # Build target args
+          CONFIG_ARGS=()
+          echo "$SEMGREP_CONFIG" | parse_list | while read -r config; do
+            [ -n "$config" ] && CONFIG_ARGS+=(--config="$config")
+          done
+
           TARGET_ARGS=()
-          while read -r target; do
+          echo "$SEMGREP_TARGETS" | parse_list | while read -r target; do
             [ -n "$target" ] && TARGET_ARGS+=("$target")
-          done <<< "${SEMGREP_TARGETS}"
+          done
 
           CMD=(semgrep "${CONFIG_ARGS[@]}" --severity="${FAIL_LEVEL^^}" --json)
           if [ "${SCAN_MODE}" = "diff" ] || [ "${SCAN_MODE}" = "baseline" ]; then
-            CMD+=(--baseline-commit="${BASELINE}")
+            CMD+=(--baseline-commit="$BASELINE")
+          fi
+          if [ -n "$EXTRA_ARGS" ]; then
+            # shellcheck disable=SC2206
+            CMD+=( $EXTRA_ARGS )
           fi
           CMD+=("${TARGET_ARGS[@]}")
 
