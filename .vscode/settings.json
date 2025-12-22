@@ -43,5 +43,5 @@
 
   // Optional: Spell checker
   "cSpell.enabled": true,
-  "cSpell.words": ["opensesame", "semgrep"]
+  "cSpell.words": ["opensesame", "reviewdog", "semgrep"]
 }

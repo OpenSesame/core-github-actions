@@ -45,8 +45,9 @@ jobs:
     with:
       commit_identifier: ${{ github.sha }}
       cancel_in_progress: true
-      semgrep_config: 'p/default'
+      semgrep_config: 'p/ci p/security-audit p/javascript'
+      semgrep_targets: './*.js ./*.mjs ./*.json scripts/ .github/actions/' ## only scanning recently changed files, eventually should cover whole .github/actions/ folder
       fail_severity: 'error'
-      scan_mode: 'diff'
-      pr_filter_mode: 'added'
-      pr_reporter: 'github-pr-review'
+      semgrep_scan_mode: 'diff'
+      reviewdog_filter_mode: 'added'
+      reviewdog_reporter: 'github-pr-review'

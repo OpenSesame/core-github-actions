@@ -16,27 +16,31 @@ on:
         type: boolean
         default: true
       semgrep_config:
-        description: 'Rulesets to run with Semgrep'
+        description: 'Rulesets to run with Semgrep (space or newline separated)'
         type: string
         default: 'p/default'
+      semgrep_targets:
+        description: 'Files or directories to scan (space or newline separated; default: entire repo)'
+        type: string
+        default: ''
       fail_severity:
         description: 'error | warning | info'
         type: string
         default: 'error'
-      scan_mode:
+      semgrep_scan_mode:
         description: What should Semgrep scan? "full | diff | baseline"
         type: string
         default: 'full'
-      pr_filter_mode:
-        description: What should reviewdog display (does NOT change what Semgrep scans)? "added | diff_context | nofilter"
-        type: string
-        default: 'added'
       baseline_ref:
         description: 'Ref for diff/baseline (e.g., origin/main)'
         type: string
         default: 'origin/main'
-      pr_reporter:
-        description: 'review output: github-pr-review | github-pr-check'
+      reviewdog_filter_mode:
+        description: What should reviewdog display (does not change what Semgrep scans)? "added | diff_context | nofilter"
+        type: string
+        default: 'nofilter'
+      reviewdog_reporter:
+        description: 'review output: github-pr-review | github-pr-check (only applies if PR context exists, on push github-check is used)'
         type: string
         default: 'github-pr-review'
     outputs:
@@ -81,7 +85,7 @@ jobs:
         with:
           ref: ${{ inputs.commit_identifier }}
           # Full history only when diff/baseline is requested
-          fetch-depth: ${{ inputs.scan_mode == 'full' && '1' || '0' }}
+          fetch-depth: ${{ inputs.semgrep_scan_mode == 'full' && '1' || '0' }}
 
       - name: Check for open PR (by commit)
         id: pr_check
@@ -94,7 +98,7 @@ jobs:
         run: npm ci --omit=dev
 
       - name: Normalize diff/baseline (push vs PR)
-        if: ${{ inputs.scan_mode != 'full' }}
+        if: ${{ inputs.semgrep_scan_mode != 'full' }}
         id: normalize_baseline
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
@@ -105,7 +109,7 @@ jobs:
       - name: Install Semgrep
         run: python3 -m pip install semgrep
 
-      - name: Set up Reviewdogß
+      - name: Set up Reviewdog
         uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: v0.20.3
@@ -114,8 +118,8 @@ jobs:
         id: normalized_settings
         env:
           EVENT_NAME: ${{ github.event_name }}
-          REPORTER: ${{ inputs.pr_reporter }}
-          FILTER_MODE: ${{ inputs.pr_filter_mode }}
+          REPORTER: ${{ inputs.reviewdog_reporter }}
+          FILTER_MODE: ${{ inputs.reviewdog_filter_mode }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
         run: |
           set -Eeuo pipefail
@@ -136,24 +140,40 @@ jobs:
       - name: Run Semgrep
         id: semgrep
         env:
-          SCAN_MODE: ${{ inputs.scan_mode }}
+          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
           BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
-          SEMGREP_RULES: ${{ inputs.semgrep_config }}
+          SEMGREP_CONFIG: ${{ inputs.semgrep_config }}
+          SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
         run: |
           set -euo pipefail
 
-          echo "▶️ Semgrep rules: ${SEMGREP_RULES}"
+          echo "▶️ Semgrep config: ${SEMGREP_CONFIG}"
+          echo "▶️ Semgrep targets: ${SEMGREP_TARGETS}"
           echo "🔎 Scan mode: ${SCAN_MODE}"
           [ "${SCAN_MODE}" = "full" ] && echo "⚠️ Full scan may be slow for large repositories"
           [ "${SCAN_MODE}" != "full" ] && echo "📍 Baseline commit: ${BASELINE}"
           echo "⛔ Fail level: ${FAIL_LEVEL}"
 
-          CMD=(semgrep --config="${SEMGREP_RULES}" --severity="${FAIL_LEVEL^^}" --json)
+          # Build config args
+          CONFIG_ARGS=()
+          while read -r config; do
+            [ -n "$config" ] && CONFIG_ARGS+=(--config="$config")
+          done <<< "${SEMGREP_CONFIG}"
+
+          # Build target args
+          TARGET_ARGS=()
+          while read -r target; do
+            [ -n "$target" ] && TARGET_ARGS+=("$target")
+          done <<< "${SEMGREP_TARGETS}"
+
+          CMD=(semgrep "${CONFIG_ARGS[@]}" --severity="${FAIL_LEVEL^^}" --json)
           if [ "${SCAN_MODE}" = "diff" ] || [ "${SCAN_MODE}" = "baseline" ]; then
             CMD+=(--baseline-commit="${BASELINE}")
           fi
+          CMD+=("${TARGET_ARGS[@]}")
 
+          echo "Running: ${CMD[*]}"
           # Execute; don't fail the step on Semgrep exit (we compute status ourselves)
           if ! "${CMD[@]}" > semgrep.json; then
             echo "Semgrep exited non-zero; proceeding with whatever results are available."
@@ -196,7 +216,7 @@ jobs:
           WARN: ${{ steps.semgrep_metrics.outputs.warnings }}
           INFO: ${{ steps.semgrep_metrics.outputs.info }}
           SEMGREP_RULES: ${{ inputs.semgrep_config }}
-          SCAN_MODE: ${{ inputs.scan_mode }}
+          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
           BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
           FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
@@ -272,7 +292,7 @@ jobs:
             const warns   = Number("${{ steps.semgrep_metrics.outputs.warnings || '0' }}");
             const info    = Number("${{ steps.semgrep_metrics.outputs.info || '0' }}");
 
-            const scanMode   = "${{ inputs.scan_mode }}";
+            const scanMode   = "${{ inputs.semgrep_scan_mode }}";
             const rules      = "${{ inputs.semgrep_config }}";
             const failLevel  = "${{ inputs.fail_severity }}";
             const filterMode = "${{ steps.normalized_settings.outputs.filterMode }}";

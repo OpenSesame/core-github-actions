@@ -107,9 +107,8 @@ if (require.main === module) {
       if (githubOutput) {
         const fs = require('fs');
         fs.appendFileSync(githubOutput, `baseline=${baseline}\n`);
-      } else {
-        console.log(baseline);
       }
+      console.log(`Normalized baseline: ${baseline}`);
     } catch (err) {
       console.error(err.message || err);
       process.exit(1);
