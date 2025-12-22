@@ -89,6 +89,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
+
       - name: Install dependencies
         run: npm ci --omit=dev
 
@@ -98,12 +99,13 @@ jobs:
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/shared/normalize-push-baseline.js
 
       - name: Install Semgrep
         run: python3 -m pip install semgrep
 
-      - name: Set up Reviewdog
+      - name: Set up Reviewdogß
         uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: v0.20.3
@@ -117,25 +119,25 @@ jobs:
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
         run: |
           set -Eeuo pipefail
-          echo "event=$EVENT_NAME, has_pr=$HAS_PR"
-          echo "Input reporter: $REPORTER"
-          echo "Input filter mode: $FILTER_MODE"
+          echo "Inputs: event=$EVENT_NAME, has_pr=$HAS_PR"
+          echo "- reporter: $REPORTER"
+          echo "- filter mode: $FILTER_MODE"
 
           # Normalize settings so later steps do not need to branch on PR context
           if [[ "$EVENT_NAME" != "pull_request" && "$HAS_PR" != "true" ]]; then
-            echo "No PR context; using github-check reporter with nofilter"
-            REPORTER=github-check
-            FILTER_MODE=nofilter
+            REPORTER="github-check"
+            FILTER_MODE="nofilter"
+            echo -e "\nNo PR context; using github-check reporter with nofilter"
           fi
 
-          echo "REPORTER=$REPORTER" >> "$GITHUB_OUTPUT"
-          echo "FILTER_MODE=$FILTER_MODE" >> "$GITHUB_OUTPUT"
+          echo "reporter=$REPORTER" >> "$GITHUB_OUTPUT"
+          echo "filterMode=$FILTER_MODE" >> "$GITHUB_OUTPUT"
 
       - name: Run Semgrep
         id: semgrep
         env:
           SCAN_MODE: ${{ inputs.scan_mode }}
-          BASELINE: ${{ env.BASELINE }}
+          BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
           SEMGREP_RULES: ${{ inputs.semgrep_config }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
         run: |
@@ -195,10 +197,10 @@ jobs:
           INFO: ${{ steps.semgrep_metrics.outputs.info }}
           SEMGREP_RULES: ${{ inputs.semgrep_config }}
           SCAN_MODE: ${{ inputs.scan_mode }}
-          BASELINE: ${{ env.BASELINE }}
+          BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
-          FILTER_MODE: ${{ steps.verified_settings.outputs.FILTER_MODE }}
-          REVIEWDOG_REPORTER: ${{ steps.verified_settings.outputs.REPORTER }}
+          FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
+          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
           PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
           PR_URL: ${{ steps.pr_check.outputs.pr_url }}
@@ -244,8 +246,8 @@ jobs:
         if: ${{ steps.semgrep_metrics.outputs.total != '0' }}
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWDOG_REPORTER: ${{ steps.verified_settings.outputs.REPORTER }}
-          REVIEWDOG_FILTER_MODE: ${{ steps.verified_settings.outputs.FILTER_MODE }}
+          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
+          REVIEWDOG_FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
           REVIEWDOG_FAIL_LEVEL: ${{ inputs.fail_severity }}
         run: |
           cat reviewdog_input.txt | reviewdog \
@@ -273,8 +275,8 @@ jobs:
             const scanMode   = "${{ inputs.scan_mode }}";
             const rules      = "${{ inputs.semgrep_config }}";
             const failLevel  = "${{ inputs.fail_severity }}";
-            const filterMode = "${{ steps.verified_settings.outputs.FILTER_MODE }}";
-            const reporter   = "${{ steps.verified_settings.outputs.REPORTER }}";
+            const filterMode = "${{ steps.normalized_settings.outputs.filterMode }}";
+            const reporter   = "${{ steps.normalized_settings.outputs.reporter }}";
 
             let emoji = "✅";
             let status = "passed";
