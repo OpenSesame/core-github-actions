@@ -69,9 +69,6 @@ jobs:
     name: Run Semgrep
     runs-on: ubuntu-latest
 
-    container:
-      image: semgrep/semgrep:1.137.0
-
     outputs:
       total_findings: ${{ steps.semgrep_metrics.outputs.total }}
       error_count: ${{ steps.semgrep_metrics.outputs.errors }}
@@ -92,12 +89,6 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-
       - name: Install dependencies
         run: npm ci --omit=dev
 
@@ -108,6 +99,9 @@ jobs:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
         run: node scripts/shared/normalize-push-baseline.js
+
+      - name: Install Semgrep
+        run: python3 -m pip install semgrep
 
       - name: Set up Reviewdog
         uses: reviewdog/action-setup@v1
@@ -136,9 +130,6 @@ jobs:
 
           echo "REPORTER=$REPORTER" >> "$GITHUB_OUTPUT"
           echo "FILTER_MODE=$FILTER_MODE" >> "$GITHUB_OUTPUT"
-
-      - name: Install jq
-        run: apk add --no-cache jq
 
       - name: Run Semgrep
         id: semgrep
