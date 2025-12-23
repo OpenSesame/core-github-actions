@@ -96,22 +96,23 @@ describe('getInvalidComponents', () => {
   let lstatSyncMock;
 
   // Simulate a static directory structure
-  const directorySet = new Set([
-    '.github/actions/valid-component',
-    '.github/actions/not-a-directory',
-  ]);
-  const fileTypeMap = {
-    '.github/actions/valid-component': true,
-    '.github/actions/not-a-directory': false,
+  const pathTypeMap = {
+    '.github/actions/valid-component': 'directory', // valid action directory
+    '.github/workflows/valid-workflow.yml': 'file', // valid workflow file
+    '.github/actions/not-a-directory': 'file', // invalid action, extensionless file instead of directory
+    '.github/workflows/not-a-file': 'directory', // invalid workflow - subdirectory instead of file
+    '.github/workflows/not-yaml.txt': 'file', // invalid workflow - wrong file type
+    '.github/foo/bar.yml': 'file', // invalid type
   };
 
   beforeAll(() => {
     existsSyncMock = jest
       .spyOn(fs, 'existsSync')
-      .mockImplementation(path => directorySet.has(path));
-    lstatSyncMock = jest
-      .spyOn(fs, 'lstatSync')
-      .mockImplementation(path => ({ isDirectory: () => fileTypeMap[path] === true }));
+      .mockImplementation(path => Object.prototype.hasOwnProperty.call(pathTypeMap, path));
+    lstatSyncMock = jest.spyOn(fs, 'lstatSync').mockImplementation(path => ({
+      isDirectory: () => pathTypeMap[path] === 'directory',
+      isFile: () => pathTypeMap[path] === 'file',
+    }));
   });
 
   afterAll(() => {
@@ -125,20 +126,28 @@ describe('getInvalidComponents', () => {
     expect(invalidComponents).toEqual([]);
   });
 
-  it('should return paths not starting with actions/', () => {
+  it('should return paths not starting with actions/ or workflows/', () => {
     const componentVersionMap = {
-      'dir/component': '1.0.0',
+      'actions/valid-component': '1.0.0',
+      'workflows/valid-workflow': '1.0.0',
+      'foo/bar': '1.0.0',
     };
     const invalidComponents = getInvalidComponents(componentVersionMap);
-    expect(invalidComponents).toEqual(['dir/component']);
+    expect(invalidComponents).toEqual(['foo/bar']);
   });
 
-  it('should return paths where the expected directory does not exist', () => {
+  it('should return paths where the expected path does not exist', () => {
     const componentVersionMap = {
       'actions/nonexistent-component': '1.0.0',
+      'workflows/nonexistent-workflow': '1.0.0',
+      'actions/valid-component': '1.0.0',
+      'workflows/valid-workflow': '1.0.0',
     };
     const invalidComponents = getInvalidComponents(componentVersionMap);
-    expect(invalidComponents).toEqual(['actions/nonexistent-component']);
+    expect(invalidComponents).toEqual([
+      'actions/nonexistent-component',
+      'workflows/nonexistent-workflow',
+    ]);
   });
 
   it('should return paths where the expected directory is not a directory', () => {
@@ -152,9 +161,19 @@ describe('getInvalidComponents', () => {
   it('should return an empty array when all components are valid', () => {
     const componentVersionMap = {
       'actions/valid-component': '1.0.0',
+      'workflows/valid-workflow': '1.0.0',
     };
     const invalidComponents = getInvalidComponents(componentVersionMap);
     expect(invalidComponents).toEqual([]);
+  });
+
+  it('should return paths where the expected workflow is not a YAML file', () => {
+    const componentVersionMap = {
+      'workflows/not-a-file': '1.0.0',
+      'workflows/not-yaml': '1.0.0',
+    };
+    const invalidComponents = getInvalidComponents(componentVersionMap);
+    expect(invalidComponents).toEqual(['workflows/not-a-file', 'workflows/not-yaml']);
   });
 });
 
@@ -171,10 +190,17 @@ describe('getMissingChangelogs', () => {
     '.github/actions/component-with-changelog/CHANGELOG.md',
     '.github/actions/component-without-changelog',
     '.github/actions/component-missing-changelog-entry/CHANGELOG.md',
+    '.github/workflows/CHANGELOGS/workflow-with-changelog.md',
+    '.github/workflows/CHANGELOGS/workflow-missing-changelog-entry.md',
+    '.github/workflows/CHANGELOGS/workflow-without-changelog',
+    '.github/workflows/wrong_location_CHANGELOG.md',
   ]);
   const fileContentMap = {
     '.github/actions/component-with-changelog/CHANGELOG.md': '## 1.0.0\n- Initial release',
     '.github/actions/component-missing-changelog-entry/CHANGELOG.md': '',
+    '.github/workflows/CHANGELOGS/workflow-with-changelog.md': '## 2.0.0\n- Major update',
+    '.github/workflows/CHANGELOGS/workflow-missing-changelog-entry.md': '',
+    '.github/workflows/wrong_location_CHANGELOG.md': '## 1.0.0\n- Initial release',
   };
 
   beforeAll(() => {
@@ -200,17 +226,25 @@ describe('getMissingChangelogs', () => {
       'actions/component-with-changelog': '1.0.0',
       'actions/component-without-changelog': '1.0.0',
       'actions/component-missing-changelog-entry': '1.0.0',
+      'workflows/workflow-with-changelog': '2.0.0',
+      'workflows/workflow-without-changelog': '1.0.0',
+      'workflows/workflow-missing-changelog-entry': '2.0.0',
+      'workflows/wrong_location': '1.0.0',
     };
     const missingChangelogs = getMissingChangelogs(componentVersionMap);
     expect(missingChangelogs).toEqual([
       'actions/component-without-changelog',
       'actions/component-missing-changelog-entry',
+      'workflows/workflow-without-changelog',
+      'workflows/workflow-missing-changelog-entry',
+      'workflows/wrong_location',
     ]);
   });
 
   it('should return an empty array when all changelogs are present and correct', () => {
     const componentVersionMap = {
       'actions/component-with-changelog': '1.0.0',
+      'workflows/workflow-with-changelog': '2.0.0',
     };
     const missingChangelogs = getMissingChangelogs(componentVersionMap);
     expect(missingChangelogs).toEqual([]);

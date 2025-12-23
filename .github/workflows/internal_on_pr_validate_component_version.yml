@@ -101,14 +101,16 @@ jobs:
           HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
           VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
         run: |
+          set -x
           summary="## Tags\n"
           if [ "${HAS_UNTRACKED_VERSION}" = "true" ]; then
             summary+="- No Tags will be created on main"
           else
             summary+="The following tags will be created on main after merge\n\n"
-            IFS=',' read -ra components <<< "${VALID_COMPONENTS}"
+            echo $VALID_COMPONENTS
+            IFS=',' read -ra components <<< "$VALID_COMPONENTS"
             for component_version in "${components[@]}"; do
-              summary+="🏷️  \\`$component_version\\`\n"
+              summary+="🏷️  \`$component_version\`\n"
             done
             # Remove trailing newline
             summary="${summary%\\n}"
@@ -116,8 +118,11 @@ jobs:
 
           echo -e "$summary" >> "$GITHUB_STEP_SUMMARY"
 
-          summary_escaped="${summary//$'\n'/\\n}"
-          echo "summary=$summary_escaped" >> "$GITHUB_OUTPUT"
+          # Replace any literal \n with real newlines for correct PR comment formatting
+          summary_with_eol="${summary//\\n/$'\n'}"
+          echo "summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$summary_with_eol" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Write Tags to PR Comment
         uses: ./.github/actions/upsert-pr-comment

@@ -7,9 +7,6 @@ This repository contains **reusable GitHub Actions and reusable workflows** that
 **Current**
 
 - Composite Actions that live under `./github/actions`
-
-**Future**
-
 - Reusable workflows that live under `./github/workflows`
 
 **Excluded**
@@ -33,14 +30,15 @@ Versioned components use namespaced semantic version tags so multiple components
 **Format**
 
 ```text
-action/<component-name>/vX.Y.Z
+actions/<component-name>/vX.Y.Z
 ```
 
 **Examples**
 
 ```text
-action/pr-open-check/v1.0.0
-action/pr-upsert-comment/v0.2.3
+actions/pr-open-check/2.0.0
+actions/upsert-pr-comment/1.0.0
+workflows/run_semgrep_scan/1.0.0
 ```
 
 **Semantic Versioning**
@@ -112,15 +110,23 @@ A PR cannot merge until version validation passes.
 Each versioned component must have its own changelog. The changelog is the authoritative source of truth for released versions of that component.
 
 **Located At**
+Action changelogs live in their component directory under `.github/actions/`.
 
 ```text
 .github/actions/<component-name>/CHANGELOG.md
+```
+
+Workflow changelogs live in a component file under the `.github/workflows/CHANGELOGS` directory
+
+```text
+.github/workflows/CHANGELOGS/<component-name>.md
 ```
 
 **Examples**
 
 ```text
 .github/actions/pr-open-check/CHANGELOG.md
+.github/workflows/CHANGELOGS/run_semgrep_scan.md
 ```
 
 ### Required Format
@@ -151,15 +157,17 @@ Minimum requirements:
 
 - The header must contain `## X.Y.Z` exactly (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
-  (version:<component-name>/X.Y.Z).
+  (version:{component-name}/X.Y.Z).
 
 The rest of the content (sections and bullets) is for humans, but strongly recommended.
 
 ### Interaction with Labels
 
 For versioned releases, A label like `version:actions/pr-open-check/1.2.0`
-requires that CHANGELOG.md under `.github/actions/pr-open-check/` contain a `## 1.2.0` entry.
+requires that the `CHANGELOG.md` file under `.github/actions/pr-open-check/` contain a `## 1.2.0` entry.
+
+A label like `version:workflows/run_semgrep_scan/1.0.0` requires a `run_semgrep_scan.md` file under `.github/workflows/CHANGELOGS` containing a `## 1.0.0` entry.
 
 Validation will fail if:
 
-- A vX.Y.Z label is present but `## X.Y.Z` does not appear in the matching component’s CHANGELOG.md.
+- A X.Y.Z label is present but `## X.Y.Z` does not appear in the matching component’s CHANGELOG

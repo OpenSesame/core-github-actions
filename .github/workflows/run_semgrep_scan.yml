@@ -88,6 +88,7 @@ jobs:
       info_count: ${{ steps.semgrep.outputs.numInfo }}
       scan_status: ${{ steps.semgrep.outputs.scanStatus }}
       scan_md_summary: ${{ steps.semgrep.outputs.scanFindings }}
+      config_md_summary: ${{ steps.semgrep.outputs.configSummary }}
       normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
 
     steps:
