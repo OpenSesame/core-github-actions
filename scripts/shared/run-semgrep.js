@@ -119,7 +119,7 @@ function constructSemgrepCommand(baseline, config, resultsFileName) {
 
 function runSemgrepAndCapture(semgrepCmd, resultsFileName) {
   // we are trusting internal engineers not to pass untrusted arguments to semgrep GHA
-  // nosemgrep: javascript.lang.security.detect-child-process.detect-child-process
+
   const result = spawnSync(semgrepCmd, { encoding: 'utf-8', shell: true });
 
   if (result.error) {
