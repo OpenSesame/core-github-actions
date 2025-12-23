@@ -136,7 +136,7 @@ jobs:
           EXTRA_ARGS: ${{ inputs.extra_args }}
         run: node scripts/shared/run-semgrep.js
 
-      - name: Upload Semgrep JSON artifact
+      - name: Upload Artifact
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         uses: actions/upload-artifact@v4
         with:
@@ -190,7 +190,7 @@ jobs:
             -filter-mode="$REVIEWDOG_FILTER_MODE" \
             -fail-level="$REVIEWDOG_FAIL_LEVEL"
 
-      - name: Job summary
+      - name: Write job summary
         env:
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
           PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
@@ -219,91 +219,58 @@ jobs:
           echo "- **Review filter**: \`${FILTER_MODE}\`"
           echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
 
-      - name: Upsert PR summary comment
+      - name: Generate PR comment body
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
+        id: generate_body
         uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
+          SCAN_STATUS: ${{ steps.semgrep.outputs.scanStatus }}
+          TOTAL_FINDINGS: ${{ steps.semgrep.outputs.totalFindings }}
+          NUM_ERRORS: ${{ steps.semgrep.outputs.numErrors }}
+          NUM_WARNINGS: ${{ steps.semgrep.outputs.numWarnings }}
+          NUM_INFO: ${{ steps.semgrep.outputs.numInfo }}
+          CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: string
           script: |
-            const prNumber = context.payload.pull_request?.number ?? process.env.PR_NUMBER;
+            const scanStatus = process.env.SCAN_STATUS;
+            const total   = Number(process.env.TOTAL_FINDINGS || '0');
+            const errors  = Number(process.env.NUM_ERRORS || '0');
+            const warns   = Number(process.env.NUM_WARNINGS || '0');
+            const info    = Number(process.env.NUM_INFO || '0');
+            const configSummary = process.env.CONFIG_SUMMARY || '';
 
-            const total   = Number("${{ steps.semgrep.outputs.totalFindings || '0' }}");
-            const errors  = Number("${{ steps.semgrep.outputs.numErrors || '0' }}");
-            const warns   = Number("${{ steps.semgrep.outputs.numWarnings || '0' }}");
-            const info    = Number("${{ steps.semgrep.outputs.numInfo || '0' }}");
+            const emoji = scanStatus === 'success' ? "✅" : "❌";
+            const statusText =  scanStatus === 'success' ? "passed" : "failed";
 
-            const scanMode   = "${{ inputs.semgrep_scan_mode }}";
-            const rules      = "${{ inputs.semgrep_config }}";
-            const failLevel  = "${{ inputs.fail_severity }}";
-            const filterMode = "${{ steps.normalized_settings.outputs.filterMode }}";
-            const reporter   = "${{ steps.normalized_settings.outputs.reporter }}";
-
-            let emoji = "✅";
-            let status = "passed";
-
-            if (failLevel === "error") {
-              if (errors > 0) { emoji = "❌"; status = "failed (errors)"; }
-              else if (warns > 0) { emoji = "⚠️"; status = "warnings"; }
-              else if (info > 0) { emoji = "ℹ️"; status = "info only"; }
-            }
-            else if (failLevel === "warning") {
-              if (errors > 0 || warns > 0) { emoji = "❌"; status = "failed (errors/warnings)"; }
-              else if (info > 0) { emoji = "ℹ️"; status = "info only"; }
-            }
-            else if (failLevel === "info") {
-              if (total > 0) { emoji = "❌"; status = "failed (findings)"; }
-            }
+            const heading = `## ${emoji} Semgrep Security Scan ${statusText.charAt(0).toUpperCase() + statusText.slice(1)}`
 
             const parts = [];
             if (errors > 0) parts.push(`${errors} error${errors === 1 ? "" : "s"}`);
             if (warns  > 0) parts.push(`${warns} warning${warns === 1 ? "" : "s"}`);
             if (info   > 0) parts.push(`${info} info`);
 
-            const findings = total > 0 ? `\n\n**Findings:** ${parts.join(", ")}` :
-              (scanMode === "diff" ? "\n\n🎉 No security issues found in changed code!" : "\n\n🎉 No security issues found!");
+            const findings = total > 0 ? `\n\n**Findings:** ${parts.join(", ")}` : "\n\n🎉 No security issues found!";
 
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
 
-            const body = `<!-- semgrep-summary -->
-            ## ${emoji} Semgrep Security Scan ${status.charAt(0).toUpperCase() + status.slice(1)}
-
-            **Configuration:** \`${rules}\`
-            **Scan mode:** \`${scanMode}\`${scanMode === "diff" ? " (changed code only)" : ""}
-            **Severity threshold:** \`${failLevel}\`
-            **Review filter:** \`${filterMode}\`
-            **Reporter:** \`${reporter}\`${findings}
-
+            const body = `${heading}
+            ${configSummary}
+            ${findings}
             [View run](${runUrl})
-
-            ---
             <sub>🤖 Powered by Semgrep + reviewdog</sub>`;
 
-            // Upsert by hidden marker to avoid duplicate comments
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100,
-            });
+            core.setOutput('body', body);
 
-            const existing = comments.find(c => c.body && c.body.includes("<!-- semgrep-summary -->"));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
+      - name: Upsert PR comment
+        if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
+        uses: ./.github/actions/pr-comment-upsert
+        with:
+          pr-number: ${{ steps.pr_check.outputs.pr_number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          comment-marker: semgrep-summary
+          body-content: ${{ steps.generate_body.outputs.body }}
 
       - name: Fail on findings at/above threshold
         if: ${{ steps.semgrep.outputs.scanStatus == 'failed' }}

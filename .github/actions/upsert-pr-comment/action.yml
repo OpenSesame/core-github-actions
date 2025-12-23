@@ -1,0 +1,55 @@
+name: Upsert PR Comment
+description: Creates or updates a PR comment based on a unique marker
+inputs:
+  github-token:
+    description: GitHub token with repo scope (use GITHUB_TOKEN)
+    required: true
+  pr-number:
+    description: PR number
+    required: true
+  comment-marker:
+    description: Unique marker to identify the comment for upsert, value will be hidden in HTML comment
+    required: true
+  body-content:
+    description: Markdown content for the comment body
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Upsert PR summary comment
+      uses: actions/github-script@v7
+      env:
+        PR_NUMBER: ${{ inputs.pr-number }}
+        COMMENT_MARKER: ${{ inputs.comment-marker }}
+        BODY_CONTENT: ${{ inputs.body-content }}
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const body = `<!-- ${process.env.COMMENT_MARKER} -->
+          ${process.env.BODY_CONTENT}
+          `;
+
+          // Upsert by hidden marker to avoid duplicate comments
+          const { data: comments } = await github.rest.issues.listComments({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: process.env.PR_NUMBER,
+            per_page: 100,
+          });
+
+          const existing = comments.find(c => c.body && c.body.includes(`<!-- ${process.env.COMMENT_MARKER} -->`));
+          if (existing) {
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: existing.id,
+              body,
+            });
+          } else {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.PR_NUMBER,
+              body,
+            });
+          }
