@@ -1,4 +1,4 @@
-name: Semgrep CE Scan
+name: Semgrep Scan
 
 defaults:
   run:
@@ -82,10 +82,13 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      total_findings: ${{ steps.semgrep_metrics.outputs.total }}
-      error_count: ${{ steps.semgrep_metrics.outputs.errors }}
-      warning_count: ${{ steps.semgrep_metrics.outputs.warnings }}
-      info_count: ${{ steps.semgrep_metrics.outputs.info }}
+      total_findings: ${{ steps.semgrep.outputs.totalFindings }}
+      error_count: ${{ steps.semgrep.outputs.numErrors }}
+      warning_count: ${{ steps.semgrep.outputs.numWarnings }}
+      info_count: ${{ steps.semgrep.outputs.numInfo }}
+      scan_status: ${{ steps.semgrep.outputs.scanStatus }}
+      scan_md_summary: ${{ steps.semgrep.outputs.scanFindings }}
+      normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
 
     steps:
       - name: Checkout code
@@ -102,17 +105,13 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
 
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
       - name: Install dependencies
         run: npm ci --omit=dev
-
-      - name: Normalize diff/baseline (push vs PR)
-        if: ${{ inputs.semgrep_scan_mode != 'full' }}
-        id: normalize_baseline
-        env:
-          INPUT_BASELINE: ${{ inputs.baseline_ref }}
-          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/shared/normalize-push-baseline.js
 
       - name: Install Semgrep
         env:
@@ -124,13 +123,37 @@ jobs:
             python3 -m pip install semgrep
           fi
 
+      - name: Run Semgrep
+        id: semgrep
+        env:
+          INPUT_BASELINE: ${{ inputs.baseline_ref }}
+          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
+          SEMGREP_CONFIG: ${{ inputs.semgrep_config }}
+          SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
+          FAIL_LEVEL: ${{ inputs.fail_severity }}
+          EXTRA_ARGS: ${{ inputs.extra_args }}
+        run: node scripts/shared/run-semgrep.js
+
+      - name: Upload Semgrep JSON artifact
+        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-${{ github.run_id }}.json
+          path: semgrep_results.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Set up Reviewdog
+        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: v0.20.3
 
       - name: Normalize Reviewdog settings (push vs PR)
         id: normalized_settings
+        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         env:
           EVENT_NAME: ${{ github.event_name }}
           REPORTER: ${{ inputs.reviewdog_reporter }}
@@ -152,141 +175,8 @@ jobs:
           echo "reporter=$REPORTER" >> "$GITHUB_OUTPUT"
           echo "filterMode=$FILTER_MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Run Semgrep
-        id: semgrep
-        env:
-          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
-          BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
-          SEMGREP_CONFIG: ${{ inputs.semgrep_config }}
-          SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
-          FAIL_LEVEL: ${{ inputs.fail_severity }}
-        run: |
-          set -euo pipefail
-
-          echo "▶️ Semgrep config: ${SEMGREP_CONFIG}"
-          echo "▶️ Semgrep targets: ${SEMGREP_TARGETS}"
-          echo "▶️ Extra args: ${EXTRA_ARGS}"
-          echo "🔎 Scan mode: ${SCAN_MODE}"
-          [ "${SCAN_MODE}" = "full" ] && echo "⚠️ Full scan may be slow for large repositories"
-          [ "${SCAN_MODE}" != "full" ] && echo "📍 Baseline commit: ${BASELINE}"
-          echo "⛔ Fail level: ${FAIL_LEVEL}"
-
-          # Parse configs as YAML array, newline, or space separated
-          parse_list() {
-            python3 -c 'import sys, yaml; print("\n".join(yaml.safe_load(sys.stdin)))' 2>/dev/null || cat
-          }
-
-          CONFIG_ARGS=()
-          echo "$SEMGREP_CONFIG" | parse_list | while read -r config; do
-            [ -n "$config" ] && CONFIG_ARGS+=(--config="$config")
-          done
-
-          TARGET_ARGS=()
-          echo "$SEMGREP_TARGETS" | parse_list | while read -r target; do
-            [ -n "$target" ] && TARGET_ARGS+=("$target")
-          done
-
-          CMD=(semgrep "${CONFIG_ARGS[@]}" --severity="${FAIL_LEVEL^^}" --json)
-          if [ "${SCAN_MODE}" = "diff" ] || [ "${SCAN_MODE}" = "baseline" ]; then
-            CMD+=(--baseline-commit="$BASELINE")
-          fi
-          if [ -n "$EXTRA_ARGS" ]; then
-            # shellcheck disable=SC2206
-            CMD+=( $EXTRA_ARGS )
-          fi
-          CMD+=("${TARGET_ARGS[@]}")
-
-          echo "Running: ${CMD[*]}"
-          # Execute; don't fail the step on Semgrep exit (we compute status ourselves)
-          if ! "${CMD[@]}" > semgrep.json; then
-            echo "Semgrep exited non-zero; proceeding with whatever results are available."
-          fi
-          test -s semgrep.json || echo '{"results":[]}' > semgrep.json
-          echo "Semgrep JSON size: $(wc -c < semgrep.json) bytes"
-
-      - name: Extract Semgrep metrics
-        id: semgrep_metrics
-        run: |
-          set -euo pipefail
-          # Safety: empty file → empty results array
-          test -s semgrep.json || echo '{"results":[]}' > semgrep.json
-
-          TOTAL=$(jq '.results | length' semgrep.json)
-          ERR=$(jq '[.results[] | select(.extra.severity == "ERROR")]   | length' semgrep.json)
-          WARN=$(jq '[.results[] | select(.extra.severity == "WARNING")] | length' semgrep.json)
-          INFO=$(jq '[.results[] | select(.extra.severity == "INFO")]    | length' semgrep.json)
-
-          {
-            echo "total=${TOTAL}"
-            echo "errors=${ERR}"
-            echo "warnings=${WARN}"
-            echo "info=${INFO}"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Upload Semgrep JSON artifact
-        if: ${{ fromJSON(steps.semgrep_metrics.outputs.total) > 0 }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: semgrep-${{ github.run_id }}.json
-          path: semgrep.json
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Job summary
-        env:
-          TOTAL: ${{ steps.semgrep_metrics.outputs.total }}
-          ERR: ${{ steps.semgrep_metrics.outputs.errors }}
-          WARN: ${{ steps.semgrep_metrics.outputs.warnings }}
-          INFO: ${{ steps.semgrep_metrics.outputs.info }}
-          SEMGREP_RULES: ${{ inputs.semgrep_config }}
-          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
-          BASELINE: ${{ steps.normalize_baseline.outputs.normalized_baseline }}
-          FAIL_LEVEL: ${{ inputs.fail_severity }}
-          FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
-          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
-          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
-          PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
-          PR_URL: ${{ steps.pr_check.outputs.pr_url }}
-        run: |
-          {
-            echo "## 🔎 Semgrep Summary"
-            echo "triggered by: \`${{ github.event_name }}\` on \`${{ github.ref }}\`"
-
-            if [ "${{ github.event_name }}" = "push" ]; then
-              if [ "${HAS_PR}" = "true" ]; then
-                echo "- **PR context**: Detected open PR [#${PR_NUMBER}](${PR_URL}); PR-style review settings applied."
-              else
-                echo "- **PR context**: None for this push; PR-only input settings were overridden."
-              fi
-            fi
-
-            echo ""
-            echo "| Total | Errors | Warnings | Info |"
-            echo "|------:|------:|--------:|----:|"
-            echo "| ${TOTAL:-0} | ${ERR:-0} | ${WARN:-0} | ${INFO:-0} |"
-            echo ""
-            echo "- **Rules**: \`${SEMGREP_RULES}\`"
-            echo "- **Scan mode**: \`${SCAN_MODE}\`"
-            if [ "${SCAN_MODE}" != "full" ]; then
-              echo "- **Baseline**: \`${BASELINE}\`"
-            else
-              echo "- **Baseline**: \`n/a\`"
-            fi
-            echo "- **Fail level**: \`${FAIL_LEVEL}\`"
-            echo "- **Review filter**: \`${FILTER_MODE}\`"
-            echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Prepare reviewdog input
-        id: semgrep_reviewdog_input
-        if: ${{ steps.semgrep_metrics.outputs.total != '0' }}
-        run: |
-          jq -r '.results[] | "\(.extra.severity[0:1]):\(.path):\(.end.line) \(.extra.message)"' \
-            semgrep.json > reviewdog_input.txt || :
-        # If jq finds no results, file will be empty; that's fine.
-
       - name: Reviewdog report
-        if: ${{ steps.semgrep_metrics.outputs.total != '0' }}
+        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
@@ -300,6 +190,35 @@ jobs:
             -filter-mode="$REVIEWDOG_FILTER_MODE" \
             -fail-level="$REVIEWDOG_FAIL_LEVEL"
 
+      - name: Job summary
+        env:
+          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
+          PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
+          PR_URL: ${{ steps.pr_check.outputs.pr_url }}
+          SCAN_SUMMARY: ${{ steps.semgrep.outputs.scanSummary }}
+          CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
+          FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
+          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
+        run: |
+          {
+            echo "## 🔎 Semgrep Summary"
+            echo "triggered by: \`${{ github.event_name }}\` on \`${{ github.ref }}\`"
+
+            if [ "${{ github.event_name }}" = "push" ]; then
+              if [ "${HAS_PR}" = "true" ]; then
+                echo "- **PR context**: Detected open PR [#${PR_NUMBER}](${PR_URL}); PR-style review settings applied."
+              else
+                echo "- **PR context**: None for this push; PR-only input settings were overridden."
+              fi
+            fi
+          } >> $GITHUB_STEP_SUMMARY
+
+          echo -e "${SCAN_SUMMARY}" >> $GITHUB_STEP_SUMMARY
+          echo -e "${CONFIG_SUMMARY}" >> $GITHUB_STEP_SUMMARY
+
+          echo "- **Review filter**: \`${FILTER_MODE}\`"
+          echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+
       - name: Upsert PR summary comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
         uses: actions/github-script@v7
@@ -310,10 +229,10 @@ jobs:
           script: |
             const prNumber = context.payload.pull_request?.number ?? process.env.PR_NUMBER;
 
-            const total   = Number("${{ steps.semgrep_metrics.outputs.total || '0' }}");
-            const errors  = Number("${{ steps.semgrep_metrics.outputs.errors || '0' }}");
-            const warns   = Number("${{ steps.semgrep_metrics.outputs.warnings || '0' }}");
-            const info    = Number("${{ steps.semgrep_metrics.outputs.info || '0' }}");
+            const total   = Number("${{ steps.semgrep.outputs.totalFindings || '0' }}");
+            const errors  = Number("${{ steps.semgrep.outputs.numErrors || '0' }}");
+            const warns   = Number("${{ steps.semgrep.outputs.numWarnings || '0' }}");
+            const info    = Number("${{ steps.semgrep.outputs.numInfo || '0' }}");
 
             const scanMode   = "${{ inputs.semgrep_scan_mode }}";
             const rules      = "${{ inputs.semgrep_config }}";
@@ -387,10 +306,7 @@ jobs:
             }
 
       - name: Fail on findings at/above threshold
-        if: |
-          (inputs.fail_severity == 'error'   && fromJSON(steps.semgrep_metrics.outputs.errors)   > 0) ||
-          (inputs.fail_severity == 'warning' && (fromJSON(steps.semgrep_metrics.outputs.errors)  > 0  || fromJSON(steps.semgrep_metrics.outputs.warnings) > 0)) ||
-          (inputs.fail_severity == 'info'    && fromJSON(steps.semgrep_metrics.outputs.total)    > 0)
+        if: ${{ steps.semgrep.outputs.scanStatus == 'failed' }}
         env:
           FAIL_SEVERITY: ${{ inputs.fail_severity }}
         run: |
