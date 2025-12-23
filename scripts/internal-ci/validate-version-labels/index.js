@@ -205,11 +205,14 @@ if (require.main === module) {
   const githubOutput = process.env.GITHUB_OUTPUT;
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `isValid=${isValid}\n`);
-    fs.appendFileSync(githubOutput, `invalidVersionLabels=${invalidVersionLabels.join(',')}\n`);
+    fs.appendFileSync(githubOutput, `invalidVersionLabels=${invalidVersionLabels.join(', ')}\n`);
     fs.appendFileSync(githubOutput, `hasUntrackedVersion=${hasUntrackedVersion}\n`);
-    fs.appendFileSync(githubOutput, `componentVersionLabels=${componentVersionLabels.join(',')}\n`);
-    fs.appendFileSync(githubOutput, `invalidComponents=${invalidComponents.join(',')}\n`);
-    fs.appendFileSync(githubOutput, `missingChangelogs=${missingChangelogs.join(',')}\n`);
+    fs.appendFileSync(
+      githubOutput,
+      `componentVersionLabels=${componentVersionLabels.join(', ')}\n`
+    );
+    fs.appendFileSync(githubOutput, `invalidComponents=${invalidComponents.join(', ')}\n`);
+    fs.appendFileSync(githubOutput, `missingChangelogs=${missingChangelogs.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
       `validationMessage=${validationMessage.replace(/\n/g, '\\n')}\n`

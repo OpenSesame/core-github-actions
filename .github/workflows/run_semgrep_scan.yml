@@ -239,7 +239,7 @@ jobs:
             const errors  = Number(process.env.NUM_ERRORS || '0');
             const warns   = Number(process.env.NUM_WARNINGS || '0');
             const info    = Number(process.env.NUM_INFO || '0');
-            const configSummary = process.env.CONFIG_SUMMARY || '';
+            const configSummary = (process.env.CONFIG_SUMMARY || '').replace(/\\n/g, '\n');
 
             const emoji = scanStatus === 'success' ? "✅" : "❌";
             const statusText =  scanStatus === 'success' ? "passed" : "failed";
@@ -251,13 +251,15 @@ jobs:
             if (warns  > 0) parts.push(`${warns} warning${warns === 1 ? "" : "s"}`);
             if (info   > 0) parts.push(`${info} info`);
 
-            const findings = total > 0 ? `\n\n**Findings:** ${parts.join(", ")}` : "\n\n🎉 No security issues found!";
+            const findings = total > 0 ? `\n\n${parts.join(", ")}` : "\n\n🎉 No security issues found!";
 
             const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
 
             const body = `${heading}
             ${configSummary}
+            ### Findings
             ${findings}
+
             [View run](${runUrl})
             <sub>🤖 Powered by Semgrep + reviewdog</sub>`;
 
@@ -265,7 +267,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: ./.github/actions/pr-comment-upsert
+        uses: ./.github/actions/upsert-pr-comment
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -273,7 +275,7 @@ jobs:
           body-content: ${{ steps.generate_body.outputs.body }}
 
       - name: Fail on findings at/above threshold
-        if: ${{ steps.semgrep.outputs.scanStatus == 'failed' }}
+        if: ${{ steps.semgrep.outputs.scanStatus == 'failure' }}
         env:
           FAIL_SEVERITY: ${{ inputs.fail_severity }}
         run: |
