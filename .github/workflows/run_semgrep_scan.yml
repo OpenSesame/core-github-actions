@@ -240,7 +240,6 @@ jobs:
             const errors  = Number(process.env.NUM_ERRORS || '0');
             const warns   = Number(process.env.NUM_WARNINGS || '0');
             const info    = Number(process.env.NUM_INFO || '0');
-            const configSummary = (process.env.CONFIG_SUMMARY || '').replace(/\\n/g, '\n');
 
             const emoji = scanStatus === 'success' ? "✅" : "❌";
             const statusText =  scanStatus === 'success' ? "passed" : "failed";
@@ -257,8 +256,6 @@ jobs:
             const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
 
             const body = `${heading}
-            ${configSummary}
-            ### Findings
             ${findings}
 
             [View run](${runUrl})
