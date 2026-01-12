@@ -68,13 +68,23 @@ To get started:
 - install semgrep globally `brew install semgrep`
 - install project dependencies `npm ci`
 
+### 🏷️ Versioning Policy Overview
+
+A complete policy is defined in [VERSIONING.md](VERSIONING.md). Highlights:
+
+- Versioned components use namespaced tags: actions/{component-name}/vX.Y.Z
+- PRs modifying a component must include a version label
+- version:untracked is allowed for non-behavior changes
+- Version/changelog validation runs automatically on PRs
+- Tags are automatically created when changes merge into main
+
 ### 🚧 Reusable Workflows (Work in Progress)
 
 The Core Services team is moving away from composite actions and building **reusable workflows** in this repository.
 
-### Current scope
+At this stage, the reusable workflows support **Terraform-only projects**. They are still evolving and are not yet versioned. While they can be consumed by other repositories, their API is not considered stable. Their contracts remain subject to change until the versioning model expands to reusable workflows. These workflows should be referenced by the `legacy-stable` tag. This allows us to make changes to bring the workflows under versioning safely.
 
-At this stage, the reusable workflows support **Terraform-only projects**. They are still evolving and are not yet versioned. While they can be consumed by other repositories, their API is not considered stable. Their contracts remain subject to change until the versioning model expands to reusable workflows.
+You can check the `./github/workflows/CHANGELOGS` directory to know which workflows are under versioning and you should reference them by their namespaced version tags.
 
 ### 🧩 Versioned Composite Actions
 
@@ -92,12 +102,3 @@ Each action:
 - Requires version labels on PRs (e.g., version:pr-open-check/1.0.0)
 
 Versioning ensures that consumers can safely upgrade without unexpected breaking changes.
-
-🏷️ Versioning Policy Overview
-
-- A complete policy is defined in VERSIONING.md. Highlights:
-- Versioned components use namespaced tags: actions/{component-name}/vX.Y.Z
-- PRs modifying a component must include a version label
-- version:untracked is allowed for non-behavior changes
-- Version/changelog validation runs automatically on PRs
-- Tags are automatically created when changes merge into main

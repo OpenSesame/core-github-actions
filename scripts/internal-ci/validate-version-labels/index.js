@@ -80,13 +80,18 @@ function getInvalidComponents(componentVersionMap) {
 
   let invalidComponents = [];
   for (const path of Object.keys(componentVersionMap)) {
-    if (!path.startsWith('actions/')) {
-      invalidComponents.push(path);
-    } else {
+    if (path.startsWith('actions/')) {
       const expectedDir = `.github/${path}`;
       if (!fs.existsSync(expectedDir) || !fs.lstatSync(expectedDir).isDirectory()) {
         invalidComponents.push(path);
       }
+    } else if (path.startsWith('workflows/')) {
+      const expectedFile = `.github/${path}.yml`;
+      if (!fs.existsSync(expectedFile) || !fs.lstatSync(expectedFile).isFile) {
+        invalidComponents.push(path);
+      }
+    } else {
+      invalidComponents.push(path);
     }
   }
 
@@ -98,8 +103,19 @@ function getInvalidComponents(componentVersionMap) {
 function getMissingChangelogs(componentVersionMap) {
   let missingChangelogs = [];
   for (const path of Object.keys(componentVersionMap)) {
-    // Expected changelog path: .github/<component-path>/CHANGELOG.md
-    const changelogPath = `.github/${path}/CHANGELOG.md`;
+    let changelogPath;
+    if (path.startsWith('actions/')) {
+      // Expected changelog path: .github/<component-path>/CHANGELOG.md
+      changelogPath = `.github/${path}/CHANGELOG.md`;
+    } else if (path.startsWith('workflows/')) {
+      // Expected changelog path: .github/workflows/CHANGELOGS/<workflow-name>.md
+      const workflowName = path.replace(/^workflows\//, '');
+      changelogPath = `.github/workflows/CHANGELOGS/${workflowName}.md`;
+    } else {
+      // Unknown type, skip
+      missingChangelogs.push(path);
+      continue;
+    }
     if (!fs.existsSync(changelogPath)) {
       missingChangelogs.push(path);
       continue;
@@ -205,11 +221,14 @@ if (require.main === module) {
   const githubOutput = process.env.GITHUB_OUTPUT;
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `isValid=${isValid}\n`);
-    fs.appendFileSync(githubOutput, `invalidVersionLabels=${invalidVersionLabels.join(',')}\n`);
+    fs.appendFileSync(githubOutput, `invalidVersionLabels=${invalidVersionLabels.join(', ')}\n`);
     fs.appendFileSync(githubOutput, `hasUntrackedVersion=${hasUntrackedVersion}\n`);
-    fs.appendFileSync(githubOutput, `componentVersionLabels=${componentVersionLabels.join(',')}\n`);
-    fs.appendFileSync(githubOutput, `invalidComponents=${invalidComponents.join(',')}\n`);
-    fs.appendFileSync(githubOutput, `missingChangelogs=${missingChangelogs.join(',')}\n`);
+    fs.appendFileSync(
+      githubOutput,
+      `componentVersionLabels=${componentVersionLabels.join(', ')}\n`
+    );
+    fs.appendFileSync(githubOutput, `invalidComponents=${invalidComponents.join(', ')}\n`);
+    fs.appendFileSync(githubOutput, `missingChangelogs=${missingChangelogs.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
       `validationMessage=${validationMessage.replace(/\n/g, '\\n')}\n`

@@ -68,93 +68,66 @@ jobs:
         run: |
           echo "## Validation Outcome" >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "${{ env.NO_LABELS }}" === "true" ]; then
+          if [ "${{ env.NO_LABELS }}" == "true" ]; then
             echo "❌ No labels found on the PR. Add at least one version label." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          if [ "${{ env.IS_VALID }}" === "false" ]; then
+          if [ "${{ env.IS_VALID }}" == "false" ]; then
             echo "❌ Version label validation failed." >> "$GITHUB_STEP_SUMMARY"
             if [ -n "${{ env.VALIDATION_MESSAGE }}" ]; then
               echo "${{ env.VALIDATION_MESSAGE }}" >> "$GITHUB_STEP_SUMMARY"
               echo "" >> "$GITHUB_STEP_SUMMARY"
             fi
             if [ -n "${{ env.INVALID_VERSION_LABELS }}" ]; then
-              echo "Invalid version labels: ${{ env.INVALID_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
+              echo "**Invalid version labels**: ${{ env.INVALID_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -n "${{ env.INVALID_COMPONENTS }}" ]; then
+              echo "**Nonexistent/Invalid components**: ${{ env.INVALID_COMPONENTS }}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -n "${{ env.MISSING_CHANGELOGS }}" ]; then
+              echo "**Components missing changelogs/entries**: ${{ env.MISSING_CHANGELOGS }}" >> "$GITHUB_STEP_SUMMARY"
             fi
           else
-            echo -e "✅ Version label validation passed\n" >> "$GITHUB_STEP_SUMMARY"
+            echo "✅ Version label validation passed" >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo "**Untracked Version**: ${{ env.HAS_UNTRACKED_VERSION }}" >> "$GITHUB_STEP_SUMMARY"
+          echo -e "\n**Untracked Version**: ${{ env.HAS_UNTRACKED_VERSION }}" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "${{ env.COMPONENT_VERSION_LABELS }}" ]; then
             echo "**Component Versions**: ${{ env.COMPONENT_VERSION_LABELS }}" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Tags Job Summary
+      - name: Write Tags Job Summary
+        id: tags_summary
         env:
           HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
           VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
         run: |
-          echo "## Tags" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ env.HAS_UNTRACKED_VERSION }}" = "true" ]; then
-            echo "- No Tags will be created on main" >> "$GITHUB_STEP_SUMMARY"
+          set -x
+          summary="## Tags\n"
+          if [ "${HAS_UNTRACKED_VERSION}" = "true" ]; then
+            summary+="- No Tags will be created on main"
           else
-            echo -e "The following tags will be created on main after merge\n" >> "$GITHUB_STEP_SUMMARY"
-            echo "${{ env.VALID_COMPONENTS }}" | tr ',' '\n' | while read -r component_version; do
-              echo "🏷️  \`$component_version\`" >> "$GITHUB_STEP_SUMMARY"
+            summary+="The following tags will be created on main after merge\n\n"
+            echo $VALID_COMPONENTS
+            IFS=',' read -ra components <<< "$VALID_COMPONENTS"
+            for component_version in "${components[@]}"; do
+              summary+="🏷️  \`$component_version\`\n"
             done
+            # Remove trailing newline
+            summary="${summary%\\n}"
           fi
 
-      - name: Tags PR Summary
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
-          VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
+          echo -e "$summary" >> "$GITHUB_STEP_SUMMARY"
+
+          # Replace any literal \n with real newlines for correct PR comment formatting
+          summary_with_eol="${summary//\\n/$'\n'}"
+          echo "summary<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$summary_with_eol" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Write Tags to PR Comment
+        uses: ./.github/actions/upsert-pr-comment
         with:
+          pr-number: ${{ github.event.pull_request.number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const prNumber = parseInt(process.env.PR_NUMBER, 10);
-            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            let summary = '';
-
-            if (process.env.HAS_UNTRACKED_VERSION === 'true') {
-              summary += '- No Tags will be created on main after merge.\n';
-            } else {
-              summary += 'The following tags will be created on main after merge:\n\n';
-              const components = process.env.VALID_COMPONENTS.split(',');
-              for (const component_version of components) {
-                summary += `🏷️  \`${component_version.trim()}\`\n`;
-              }
-            }
-
-            const body = `<!-- version-summary -->
-            ## Version Tags
-            ${summary.trim()}
-
-            [View run](${runUrl})
-            `;
-
-            // Upsert by hidden marker to avoid duplicate comments
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100,
-            });
-
-            const existing = comments.find(c => c.body && c.body.includes("<!-- version-summary -->"));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                body,
-              });
-            }
+          comment-marker: version-summary
+          body-content: ${{ steps.tags_summary.outputs.summary }}

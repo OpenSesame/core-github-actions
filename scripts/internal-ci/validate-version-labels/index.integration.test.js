@@ -1,4 +1,5 @@
 const { versionLabelPrefix, untrackedLabel } = require('.');
+const { parseGithubOutput } = require('../../util/test-helpers');
 
 describe('validate-version-labels main module integration', () => {
   const fs = require('fs');
@@ -7,16 +8,6 @@ describe('validate-version-labels main module integration', () => {
   const tmp = require('os').tmpdir();
   const scriptPath = path.resolve(__dirname, 'index.js');
   const projectRoot = path.resolve(__dirname, '../../..');
-
-  function parseGithubOutput(file) {
-    return Object.fromEntries(
-      fs
-        .readFileSync(file, 'utf8')
-        .split('\n')
-        .filter(Boolean)
-        .map(line => line.split(/=(.*)/).slice(0, 2))
-    );
-  }
 
   it('accepts stdin, succeeds with valid component version label, and writes correct env values', () => {
     const labelInput = `${versionLabelPrefix}actions/pr-open-check/1.0.0`;
