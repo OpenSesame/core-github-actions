@@ -1,0 +1,75 @@
+name: Audit NPM Dependencies
+description: Run npm audit, parse results, and output a summary and audit gate
+
+outputs:
+  gate_passed:
+    description: 'true/false if audit gate passed (no critical or high vulnerabilities in production dependencies)'
+    value: ${{ steps.evaluate-gate.outputs.gate_passed }}
+  gate_summary:
+    description: 'Markdown summary of audit results'
+    value: ${{ steps.generate-summary.outputs.gate_summary }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Audit All
+      id: audit-all
+      shell: bash
+      run: npm audit --json > audit-all.json || true
+
+    - name: Audit Production
+      id: audit-prod
+      shell: bash
+      run: npm audit --json --omit=dev > audit-prod.json || true
+
+    - name: Parse audit reports
+      id: parse-audit
+      shell: bash
+      run: |
+        jq_counts='
+          (.metadata.vulnerabilities // {}) as $v |
+          [
+            ($v.critical // 0),
+            ($v.high     // 0),
+            ($v.moderate // 0),
+            ($v.low      // 0)
+          ] | @tsv
+        '
+        read -r ALL_CRIT ALL_HIGH ALL_MOD ALL_LOW < <(jq -r "$jq_counts" audit-all.json)
+        read -r PRD_CRIT PRD_HIGH PRD_MOD PRD_LOW < <(jq -r "$jq_counts" audit-prod.json)
+        echo "ALL_CRIT=$ALL_CRIT" >> $GITHUB_ENV
+        echo "ALL_HIGH=$ALL_HIGH" >> $GITHUB_ENV
+        echo "ALL_MOD=$ALL_MOD" >> $GITHUB_ENV
+        echo "ALL_LOW=$ALL_LOW" >> $GITHUB_ENV
+        echo "PRD_CRIT=$PRD_CRIT" >> $GITHUB_ENV
+        echo "PRD_HIGH=$PRD_HIGH" >> $GITHUB_ENV
+        echo "PRD_MOD=$PRD_MOD" >> $GITHUB_ENV
+        echo "PRD_LOW=$PRD_LOW" >> $GITHUB_ENV
+
+    - name: Evaluate audit gate
+      id: evaluate-gate
+      shell: bash
+      run: |
+        if [ "$PRD_CRIT" -gt 0 ] || [ "$PRD_HIGH" -gt 0 ]; then
+          gate_passed="false"
+        else
+          gate_passed="true"
+        fi
+        echo "gate_passed=${gate_passed}" >> "$GITHUB_OUTPUT"
+
+    - name: Generate audit summary
+      id: generate-summary
+      shell: bash
+      run: |
+        {
+          echo "gate_summary<<EOF"
+          echo "### 🛡️ Dependency Audit"
+          echo ""
+          echo "|           | ⛔ Critical | ❌ High | ⚠️ Moderate | 🔵 Low |"
+          echo "|:---------:|:--------:|:----:|:--------:|:---:|"
+          echo "| All       | $ALL_CRIT | $ALL_HIGH | $ALL_MOD | $ALL_LOW |"
+          echo "| Production| $PRD_CRIT | $PRD_HIGH | $PRD_MOD | $PRD_LOW |"
+          echo ""
+          echo "<sub>Gate checks production dependencies only (fails on any Critical or High)</sub>"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"

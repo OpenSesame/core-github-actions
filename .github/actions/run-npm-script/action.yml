@@ -1,0 +1,44 @@
+name: 'Run NPM Script'
+description: 'Run an npm script if present, and output status'
+
+inputs:
+  script:
+    description: 'The npm script to run (e.g., build, lint:check, test)'
+    required: true
+    default: ''
+  working_directory:
+    description: 'Directory containing package.json (optional)'
+    required: false
+    default: '.'
+
+outputs:
+  status:
+    description: 'success, failure, or notpresent'
+    value: ${{ steps.run-script.outputs.status }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run npm script
+      id: run-script
+      shell: bash
+      env:
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        SCRIPT: ${{ inputs.script }}
+      run: |
+        cd "$WORKING_DIRECTORY"
+        if ! [ -f package.json ]; then
+          echo "No package.json found. Skipping $SCRIPT."
+          echo "status=notpresent" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if ! jq -e --arg s "$SCRIPT" '.scripts | has($s)' package.json > /dev/null; then
+          echo "script $SCRIPT not found in package.json. Skipping."
+          echo "status=notpresent" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+        if npm run "$SCRIPT"; then
+          echo "status=success" >> "$GITHUB_OUTPUT"
+        else
+          echo "status=failure" >> "$GITHUB_OUTPUT"
+        fi

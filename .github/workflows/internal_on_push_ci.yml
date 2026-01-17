@@ -13,31 +13,11 @@ permissions:
 jobs:
   internal-ci:
     name: Internal CI
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Dependency Audit
-        run: npm audit
-
-      - name: Test
-        run: npm test
-
-      - name: Lint Check
-        run: npm run lint:check
-
-      - name: Format Check
-        run: npm run format:check
+    uses: ./.github/workflows/run_npm_ci_scripts.yml
+    secrets: inherit
+    with:
+      working_directory: '.'
+      commit_identifier: ${{ github.sha }}
 
   semgrep:
     uses: ./.github/workflows/run_semgrep_scan.yml
