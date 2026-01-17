@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   internal-ci2:
+    name: Internal CI
     uses: ./.github/workflows/run_npm_ci_scripts.yml
     secrets: inherit
     with:
@@ -19,7 +20,7 @@ jobs:
       commit-identifier: ${{ github.sha }}
 
   internal-ci:
-    name: Internal CI
+    name: Internal CI (old)
     runs-on: ubuntu-latest
 
     steps:
