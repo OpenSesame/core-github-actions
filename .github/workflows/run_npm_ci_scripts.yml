@@ -41,7 +41,6 @@ jobs:
           cache: 'npm'
           registry-url: 'https://npm.pkg.github.com/'
           cache-dependency-path: '**/package-lock.json'
-          always-auth: true
 
       - name: Install dependencies
         run: npm ci
@@ -52,74 +51,42 @@ jobs:
         continue-on-error: true
 
       - name: Build
+        uses: ./.github/actions/run-npm-script
         id: build
-        continue-on-error: true
-        run: |
-          if ! [ -f package.json ] || ! jq -e '.scripts.build' package.json > /dev/null; then
-            echo "No build script found in package.json."
-            echo "build_status=notpresent" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if npm run build; then
-            echo "build_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "build_status=failure" >> $GITHUB_OUTPUT
-          fi
+        with:
+          working-directory: '.'
+          script: build
 
       - name: Lint
+        uses: ./.github/actions/run-npm-script
         id: lint
-        continue-on-error: true
-        run: |
-          if ! [ -f package.json ] || ! jq -e '.scripts.["lint:check"]' package.json > /dev/null; then
-            echo "No lint script found in package.json."
-            echo "lint_status=notpresent" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if npm run lint:check; then
-            echo "lint_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "lint_status=failure" >> $GITHUB_OUTPUT
-          fi
+        with:
+          working-directory: '.'
+          script: lint:check
 
       - name: Format
+        uses: ./.github/actions/run-npm-script
         id: format
-        continue-on-error: true
-        run: |
-          if ! [ -f package.json ] || ! jq -e '.scripts.["format:check"]' package.json > /dev/null; then
-            echo "No format script found in package.json."
-            echo "format_status=notpresent" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if npm run format:check; then
-            echo "format_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "format_status=failure" >> $GITHUB_OUTPUT
-          fi
+        with:
+          working-directory: '.'
+          script: format:check
 
       - name: Test
+        uses: ./.github/actions/run-npm-script
         id: test
-        continue-on-error: true
-        run: |
-          if ! [ -f package.json ] || ! jq -e '.scripts.test' package.json > /dev/null; then
-            echo "No test script found in package.json."
-            echo "test_status=notpresent" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          if npm test; then
-            echo "test_status=success" >> $GITHUB_OUTPUT
-          else
-            echo "test_status=failure" >> $GITHUB_OUTPUT
-          fi
+        with:
+          working-directory: '.'
+          script: test
 
       - name: Job Summary
         if: always()
         env:
           AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'success' || 'failure' }}
           AUDIT_SUMMARY: ${{ steps.audit-npm.outputs.gate_summary }}
-          BUILD_STATUS: ${{ steps.build.outputs.build_status || steps.build.outcome }}
-          LINT_STATUS: ${{ steps.lint.outputs.lint_status || steps.lint.outcome }}
-          FORMAT_STATUS: ${{ steps.format.outputs.format_status || steps.format.outcome }}
-          TEST_STATUS: ${{ steps.test.outputs.test_status || steps.test.outcome }}
+          BUILD_STATUS: ${{ steps.build.outputs.status || steps.build.outcome }}
+          LINT_STATUS: ${{ steps.lint.outputs.status || steps.lint.outcome }}
+          FORMAT_STATUS: ${{ steps.format.outputs.status || steps.format.outcome }}
+          TEST_STATUS: ${{ steps.test.outputs.status || steps.test.outcome }}
         run: |
           status_emoji () {
             case "$1" in
@@ -146,13 +113,13 @@ jobs:
           cat job-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set Run Outcome
-        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.build_status == 'failure' || steps.lint.outputs.lint_status == 'failure' || steps.format.outputs.format_status == 'failure' || steps.test.outputs.test_status == 'failure' }}
+        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.status == 'failure' || steps.lint.outputs.status == 'failure' || steps.format.outputs.status == 'failure' || steps.test.outputs.status == 'failure' }}
         env:
           AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'passed' || 'failed' }}
-          BUILD_STATUS: ${{ steps.build.outputs.build_status == 'success' && 'passed' || 'failed' }}
-          LINT_STATUS: ${{ steps.lint.outputs.lint_status == 'success' && 'passed' || 'failed' }}
-          FORMAT_STATUS: ${{ steps.format.outputs.format_status == 'success' && 'passed' || 'failed' }}
-          TEST_STATUS: ${{ steps.test.outputs.test_status == 'success' && 'passed' || 'failed' }}
+          BUILD_STATUS: ${{ steps.build.outputs.status == 'success' && 'passed' || 'failed' }}
+          LINT_STATUS: ${{ steps.lint.outputs.status == 'success' && 'passed' || 'failed' }}
+          FORMAT_STATUS: ${{ steps.format.outputs.status == 'success' && 'passed' || 'failed' }}
+          TEST_STATUS: ${{ steps.test.outputs.status == 'success' && 'passed' || 'failed' }}
         run: |
           echo "❌ One or more gate steps failed:"
           echo "  Audit Gate: $AUDIT_STATUS"
