@@ -1,21 +1,13 @@
-# {action-name} action Changelog
+# audit-npm action Changelog
 
-All notable changes to the **{action-name}** action are documented in this file.
+All notable changes to the **audit-npm** action are documented in this file.
 
-## v{semver}
+## v1.0.0
 
 ### Added
 
-- ...
-
-### Changed
-
-- ...
-
-### Fixed
-
-- ...
-
-### Removed
-
-- ...
+- Initial release of audit-npm composite action
+- Runs `npm audit`
+- Parses and summarizes vulnerabilities by severity
+- Outputs a markdown summary and a boolean audit gate
+- Audit gate fails if a critical or high production vulnerability exists
