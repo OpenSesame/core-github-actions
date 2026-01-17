@@ -11,6 +11,13 @@ permissions:
   checks: write # needed if reporter is github-pr-check or github-check
 
 jobs:
+  internal-ci2:
+    uses: ./.github/workflows/run_npm_ci_scripts.yml
+    secrets: inherit
+    with:
+      working-directory: '.'
+      commit-identifier: ${{ github.sha }}
+
   internal-ci:
     name: Internal CI
     runs-on: ubuntu-latest
