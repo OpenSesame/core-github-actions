@@ -1,3 +1,9 @@
+## ❌ Deprecation Notice
+
+This composite action is no longer maintained by the Core Services team. Use at your own risk.
+
+If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+
 # Semgrep CE Scan Action
 
 This action runs Semgrep security scanning with configurable options and reporting capabilities.
