@@ -50,3 +50,42 @@ jobs:
         uses: ./.github/actions/audit-npm
         id: audit-npm
         continue-on-error: true
+
+      - name: Job Summary
+        if: always()
+        env:
+          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'success' || 'failure' }}
+          AUDIT_SUMMARY: ${{ steps.audit-npm.outputs.gate_summary }}
+        run: |
+          status_emoji () {
+            case "$1" in
+              success)   echo "✅";;
+              failure)   echo "❌";;
+              cancelled) echo "🛑";;
+              skipped|"") echo "⏭️";;
+              *)         echo "❓";;
+            esac
+          }
+
+          {
+            echo "## 🚪 Gate Summary"
+            echo "triggered by: \`${{ github.event_name }}\` on \`${{ github.ref_name }}\`"
+            echo "Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+            echo ""
+            echo "| Audit |"
+            echo "|:-----:|"
+            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" |"
+            echo ""
+            echo "$AUDIT_SUMMARY"
+          } > job-summary.md
+          cat job-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set Run Outcome
+        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' }}
+        env:
+          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && '✅ passed' || '❌ failed' }}
+        run: |
+          echo "❌ One or more gate steps failed:"
+          echo "  Audit Gate: $AUDIT_STATUS"
+          exit 1
