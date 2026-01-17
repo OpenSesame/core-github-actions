@@ -96,6 +96,21 @@ jobs:
             echo "format_status=failure" >> $GITHUB_OUTPUT
           fi
 
+      - name: Test
+        id: test
+        continue-on-error: true
+        run: |
+          if ! [ -f package.json ] || ! jq -e '.scripts.test' package.json > /dev/null; then
+            echo "No test script found in package.json."
+            echo "test_status=notpresent" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          if npm test; then
+            echo "test_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "test_status=failure" >> $GITHUB_OUTPUT
+          fi
+
       - name: Job Summary
         if: always()
         env:
@@ -104,6 +119,7 @@ jobs:
           BUILD_STATUS: ${{ steps.build.outputs.build_status || steps.build.outcome }}
           LINT_STATUS: ${{ steps.lint.outputs.lint_status || steps.lint.outcome }}
           FORMAT_STATUS: ${{ steps.format.outputs.format_status || steps.format.outcome }}
+          TEST_STATUS: ${{ steps.test.outputs.test_status || steps.test.outcome }}
         run: |
           status_emoji () {
             case "$1" in
@@ -121,25 +137,27 @@ jobs:
             echo "Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo ""
             echo ""
-            echo "| Audit | Build | Lint | Format |"
-            echo "|:-----:|:-----:|:----:|:------:|"
-            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" | $(status_emoji "$BUILD_STATUS") "$BUILD_STATUS" | $(status_emoji "$LINT_STATUS") "$LINT_STATUS" | $(status_emoji "$FORMAT_STATUS") "$FORMAT_STATUS" |"
+            echo "| Audit | Build | Lint | Format | Test |"
+            echo "|:-----:|:-----:|:----:|:------:|:----:|"
+            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" | $(status_emoji "$BUILD_STATUS") "$BUILD_STATUS" | $(status_emoji "$LINT_STATUS") "$LINT_STATUS" | $(status_emoji "$FORMAT_STATUS") "$FORMAT_STATUS" | $(status_emoji "$TEST_STATUS") "$TEST_STATUS" |"
             echo ""
             echo "$AUDIT_SUMMARY"
           } > job-summary.md
           cat job-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set Run Outcome
-        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.build_status == 'failure' || steps.lint.outputs.lint_status == 'failure' || steps.format.outputs.format_status == 'failure' }}
+        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.build_status == 'failure' || steps.lint.outputs.lint_status == 'failure' || steps.format.outputs.format_status == 'failure' || steps.test.outputs.test_status == 'failure' }}
         env:
           AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'passed' || 'failed' }}
           BUILD_STATUS: ${{ steps.build.outputs.build_status == 'success' && 'passed' || 'failed' }}
           LINT_STATUS: ${{ steps.lint.outputs.lint_status == 'success' && 'passed' || 'failed' }}
           FORMAT_STATUS: ${{ steps.format.outputs.format_status == 'success' && 'passed' || 'failed' }}
+          TEST_STATUS: ${{ steps.test.outputs.test_status == 'success' && 'passed' || 'failed' }}
         run: |
           echo "❌ One or more gate steps failed:"
           echo "  Audit Gate: $AUDIT_STATUS"
           echo "  Build: $BUILD_STATUS"
           echo "  Lint: $LINT_STATUS"
           echo "  Format: $FORMAT_STATUS"
+          echo "  Test: $TEST_STATUS"
           exit 1
