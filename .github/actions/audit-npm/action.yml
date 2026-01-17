@@ -37,6 +37,14 @@ runs:
         '
         read -r ALL_CRIT ALL_HIGH ALL_MOD ALL_LOW < <(jq -r "$jq_counts" audit-all.json)
         read -r PRD_CRIT PRD_HIGH PRD_MOD PRD_LOW < <(jq -r "$jq_counts" audit-prod.json)
+        echo "ALL_CRIT=$ALL_CRIT" >> $GITHUB_ENV
+        echo "ALL_HIGH=$ALL_HIGH" >> $GITHUB_ENV
+        echo "ALL_MOD=$ALL_MOD" >> $GITHUB_ENV
+        echo "ALL_LOW=$ALL_LOW" >> $GITHUB_ENV
+        echo "PRD_CRIT=$PRD_CRIT" >> $GITHUB_ENV
+        echo "PRD_HIGH=$PRD_HIGH" >> $GITHUB_ENV
+        echo "PRD_MOD=$PRD_MOD" >> $GITHUB_ENV
+        echo "PRD_LOW=$PRD_LOW" >> $GITHUB_ENV
 
     - name: Evaluate audit gate
       id: evaluate-gate
