@@ -51,18 +51,34 @@ jobs:
         id: audit-npm
         continue-on-error: true
 
+      - name: Build
+        id: build
+        continue-on-error: true
+        run: |
+          if ! [ -f package.json ] || ! jq -e '.scripts.build' package.json > /dev/null; then
+            echo "No build script found in package.json."
+            echo "build_status=notpresent" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          if npm run build; then
+            echo "build_status=passed" >> $GITHUB_OUTPUT
+          else
+            echo "build_status=failed" >> $GITHUB_OUTPUT
+          fi
+
       - name: Job Summary
         if: always()
         env:
           AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'success' || 'failure' }}
           AUDIT_SUMMARY: ${{ steps.audit-npm.outputs.gate_summary }}
+          BUILD_STATUS: ${{ steps.build.outputs.build_status || steps.build.outcome }}
         run: |
           status_emoji () {
             case "$1" in
               success)   echo "✅";;
               failure)   echo "❌";;
-              cancelled) echo "🛑";;
-              skipped|"") echo "⏭️";;
+              cancelled) echo "➖";;
+              skipped|"") echo "⏩";;
               *)         echo "❓";;
             esac
           }
@@ -73,19 +89,21 @@ jobs:
             echo "Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
             echo ""
             echo ""
-            echo "| Audit |"
-            echo "|:-----:|"
-            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" |"
+            echo "| Audit | Build |"
+            echo "|:-----:|:-----:|"
+            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" | $(status_emoji "$BUILD_STATUS") "$BUILD_STATUS" |"
             echo ""
             echo "$AUDIT_SUMMARY"
           } > job-summary.md
           cat job-summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Set Run Outcome
-        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' }}
+        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.build_status == 'failure' }}
         env:
-          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && '✅ passed' || '❌ failed' }}
+          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'passed' || 'failed' }}
+          BUILD_STATUS: ${{ steps.build.outputs.build_status }}
         run: |
           echo "❌ One or more gate steps failed:"
           echo "  Audit Gate: $AUDIT_STATUS"
+          echo "  Build: $BUILD_STATUS"
           exit 1
