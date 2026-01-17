@@ -135,7 +135,7 @@ jobs:
           SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
           EXTRA_ARGS: ${{ inputs.extra_args }}
-        run: node scripts/shared/run-semgrep.js
+        run: node scripts/gha-lib/run-semgrep.js
 
       - name: Upload Artifact
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
