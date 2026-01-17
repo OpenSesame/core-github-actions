@@ -6,7 +6,7 @@ inputs:
     description: 'The npm script to run (e.g., build, lint:check, test)'
     required: true
     default: ''
-  working-directory:
+  working_directory:
     description: 'Directory containing package.json (optional)'
     required: false
     default: '.'
@@ -23,7 +23,7 @@ runs:
       id: run-script
       shell: bash
       env:
-        WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        WORKING_DIRECTORY: ${{ inputs.working_directory }}
         SCRIPT: ${{ inputs.script }}
       run: |
         cd "$WORKING_DIRECTORY"

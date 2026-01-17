@@ -3,11 +3,11 @@ name: NPM CI
 on:
   workflow_call:
     inputs:
-      working-directory:
+      working_directory:
         description: 'The working directory containing the package.json file with the npm ci scripts to run'
         required: true
         type: string
-      commit-identifier:
+      commit_identifier:
         description: 'SHA or tag to run ci against'
         required: true
         type: string
@@ -23,16 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      WORKING_DIRECTORY: ${{ inputs.working_directory }}
     steps:
       - name: Change to working directory
         run: |
-          echo "WORKING_DIRECTORY=${{ inputs.working-directory }}"
-          cd ${{ inputs.working-directory }}
+          echo "Changing to working directory: $WORKING_DIRECTORY"
+          cd "$WORKING_DIRECTORY"
 
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit-identifier }}
+          ref: ${{ inputs.commit_identifier }}
 
       - name: Set up Node
         uses: actions/setup-node@v3
@@ -54,28 +55,28 @@ jobs:
         uses: ./.github/actions/run-npm-script
         id: build
         with:
-          working-directory: '.'
+          working_directory: '.'
           script: build
 
       - name: Lint
         uses: ./.github/actions/run-npm-script
         id: lint
         with:
-          working-directory: '.'
+          working_directory: '.'
           script: lint:check
 
       - name: Format
         uses: ./.github/actions/run-npm-script
         id: format
         with:
-          working-directory: '.'
+          working_directory: '.'
           script: format:check
 
       - name: Test
         uses: ./.github/actions/run-npm-script
         id: test
         with:
-          working-directory: '.'
+          working_directory: '.'
           script: test
 
       - name: Job Summary

@@ -29,7 +29,7 @@ permissions:
 | Name                | Required | Description                                                                      |
 | ------------------- | -------- | -------------------------------------------------------------------------------- |
 | `script`            | ✅       | The npm script to run (e.g., build, lint:check, test)                            |
-| `working-directory` | ❌       | Directory containing package.json, pass in '.' if you want the current directory |
+| `working_directory` | ❌       | Directory containing package.json, pass in '.' if you want the current directory |
 
 ## 📤 Outputs
 
