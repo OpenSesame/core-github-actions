@@ -35,7 +35,7 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const fetch = require('node-fetch');
-const { validateEnvVar } = require('../util/env-helpers');
+const { validateEnvVar } = require('../utils/env-helpers');
 
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
