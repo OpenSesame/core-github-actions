@@ -2,6 +2,12 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 1.0.1
+
+### Fixed
+
+- Repo-qualified internal action references to ensure correct resolution when this workflow is called from other repositories. This change allows the workflow to reliably locate and use the intended actions, regardless of the calling repository context.
+
 ## 1.0.0
 
 ### Added
