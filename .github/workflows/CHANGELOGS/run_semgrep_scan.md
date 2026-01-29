@@ -4,9 +4,9 @@ All notable changes to the **run_semgrep_scan** callable workflow are documented
 
 ## 1.0.1
 
-### Fixed
+### Changed
 
-- Repo-qualified internal action references to ensure correct resolution when this workflow is called from other repositories. This change allows the workflow to reliably locate and use the intended actions, regardless of the calling repository context.
+- Updated workflow to support cross-repository usage by checking out the core-github-actions repository into a subdirectory and referencing all internal actions and scripts from that subdirectory. This ensures that required actions and scripts are always available, regardless of which repository invokes the workflow.
 
 ## 1.0.0
 
