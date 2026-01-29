@@ -101,7 +101,7 @@ jobs:
 
       - name: Check for open PR (by commit)
         id: pr_check
-        uses: ./.github/actions/pr-open-check
+        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
@@ -265,7 +265,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: ./.github/actions/upsert-pr-comment
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@actions/upsert-pr-comment/1.0.0
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
