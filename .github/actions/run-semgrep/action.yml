@@ -1,0 +1,13 @@
+name: 'Run Semgrep'
+description: 'Run a Semgrep scan and output results for reviewdog and future steps'
+runs:
+  using: composite
+  steps:
+    - name: Install action dependencies
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: npm ci
+
+    - name: Run Semgrep Scan
+      shell: bash
+      run: node ${{ github.action_path }}/run-semgrep.js

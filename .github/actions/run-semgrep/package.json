@@ -1,0 +1,10 @@
+{
+  "name": "@opensesame/run-semgrep-action",
+  "version": "1.0.0",
+  "main": "run-semgrep.js",
+  "private": true,
+  "description": "Composite action to run Semgrep scan for GitHub Actions.",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
