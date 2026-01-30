@@ -1,27 +1,51 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
-const fetch = require('node-fetch');
-const { validateEnvVar } = require('./env-helpers');
+const https = require('https');
 
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
 
-async function getPrBaseBranch(owner, repo, branch, token) {
+function getPrBaseBranch(owner, repo, branch, token) {
   // Use GitHub API to find open PR for the branch and get its base branch
-  const url = `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&head=${owner}:${branch}`;
-  const res = await fetch(url, {
+  const url = `/repos/${owner}/${repo}/pulls?state=open&head=${owner}:${branch}`;
+  const options = {
+    hostname: 'api.github.com',
+    path: url,
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'application/vnd.github.v3+json',
       'User-Agent': 'normalize-push-baseline-script',
     },
+  };
+
+  return new Promise(resolve => {
+    const req = https.request(options, res => {
+      let data = '';
+      res.on('data', chunk => {
+        data += chunk;
+      });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          return resolve(null);
+        }
+        try {
+          const prs = JSON.parse(data);
+          if (Array.isArray(prs) && prs.length > 0 && prs[0].base && prs[0].base.ref) {
+            resolve(prs[0].base.ref);
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', err => {
+      resolve(null);
+    });
+    req.end();
   });
-  if (!res.ok) return null;
-  const prs = await res.json();
-  if (prs.length > 0 && prs[0].base && prs[0].base.ref) {
-    return prs[0].base.ref;
-  }
-  return null;
 }
 
 /* Normalize the baseline ref for push events in GitHub Actions.
@@ -293,6 +317,13 @@ if (require.main === module) {
   });
 }
 
+function validateEnvVar(name) {
+  if (!process.env[name]) {
+    console.error(`::error::Environment variable ${name} is required`);
+    process.exit(1);
+  }
+}
+
 module.exports = {
   main,
   getPrBaseBranch,
@@ -304,6 +335,7 @@ module.exports = {
   writeFindingsMarkdown,
   writeConfigMarkdown,
   evaluateScanStatus,
+  validateEnvVar,
   SEMGREP_RESULTS_FILE_NAME,
   REVIEWDOG_INPUT_FILE_NAME,
 };

@@ -22,7 +22,7 @@ permissions:
 ## Dependencies
 
 - `semgrep` — must be installed in the runner environment.
-- `node-fetch` — required Node.js dependency (see package.json).
+- `https` — standard Node.js module for API requests included in default action runners
 - `reviewdog` — for annotation output (optional, for downstream steps).
 
 ## ⚙️ Inputs

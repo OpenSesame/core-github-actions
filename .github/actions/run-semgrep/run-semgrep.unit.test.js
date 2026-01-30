@@ -1,4 +1,3 @@
-const fetch = require('node-fetch');
 const fs = require('fs');
 const {
   getPrBaseBranch,
@@ -9,6 +8,7 @@ const {
   writeFindingsMarkdown,
   writeConfigMarkdown,
   evaluateScanStatus,
+  validateEnvVar,
   REVIEWDOG_INPUT_FILE_NAME,
 } = require('./run-semgrep');
 
@@ -50,48 +50,64 @@ const exampleSemgrepOutput = {
 };
 const emptySemgrepOutput = '{"results":[]}';
 
-jest.mock('node-fetch');
+const https = require('https');
+
+function mockHttpsRequest(responseData, statusCode = 200) {
+  https.request = jest.fn((options, callback) => {
+    const res = require('stream').Readable({ read() {} });
+    res.statusCode = statusCode;
+    setImmediate(() => {
+      callback(res);
+      res.emit('data', Buffer.from(responseData));
+      res.emit('end');
+    });
+    return { on: jest.fn(), end: jest.fn() };
+  });
+}
 
 describe('getPrBaseBranch', () => {
   const OWNER = 'test-owner';
   const REPO = 'test-repo';
   const BRANCH = 'feature-branch';
   const TOKEN = 'ghp_testtoken';
+  let originalRequest;
+
+  beforeAll(() => {
+    originalRequest = https.request;
+  });
 
   afterEach(() => {
-    fetch.mockClear();
+    https.request = originalRequest;
   });
 
   it('returns base branch when PR exists', async () => {
-    const mockResponse = [
+    const responseData = JSON.stringify([
       {
         base: { ref: 'main' },
       },
-    ];
-    fetch.mockResolvedValue({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
+    ]);
+    mockHttpsRequest(responseData, 200);
     const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
     expect(baseBranch).toBe('main');
   });
 
   it('returns null when no PR exists', async () => {
-    fetch.mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    });
-
+    const responseData = JSON.stringify([]);
+    mockHttpsRequest(responseData, 200);
     const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
     expect(baseBranch).toBeNull();
   });
 
-  it('returns null on fetch error', async () => {
-    fetch.mockResolvedValue({
-      ok: false,
-    });
+  it('returns null on HTTP error', async () => {
+    const responseData = '';
+    mockHttpsRequest(responseData, 404);
+    const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
+    expect(baseBranch).toBeNull();
+  });
 
+  it('returns null on invalid JSON', async () => {
+    const responseData = 'not-json';
+    mockHttpsRequest(responseData, 200);
     const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
     expect(baseBranch).toBeNull();
   });
@@ -101,9 +117,14 @@ describe('normalizeBaseline', () => {
   const FULL_REPO_NAME = 'repo-owner/test-repo';
   const GITHUB_TOKEN = 'ghp_testtoken';
   const inputBaseline = 'origin/main';
+  let originalRequest;
+
+  beforeAll(() => {
+    originalRequest = https.request;
+  });
 
   afterEach(() => {
-    fetch.mockClear();
+    https.request = originalRequest;
   });
 
   it('returns input baseline for non-PR event', async () => {
@@ -136,15 +157,12 @@ describe('normalizeBaseline', () => {
   });
 
   it('fetches base branch when baseRef is not provided', async () => {
-    const mockResponse = [
+    const mockResponse = JSON.stringify([
       {
         base: { ref: 'staging' },
       },
-    ];
-    fetch.mockResolvedValue({
-      ok: true,
-      json: async () => mockResponse,
-    });
+    ]);
+    mockHttpsRequest(mockResponse, 200);
 
     const hasPr = 'true';
     const githubDetails = {
@@ -161,9 +179,7 @@ describe('normalizeBaseline', () => {
   });
 
   it('falls back to input baseline when base branch cannot be fetched', async () => {
-    fetch.mockResolvedValue({
-      ok: false,
-    });
+    mockHttpsRequest('', 404);
 
     const hasPr = 'true';
     const githubDetails = {
@@ -247,7 +263,7 @@ describe('getSemgrepMetrics', () => {
   it('correctly parses semgrep JSON output', () => {
     const fakeInputFileName = 'fake-results.json';
 
-    jest.spyOn(fs, 'readFileSync').mockImplementation((fileName, encoding) => {
+    jest.spyOn(fs, 'readFileSync').mockImplementation(fileName => {
       if (fileName === fakeInputFileName) {
         return JSON.stringify(exampleSemgrepOutput);
       }
@@ -266,7 +282,7 @@ describe('getSemgrepMetrics', () => {
   it('handles empty results', () => {
     const fakeInputFileName = 'fake-results.json';
 
-    jest.spyOn(fs, 'readFileSync').mockImplementation((fileName, encoding) => {
+    jest.spyOn(fs, 'readFileSync').mockImplementation(fileName => {
       if (fileName === fakeInputFileName) {
         return JSON.stringify(emptySemgrepOutput);
       }
@@ -343,5 +359,37 @@ describe('evaluateScanStatus', () => {
     const metrics = { numErrors: 0, numWarnings: 1 };
     const status = evaluateScanStatus('error', metrics);
     expect(status).toBe('success');
+  });
+});
+
+describe('validateEnvVar', () => {
+  const ORIGINAL_EXIT = process.exit;
+  const ORIGINAL_CONSOLE_ERROR = console.error;
+
+  beforeEach(() => {
+    process.exit = jest.fn();
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    process.exit = ORIGINAL_EXIT;
+    console.error = ORIGINAL_CONSOLE_ERROR;
+  });
+
+  it('does not exit when env var is set', () => {
+    process.env.TEST_VAR = 'value';
+    validateEnvVar('TEST_VAR');
+    expect(process.exit).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+    delete process.env.TEST_VAR;
+  });
+
+  it('exits with error when env var is not set', () => {
+    delete process.env.TEST_VAR;
+    validateEnvVar('TEST_VAR');
+    expect(console.error).toHaveBeenCalledWith(
+      '::error::Environment variable TEST_VAR is required'
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 });
