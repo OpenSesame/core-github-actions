@@ -1,5 +1,5 @@
 const { versionLabelPrefix, untrackedLabel } = require('.');
-const { parseGithubOutput } = require('../../utils/test-helpers');
+const { parseGithubOutput } = require('../../internal-utils/test-helpers');
 
 describe('validate-version-labels main module integration', () => {
   const fs = require('fs');
