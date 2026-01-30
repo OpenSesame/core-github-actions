@@ -263,7 +263,7 @@ describe('getSemgrepMetrics', () => {
   it('correctly parses semgrep JSON output', () => {
     const fakeInputFileName = 'fake-results.json';
 
-    jest.spyOn(fs, 'readFileSync').mockImplementation(fileName => {
+    jest.spyOn(fs, 'readFileSync').mockImplementation((fileName, _encoding) => {
       if (fileName === fakeInputFileName) {
         return JSON.stringify(exampleSemgrepOutput);
       }
@@ -282,7 +282,7 @@ describe('getSemgrepMetrics', () => {
   it('handles empty results', () => {
     const fakeInputFileName = 'fake-results.json';
 
-    jest.spyOn(fs, 'readFileSync').mockImplementation(fileName => {
+    jest.spyOn(fs, 'readFileSync').mockImplementation((fileName, _encoding) => {
       if (fileName === fakeInputFileName) {
         return JSON.stringify(emptySemgrepOutput);
       }

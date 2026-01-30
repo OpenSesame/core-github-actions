@@ -137,7 +137,7 @@ jobs:
       normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
 
     steps:
-      - name: Checkout Calling Repo
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit_identifier }}
@@ -170,8 +170,8 @@ jobs:
           fi
 
       - name: Run Semgrep
-        id: semgrep
         uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
+        id: semgrep
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}

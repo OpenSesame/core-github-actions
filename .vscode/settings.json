@@ -43,5 +43,5 @@
 
   // Optional: Spell checker
   "cSpell.enabled": true,
-  "cSpell.words": ["nosemgrep", "opensesame", "reviewdog", "semgrep", "upserting"]
+  "cSpell.words": ["nosemgrep", "nvmrc", "opensesame", "reviewdog", "semgrep", "upserting"]
 }

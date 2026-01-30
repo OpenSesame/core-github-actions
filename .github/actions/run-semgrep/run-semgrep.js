@@ -36,12 +36,12 @@ function getPrBaseBranch(owner, repo, branch, token) {
           } else {
             resolve(null);
           }
-        } catch (e) {
+        } catch (_e) {
           resolve(null);
         }
       });
     });
-    req.on('error', err => {
+    req.on('error', _err => {
       resolve(null);
     });
     req.end();

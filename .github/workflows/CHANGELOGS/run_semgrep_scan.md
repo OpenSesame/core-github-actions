@@ -6,7 +6,7 @@ All notable changes to the **run_semgrep_scan** callable workflow are documented
 
 ### Changed
 
-- Updated workflow to support cross-repository usage by checking out the core-github-actions repository into a subdirectory and referencing all internal actions and scripts from that subdirectory. This ensures that required actions and scripts are always available, regardless of which repository invokes the workflow.
+- Updated workflow to support cross-repository usage by repo qualifying the internal composite action calls.
 
 ## 1.0.0
 
