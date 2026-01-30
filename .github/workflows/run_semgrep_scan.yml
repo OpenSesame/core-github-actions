@@ -66,6 +66,51 @@ on:
         value: ${{ jobs.semgrep.outputs.info_count }}
 
   workflow_dispatch:
+    inputs:
+      commit_identifier:
+        description: 'Commit SHA or ref to scan (default: current ref)'
+        type: string
+        required: false
+      cancel_in_progress:
+        description: 'Cancel in-progress run for the same ref'
+        type: boolean
+        default: true
+      semgrep_config:
+        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list. Default is "p/default"
+        type: string
+        default: p/default
+      semgrep_targets:
+        description: les/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
+        type: string
+        default: .
+      extra_args:
+        description: 'Additional arguments to pass to Semgrep (e.g., --exclude, --timeout). Optional.'
+        type: string
+        required: false
+      semgrep_version:
+        description: 'Semgrep version to install. Default: latest.'
+        type: string
+        required: false
+      fail_severity:
+        description: 'error | warning | info'
+        type: string
+        default: 'error'
+      semgrep_scan_mode:
+        description: What should Semgrep scan? "full | diff | baseline"
+        type: string
+        default: 'full'
+      baseline_ref:
+        description: 'Ref for diff/baseline (e.g., origin/main)'
+        type: string
+        default: 'origin/main'
+      reviewdog_filter_mode:
+        description: What should reviewdog display (does not change what Semgrep scans)? "added | diff_context | nofilter"
+        type: string
+        default: 'nofilter'
+      reviewdog_reporter:
+        description: 'review output: github-pr-review | github-pr-check (only applies if PR context exists, on push github-check is used)'
+        type: string
+        default: 'github-pr-review'
 
 permissions:
   contents: read
@@ -99,34 +144,9 @@ jobs:
           # Full history only when diff/baseline is requested
           fetch-depth: ${{ inputs.semgrep_scan_mode == 'full' && '1' || '0' }}
 
-      - name: Extract workflow definition repo and ref
-        id: extract_workflow_details
-        run: |
-          WF_REF="${{ github.workflow_ref }}"
-          echo "github.workflow_ref: $WF_REF"
-          REPO="${WF_REF%%/.github/workflows/*}"
-          REF="${WF_REF##*@}"
-          echo "Extracted repo: $REPO"
-          echo "Extracted ref: $REF"
-          echo "repo=$REPO" >> $GITHUB_OUTPUT
-          echo "ref=$REF" >> $GITHUB_OUTPUT
-
-      - name: Checkout workflow repo for access to internal scripts/actions
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ steps.extract_workflow_details.outputs.repo }}
-          ref: ${{ steps.extract_workflow_details.outputs.ref }}
-          path: workflow-repo
-
-      - run: |
-          ls
-          echo "-----"
-          cd workflow-repo
-          ls
-
       - name: Check for open PR (by commit)
         id: pr_check
-        uses: ./workflow-repo/.github/actions/pr-open-check
+        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
@@ -151,6 +171,7 @@ jobs:
 
       - name: Run Semgrep
         id: semgrep
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
           HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
@@ -160,7 +181,6 @@ jobs:
           SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
           EXTRA_ARGS: ${{ inputs.extra_args }}
-        run: node ./workflow-repo/scripts/gha-lib/run-semgrep.js
 
       - name: Upload Artifact
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
@@ -290,7 +310,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: ./workflow-repo/.github/actions/upsert-pr-comment
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@actions/upsert-pr-comment/1.0.0
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}

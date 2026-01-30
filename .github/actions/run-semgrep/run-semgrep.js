@@ -1,41 +1,7 @@
-/*
- * Run Semgrep scan
- * Normalizes baseline for diff scans depending on push vs PR context
- *
- * Expects the following environment variables:
- *  HAS_PR - whether the current context has an associated PR (true/false)
- *  PR_NUMBER - PR number if applicable
- *  PR_URL - PR URL if applicable
- *  INPUT_BASELINE - baseline ref to use for diffing (e.g., origin/main)
- *  GITHUB_EVENT_NAME - GitHub provided environment variable for event name (e.g., push, pull_request)
- *  GITHUB_REF - Github provided environment variable for the git ref that triggered the workflow
- *  GITHUB_REF_NAME - GitHub provided environment variable for the branch or tag name that triggered the workflow
- *  GITHUB_BASE_REF - GitHub provided environment variable for the base ref of a PR (if applicable)
- *  GITHUB_REPOSITORY - GitHub provided environment variable for the repository (e.g., owner/repo)
- *  GITHUB_TOKEN - GitHub token for API access
- *  SCAN_MODE - 'diff' or 'full' scan mode
- *  SEMGREP_CONFIG - Semgrep ruleset(s) to use
- *  SEMGREP_TARGETS - Targets to scan (default: current directory)
- *  FAIL_LEVEL - Severity level to fail on (e.g., ERROR, WARNING)
- *  EXTRA_ARGS - Additional arguments to pass to Semgrep
- *
- * Outputs:
- *  - Writes file for reviewdog annotations, reviewdog_input.txt
- *  - Sets GitHub Action outputs
- *    - normalizedBaseline - the resolved baseline ref
- *    - totalFindings - total number of findings
- *    - numErrors - number of ERROR severity findings
- *    - numWarnings - number of WARNING severity findings
- *    - numInfo - number of INFO severity findings
- *    - scanSummary - summary of findings in md format
- *    - configSummary - summary of scan config in md format
- *    - scanStatus - 'success' or 'failure' based on findings and fail level
- */
-
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const fetch = require('node-fetch');
-const { validateEnvVar } = require('../utils/env-helpers');
+const { validateEnvVar } = require('./env-helpers');
 
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
