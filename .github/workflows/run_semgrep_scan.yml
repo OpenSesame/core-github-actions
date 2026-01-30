@@ -80,7 +80,7 @@ on:
         type: string
         default: p/default
       semgrep_targets:
-        description: les/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
+        description: Files/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
         type: string
         default: .
       extra_args:
