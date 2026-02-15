@@ -66,6 +66,51 @@ on:
         value: ${{ jobs.semgrep.outputs.info_count }}
 
   workflow_dispatch:
+    inputs:
+      commit_identifier:
+        description: 'Commit SHA or ref to scan (default: current ref)'
+        type: string
+        required: false
+      cancel_in_progress:
+        description: 'Cancel in-progress run for the same ref'
+        type: boolean
+        default: true
+      semgrep_config:
+        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list. Default is "p/default"
+        type: string
+        default: p/default
+      semgrep_targets:
+        description: Files/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
+        type: string
+        default: .
+      extra_args:
+        description: 'Additional arguments to pass to Semgrep (e.g., --exclude, --timeout). Optional.'
+        type: string
+        required: false
+      semgrep_version:
+        description: 'Semgrep version to install. Default: latest.'
+        type: string
+        required: false
+      fail_severity:
+        description: 'error | warning | info'
+        type: string
+        default: 'error'
+      semgrep_scan_mode:
+        description: What should Semgrep scan? "full | diff | baseline"
+        type: string
+        default: 'full'
+      baseline_ref:
+        description: 'Ref for diff/baseline (e.g., origin/main)'
+        type: string
+        default: 'origin/main'
+      reviewdog_filter_mode:
+        description: What should reviewdog display (does not change what Semgrep scans)? "added | diff_context | nofilter"
+        type: string
+        default: 'nofilter'
+      reviewdog_reporter:
+        description: 'review output: github-pr-review | github-pr-check (only applies if PR context exists, on push github-check is used)'
+        type: string
+        default: 'github-pr-review'
 
 permissions:
   contents: read
@@ -101,7 +146,7 @@ jobs:
 
       - name: Check for open PR (by commit)
         id: pr_check
-        uses: ./.github/actions/pr-open-check
+        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
@@ -125,6 +170,7 @@ jobs:
           fi
 
       - name: Run Semgrep
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
         id: semgrep
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
@@ -135,7 +181,6 @@ jobs:
           SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
           FAIL_LEVEL: ${{ inputs.fail_severity }}
           EXTRA_ARGS: ${{ inputs.extra_args }}
-        run: node scripts/gha-lib/run-semgrep.js
 
       - name: Upload Artifact
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
@@ -265,7 +310,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: ./.github/actions/upsert-pr-comment
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@actions/upsert-pr-comment/1.0.0
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
