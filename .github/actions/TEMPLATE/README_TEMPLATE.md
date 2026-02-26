@@ -52,7 +52,7 @@ Basic usage example:
 ```yaml
 - name: Name for step
   id: <step-id>
-  uses: ./.github/actions/<action-name>
+  uses: OpenSesame/core-github-actions/.github/actions/<action-name>@actions/<action-name>/vX.Y.Z
   with:
     <input-name>: <value>
 ```

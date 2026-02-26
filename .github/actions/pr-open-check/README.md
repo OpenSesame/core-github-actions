@@ -53,7 +53,7 @@ permissions:
 ```yaml
 - name: Check for open PR
   id: pr_check
-  uses: ./.github/actions/pr-check-open
+  uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     commit-identifier: ${{ github.sha }}

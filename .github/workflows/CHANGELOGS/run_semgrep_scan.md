@@ -2,6 +2,12 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Updated workflow to support cross-repository usage by repo qualifying the internal composite action calls.
+
 ## 1.0.0
 
 ### Added

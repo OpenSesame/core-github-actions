@@ -46,7 +46,7 @@ Basic usage example:
 
 ```yaml
 - name: Upsert PR summary comment
-  uses: ./.github/actions/upsert-pr-comment
+  uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@actions/upsert-pr-comment/1.0.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     pr-number: ${{ github.event.pull_request.number }}
