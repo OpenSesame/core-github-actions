@@ -1,0 +1,60 @@
+name: Configure AWS OIDC credentials
+description: Creates a role session name, resolves the AWS role, and configures temporary credentials
+
+inputs:
+  domain:
+    description: Domain used to resolve the AWS role ARN and region
+    required: true
+  environment:
+    description: Target environment used for role resolution and session naming
+    required: true
+  action:
+    description: Operation label used in the AWS role session name
+    required: true
+  run-id:
+    description: GitHub Actions run ID used in the AWS role session name
+    required: true
+  actor:
+    description: GitHub actor used in the AWS role session name
+    required: true
+  ORG_READ_ONLY_SSH_KEY:
+    description: Private SSH key required by the AWS role resolver
+    required: true
+
+outputs:
+  role-arn:
+    description: Resolved AWS role ARN
+    value: ${{ steps.get-role-arn.outputs.role-arn }}
+  region:
+    description: Resolved AWS region
+    value: ${{ steps.get-role-arn.outputs.region }}
+  role-session-name:
+    description: Sanitized AWS role session name
+    value: ${{ steps.create-role-session-name.outputs.name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Create AWS role session name
+      id: create-role-session-name
+      uses: OpenSesame/core-github-actions/.github/actions/create-aws-role-session-name@47e33e390ee69d31c498e32ba01f7e227b6ee864
+      with:
+        action: ${{ inputs.action }}
+        environment: ${{ inputs.environment }}
+        run-id: ${{ inputs.run-id }}
+        actor: ${{ inputs.actor }}
+
+    - name: Resolve AWS role
+      id: get-role-arn
+      uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9
+      with:
+        domain: ${{ inputs.domain }}
+        env: ${{ inputs.environment }}
+        ORG_READ_ONLY_SSH_KEY: ${{ inputs.ORG_READ_ONLY_SSH_KEY }}
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+      with:
+        role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
+        aws-region: ${{ steps.get-role-arn.outputs.region }}
+        role-session-name: ${{ steps.create-role-session-name.outputs.name }}
