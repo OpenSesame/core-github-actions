@@ -2,9 +2,9 @@
 
 The Core Services team uses GitHub Actions to standardize our CI/CD process.
 
-## ❌ Deprecation Notice: Composite Actions
+## ❌ Deprecation Notice: Legacy Composite Actions
 
-An earlier version of the 'Core' team wrote composite actions in this repository to provide a standardized way for teams to build, test, and deploy software.
+An earlier version of the 'Core' team wrote root-level composite actions in this repository to provide a standardized way for teams to build, test, and deploy software.
 These actions have not been actively maintained in years and are considered deprecated by the current Core Services team.
 
 - [build](./build)
@@ -25,7 +25,7 @@ These actions have not been actively maintained in years and are considered depr
 
 ### What we're doing instead
 
-The Core Services team is writing a standard set of reusable workflows defined in this same repository for use by our repos. This approach improves visibility, reduces hidden complexity, and ensures pipelines follow current standards.
+The Core Services team uses reusable workflows for shared CI/CD orchestration so standard pipeline phases remain visible. Narrowly scoped utility composite actions are also acceptable when they live under `.github/actions`, have a cohesive contract, and follow this repository's component versioning policy.
 
 ### Maintenance ownership of the old composite actions
 
@@ -36,7 +36,8 @@ The Core Services team is writing a standard set of reusable workflows defined i
 ### Migration options
 
 - Copy the composite action code directly into your workflow in place of calling the composite action.
-- Consider writing your own reusable GHA or discuss with us ways to make ours more widely adoptable and maintainable.
+- Use a reusable workflow for multi-phase CI/CD orchestration.
+- Use a versioned utility composite action under `.github/actions` when the behavior is cohesive and does not hide standard pipeline phases.
 
 ## ⚠️ Versioning Warning
 
@@ -80,7 +81,7 @@ A complete policy is defined in [VERSIONING.md](VERSIONING.md). Highlights:
 
 ### 🚧 Reusable Workflows (Work in Progress)
 
-The Core Services team is moving away from composite actions and building **reusable workflows** in this repository.
+The Core Services team is moving legacy multi-phase orchestration out of composite actions and into **reusable workflows** in this repository.
 
 At this stage, the reusable workflows support **Terraform-only projects**. They are still evolving and are not yet versioned. While they can be consumed by other repositories, their API is not considered stable. Their contracts remain subject to change until the versioning model expands to reusable workflows. These workflows should be referenced by the `legacy-stable` tag. This allows us to make changes to bring the workflows under versioning safely.
 

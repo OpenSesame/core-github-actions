@@ -1,0 +1,50 @@
+name: Create AWS role session name
+description: Builds an AWS-compatible role session name and sanitizes invalid bytes
+
+inputs:
+  action:
+    description: Operation being performed, such as build, plan, apply, or deploy
+    required: true
+  environment:
+    description: Target environment
+    required: true
+  run-id:
+    description: GitHub Actions run ID
+    required: true
+  actor:
+    description: GitHub actor that triggered the workflow
+    required: true
+
+outputs:
+  name:
+    description: AWS-compatible role session name
+    value: ${{ steps.sanitize.outputs.name }}
+
+runs:
+  using: composite
+  steps:
+    - name: Build and sanitize role session name
+      id: sanitize
+      shell: bash
+      env:
+        SESSION_ACTION: ${{ inputs.action }}
+        SESSION_ENVIRONMENT: ${{ inputs.environment }}
+        SESSION_RUN_ID: ${{ inputs.run-id }}
+        SESSION_ACTOR: ${{ inputs.actor }}
+      run: |
+        set -Eeuo pipefail
+
+        role_session_name="${SESSION_ACTION}-${SESSION_ENVIRONMENT}-Run${SESSION_RUN_ID}-@${SESSION_ACTOR}"
+        sanitized_name="$(
+          export LC_ALL=C
+          printf '%s' "$role_session_name" \
+            | tr -c 'A-Za-z0-9_+=,.@-' '-' \
+            | cut -c 1-64
+        )"
+
+        if ((${#sanitized_name} < 2)); then
+          echo "AWS role session names must contain at least two characters" >&2
+          exit 1
+        fi
+
+        printf 'name=%s\n' "$sanitized_name" >> "$GITHUB_OUTPUT"
