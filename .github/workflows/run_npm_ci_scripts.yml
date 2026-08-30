@@ -1,0 +1,131 @@
+name: NPM CI
+
+on:
+  workflow_call:
+    inputs:
+      working_directory:
+        description: 'The working directory containing the package.json file with the npm ci scripts to run'
+        required: true
+        type: string
+      commit_identifier:
+        description: 'SHA or tag to run ci against'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  run-npm-ci-scripts:
+    name: NPM CI
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+      WORKING_DIRECTORY: ${{ inputs.working_directory }}
+    steps:
+      - name: Change to working directory
+        run: |
+          echo "Changing to working directory: $WORKING_DIRECTORY"
+          cd "$WORKING_DIRECTORY"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_identifier }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version-file: .nvmrc
+          cache: 'npm'
+          registry-url: 'https://npm.pkg.github.com/'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        uses: ./.github/actions/audit-npm
+        id: audit-npm
+        continue-on-error: true
+
+      - name: Build
+        uses: ./.github/actions/run-npm-script
+        id: build
+        with:
+          working_directory: '.'
+          script: build
+
+      - name: Lint
+        uses: ./.github/actions/run-npm-script
+        id: lint
+        with:
+          working_directory: '.'
+          script: lint:check
+
+      - name: Format
+        uses: ./.github/actions/run-npm-script
+        id: format
+        with:
+          working_directory: '.'
+          script: format:check
+
+      - name: Test
+        uses: ./.github/actions/run-npm-script
+        id: test
+        with:
+          working_directory: '.'
+          script: test
+
+      - name: Job Summary
+        if: always()
+        env:
+          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'success' || 'failure' }}
+          AUDIT_SUMMARY: ${{ steps.audit-npm.outputs.gate_summary }}
+          BUILD_STATUS: ${{ steps.build.outputs.status || steps.build.outcome }}
+          LINT_STATUS: ${{ steps.lint.outputs.status || steps.lint.outcome }}
+          FORMAT_STATUS: ${{ steps.format.outputs.status || steps.format.outcome }}
+          TEST_STATUS: ${{ steps.test.outputs.status || steps.test.outcome }}
+        run: |
+          status_emoji () {
+            case "$1" in
+              success)   echo "✅";;
+              failure)   echo "❌";;
+              cancelled) echo "➖";;
+              skipped|""|notpresent) echo "⏩";;
+              *)         echo "❓";;
+            esac
+          }
+
+          {
+            echo "## 🚪 Gate Summary"
+            echo "triggered by: \`${{ github.event_name }}\` on \`${{ github.ref_name }}\`"
+            echo "Run: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+            echo ""
+            echo ""
+            echo "| Audit | Build | Lint | Format | Test |"
+            echo "|:-----:|:-----:|:----:|:------:|:----:|"
+            echo "| $(status_emoji "$AUDIT_STATUS") "$AUDIT_STATUS" | $(status_emoji "$BUILD_STATUS") "$BUILD_STATUS" | $(status_emoji "$LINT_STATUS") "$LINT_STATUS" | $(status_emoji "$FORMAT_STATUS") "$FORMAT_STATUS" | $(status_emoji "$TEST_STATUS") "$TEST_STATUS" |"
+            echo ""
+            echo "$AUDIT_SUMMARY"
+          } > job-summary.md
+          cat job-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set Run Outcome
+        if: ${{ steps.audit-npm.outputs.gate_passed == 'false' || steps.build.outputs.status == 'failure' || steps.lint.outputs.status == 'failure' || steps.format.outputs.status == 'failure' || steps.test.outputs.status == 'failure' }}
+        env:
+          AUDIT_STATUS: ${{ steps.audit-npm.outputs.gate_passed == 'true' && 'passed' || 'failed' }}
+          BUILD_STATUS: ${{ steps.build.outputs.status == 'success' && 'passed' || 'failed' }}
+          LINT_STATUS: ${{ steps.lint.outputs.status == 'success' && 'passed' || 'failed' }}
+          FORMAT_STATUS: ${{ steps.format.outputs.status == 'success' && 'passed' || 'failed' }}
+          TEST_STATUS: ${{ steps.test.outputs.status == 'success' && 'passed' || 'failed' }}
+        run: |
+          echo "❌ One or more gate steps failed:"
+          echo "  Audit Gate: $AUDIT_STATUS"
+          echo "  Build: $BUILD_STATUS"
+          echo "  Lint: $LINT_STATUS"
+          echo "  Format: $FORMAT_STATUS"
+          echo "  Test: $TEST_STATUS"
+          exit 1
