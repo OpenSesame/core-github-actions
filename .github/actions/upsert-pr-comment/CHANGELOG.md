@@ -2,6 +2,12 @@
 
 All notable changes to the **upsert-pr-comment** action are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Bumped `actions/github-script` from `v7` (Node 20, deprecated runtime) to `v9.0.0` (Node 24), pinned by commit SHA with a version comment (CORE-5974).
+
 ## 1.0.0
 
 ### Added
