@@ -46,7 +46,7 @@ runs:
 
     - name: Resolve AWS role
       id: get-role-arn
-      uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9 # main (2026-02-16) — ahead of the "v2" tag, which is stale (see PR notes)
+      uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9 # v2.0.2
       with:
         domain: ${{ inputs.domain }}
         env: ${{ inputs.environment }}
