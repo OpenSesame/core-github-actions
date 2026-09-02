@@ -78,7 +78,7 @@ jobs:
 
     steps:
       - id: get-role-arn
-        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        uses: OpenSesame/gha-oidc-access/get-role-arn@1417c02442b956045a6930e271ce134faf8e09e6 # v2
         with:
           domain: ${{ inputs.oidc-domain }}
           env: ${{ inputs.environment }}

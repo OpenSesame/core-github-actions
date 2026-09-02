@@ -54,7 +54,7 @@ jobs:
 
     steps:
       - id: get-role-arn
-        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        uses: OpenSesame/gha-oidc-access/get-role-arn@1417c02442b956045a6930e271ce134faf8e09e6 # v2
         with:
           domain: ${{ inputs.oidc-domain }}
           env: dev
@@ -94,7 +94,7 @@ jobs:
           npm run build
 
       - name: Build And Apply Feature Branch to Dev
-        uses: opensesame/core-github-actions/build-apply@v1
+        uses: opensesame/core-github-actions/build-apply@50b11644cf5241af9f04368f38baf7b1eb02eb54 # v1
         id: build_apply
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
@@ -131,7 +131,7 @@ jobs:
           aws ecs update-service --cluster $ECR_CLUSTER --service $ECS_SERVICE --force-new-deployment
 
       - name: Deploy to Dev
-        uses: opensesame/core-github-actions/deploy@v1
+        uses: opensesame/core-github-actions/deploy@50b11644cf5241af9f04368f38baf7b1eb02eb54 # v1
         with:
           github_ssh_key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
           terraform_root: ${{ inputs.terraform-root }}
