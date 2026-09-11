@@ -1,9 +1,17 @@
+# Build-Publish Composite Action
+
 ## ❌ Deprecation Notice
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
 If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+Known Consumers - Audited Sept 2026
 
+* [core-build-library](https://github.com/OpenSesame/core-build-library)
+* [core-repo-template](https://github.com/OpenSesame/core-repo-template)
+* [identity-messages](https://github.com/OpenSesame/identity-messages)
+* [player-messages](https://github.com/OpenSesame/player-messages)
+  
 ### Overview
 
 The publish composite action builds a library and publishes it to the configured registry.

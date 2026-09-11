@@ -1,7 +1,6 @@
 # Compiled output
 dist/
 **/dist/
-build/
 **/build/
 
 # Dependencies
