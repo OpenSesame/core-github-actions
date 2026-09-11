@@ -37,7 +37,7 @@ runs:
   steps:
     - name: Create AWS role session name
       id: create-role-session-name
-      uses: OpenSesame/core-github-actions/.github/actions/create-aws-role-session-name@47e33e390ee69d31c498e32ba01f7e227b6ee864
+      uses: OpenSesame/core-github-actions/.github/actions/create-aws-role-session-name@47e33e390ee69d31c498e32ba01f7e227b6ee864 # actions/create-aws-role-session-name/1.0.0
       with:
         action: ${{ inputs.action }}
         environment: ${{ inputs.environment }}
@@ -46,14 +46,14 @@ runs:
 
     - name: Resolve AWS role
       id: get-role-arn
-      uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9
+      uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9 # v2.0.2
       with:
         domain: ${{ inputs.domain }}
         env: ${{ inputs.environment }}
         ORG_READ_ONLY_SSH_KEY: ${{ inputs.ORG_READ_ONLY_SSH_KEY }}
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c
+      uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
       with:
         role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
         aws-region: ${{ steps.get-role-arn.outputs.region }}

@@ -73,20 +73,20 @@ jobs:
 
     steps:
       - id: get-role-arn
-        uses: OpenSesame/gha-oidc-access/get-role-arn@v2
+        uses: OpenSesame/gha-oidc-access/get-role-arn@1417c02442b956045a6930e271ce134faf8e09e6 # v2
         with:
           domain: ${{ inputs.oidc-domain }}
           env: ${{ inputs.environment }}
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
           role-session-name: ${{ inputs.terraform-workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}
           aws-region: ${{ steps.get-role-arn.outputs.region }}
 
       - name: Checkout Actions
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.commit-identifier }}
 
@@ -101,7 +101,7 @@ jobs:
           chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: false # required to access terraform outputs after apply
@@ -191,7 +191,7 @@ jobs:
       - name: Upload Plans to Artifact
         id: plan-artifact
         if: ${{ inputs.write-artifact }}
-        uses: actions/upload-artifact@v4.4.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{steps.set-plan-artifact-name.outputs.artifact_name}}
           path: terraform/${{ inputs.environment }}/tfplan.txt
