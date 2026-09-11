@@ -1,8 +1,16 @@
+# Cleanup Composite Action
+
 ## ❌ Deprecation Notice
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
 If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+
+Known Consumers - Audited Sept 2026
+
+* [identity-saml-test-idp](https://github.com/OpenSesame/identity-saml-test-idp)
+* [player-ingestion](https://github.com/OpenSesame/player-ingestion)
+* [player-xapi-statement-router](https://github.com/OpenSesame/player-xapi-statement-router)
 
 ### Overview
 

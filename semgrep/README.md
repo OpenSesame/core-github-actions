@@ -1,25 +1,34 @@
+# Semgrep CE Scan Composite Action
+
+This action runs Semgrep security scanning with configurable options and reporting capabilities.
+
 ## ❌ Deprecation Notice
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
-If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+We suggest consumers switch over to the reusable workflow for [semgrep scan](https://github.com/OpenSesame/.github/blob/main/.github/workflows/semgrep-scan.yml) so it can be run in parallel with your other jobs.
 
-# Semgrep CE Scan Action
+Known Consumers - Audited Sept 2026
 
-This action runs Semgrep security scanning with configurable options and reporting capabilities.
+* [identity-idp-api](https://github.com/OpenSesame/identity-idp-api)
+* [identity-catalog-okta](https://github.com/OpenSesame/identity-catalog-okta)
+* [core-orchestrator](https://github.com/OpenSesame/core-orchestrator)
+* [core-okta-widget](https://github.com/OpenSesame/core-okta-widget)
+* [core-mfe-error-page](https://github.com/OpenSesame/core-mfe-error-page)
+* [core-pii-scrubber](https://github.com/OpenSesame/core-pii-scrubber)
 
 ## Features
 
-- **Configurable scan modes**: diff, full, or baseline scanning
-- **Multiple severity levels**: error, warning, info
-- **Reviewdog integration**: Inline PR comments for findings
-- **PR summary comments**: Automated PR comments with scan results
-- **Flexible configuration**: Support for custom Semgrep rulesets
+* **Configurable scan modes**: diff, full, or baseline scanning
+* **Multiple severity levels**: error, warning, info
+* **Reviewdog integration**: Inline PR comments for findings
+* **PR summary comments**: Automated PR comments with scan results
+* **Flexible configuration**: Support for custom Semgrep rulesets
 
 ## Inputs
 
 | Input | Description | Required | Default |
-|-------|-------------|----------|---------|
+| ----- | ----------- | -------- | ------- |
 | `branch_name` | The name of the branch where lint is running | No | - |
 | `semgrep_config` | Rulesets to run with Semgrep | No | `p/default` |
 | `fail_severity` | Severity level that causes the action to fail | No | `error` |
@@ -30,7 +39,7 @@ This action runs Semgrep security scanning with configurable options and reporti
 ## Outputs
 
 | Output | Description |
-|--------|-------------|
+| ------ | ----------- |
 | `total_findings` | Total number of findings from the scan |
 | `error_count` | Number of error-level findings |
 | `warning_count` | Number of warning-level findings |
@@ -81,30 +90,33 @@ This action runs Semgrep security scanning with configurable options and reporti
 ## Scan Modes
 
 ### Diff Mode (Default)
-- Scans only changed files in PRs
-- Compares against the base branch
-- Fastest option for PR workflows
+
+* Scans only changed files in PRs
+* Compares against the base branch
+* Fastest option for PR workflows
 
 ### Full Mode
-- Scans entire codebase
-- Comprehensive security review
-- Best for main branch or release workflows
+
+* Scans entire codebase
+* Comprehensive security review
+* Best for main branch or release workflows
 
 ### Baseline Mode
-- Scans against a baseline commit (usually main)
-- Good for tracking security debt
-- Shows new issues since baseline
+
+* Scans against a baseline commit (usually main)
+* Good for tracking security debt
+* Shows new issues since baseline
 
 ## Severity Levels
 
-- **error**: High-severity security issues that should block deployment
-- **warning**: Medium-severity issues that should be reviewed
-- **info**: Low-severity issues or informational findings
+* **error**: High-severity security issues that should block deployment
+* **warning**: Medium-severity issues that should be reviewed
+* **info**: Low-severity issues or informational findings
 
 ## Reviewdog Reporters
 
-- **github-pr-review**: Inline comments on specific lines in PR
-- **github-pr-check**: Summary in PR checks without inline comments
+* **github-pr-review**: Inline comments on specific lines in PR
+* **github-pr-check**: Summary in PR checks without inline comments
 
 ## Permissions Required
 
@@ -150,7 +162,7 @@ jobs:
 
 ## Notes
 
-- The action automatically installs Semgrep version 1.124.0
-- Git history is required for diff mode scanning
-- The action will fail if error-level findings are detected (configurable)
-- PR comments are automatically updated on subsequent runs 
+* The action automatically installs Semgrep version 1.124.0
+* Git history is required for diff mode scanning
+* The action will fail if error-level findings are detected (configurable)
+* PR comments are automatically updated on subsequent runs
