@@ -2,7 +2,7 @@
 
 All notable changes to the run-semgrep GitHub Action will be documented in this file.
 
-## Unreleased
+## 1.0.1
 
 ### Changed
 
