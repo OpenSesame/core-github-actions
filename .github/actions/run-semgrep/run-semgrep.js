@@ -305,7 +305,7 @@ async function main() {
     fs.appendFileSync(githubOutput, `totalFindings=${metrics.totalFindings}\n`);
     fs.appendFileSync(githubOutput, `numErrors=${metrics.numErrors}\n`);
     fs.appendFileSync(githubOutput, `numWarnings=${metrics.numWarnings}\n`);
-    fs.appendFileSync(githubOutput, `numInfo=${metrics.numInfo}\n`);
+    fs.appendFileSync(githubOutput, `numInfos=${metrics.numInfo}\n`);
   }
 }
 

@@ -1,6 +1,16 @@
-# Changelog for run-semgrep Composite Action
+# Changelog for run-semgrep GitHub Action
 
-All notable changes to the run-semgrep composite GitHub Action will be documented in this file.
+All notable changes to the run-semgrep GitHub Action will be documented in this file.
+
+## 1.0.1
+
+### Changed
+
+- Run the action directly on the Node.js 24 action runtime while preserving its environment and output contracts
+
+### Fixed
+
+- Write the info finding count to the declared `numInfos` output
 
 ## 1.0.0 - Initial Release
 

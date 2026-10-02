@@ -7,6 +7,7 @@ Runs a Semgrep scan normalizing the baseline for diff scans depending on push vs
 ## Scope/Limitations
 
 - Supports both push and pull request events.
+- Runs on the GitHub Actions Node.js 24 runtime.
 - Requires Semgrep to be installed and available in the runner environment.
 - Expects environment variables for configuration (see below).
 
@@ -59,7 +60,7 @@ Along with writing files for reviewdog annotations and inputs, this action provi
 | `totalFindings`      | Total number of findings                            |
 | `numErrors`          | Number of ERROR severity findings                   |
 | `numWarnings`        | Number of WARNING severity findings                 |
-| `numInfo`            | Number of INFO severity findings                    |
+| `numInfos`           | Number of INFO severity findings                    |
 
 ## 🚀 Usage
 
