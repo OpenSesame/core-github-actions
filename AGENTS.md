@@ -6,6 +6,7 @@ the repository map, consumer guidance, and migration context.
 
 ## Commands
 
+- Use Node.js 24.15.0 or newer in the Node.js 24 release line: `nvm use`
 - Install the pinned npm version: `npm install --global npm@12.1.0`
 - Install dependencies: `npm ci`
 - Run all non-mutating checks: `npm run ci`

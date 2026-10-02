@@ -67,6 +67,7 @@ There are recommended vscode extensions and settings included in the project.
 To get started:
 
 - install semgrep globally `brew install semgrep`
+- use Node.js 24.15.0 or newer in the Node.js 24 release line (`nvm use`)
 - install the pinned npm version `npm install --global npm@12.1.0`
 - install project dependencies `npm ci`
 
