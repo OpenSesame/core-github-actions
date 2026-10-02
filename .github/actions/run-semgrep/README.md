@@ -7,6 +7,7 @@ Runs a Semgrep scan normalizing the baseline for diff scans depending on push vs
 ## Scope/Limitations
 
 - Supports both push and pull request events.
+- Runs on the GitHub Actions Node.js 24 runtime.
 - Requires Semgrep to be installed and available in the runner environment.
 - Expects environment variables for configuration (see below).
 
