@@ -60,17 +60,25 @@ The version declared in a PR label must match both:
 
 PRs that modify a versioned component must include a label per component modified.
 
-**Format**
+**Formats**
 
-`version:<component-name>/X.Y.Z`
+- Actions: `v:a/<component-name>/X.Y.Z`
+- Workflows: `v:wf/<component-name>/X.Y.Z`
 
-- `<component-name>` is the folder name under `./github`
+- `a` identifies a component under `.github/actions`
+- `wf` identifies a component under `.github/workflows`
+- `<component-name>` is the action directory or workflow filename without `.yml`
 - `X.Y.Z` is the semantic version being released for that component
+
+The compact component type is used only in PR labels to stay within GitHub's
+50-character label-name limit. Generated tags retain the canonical `actions/`
+or `workflows/` namespace.
 
 **Example**
 
 ```text
-version:actions/pr-open-check/1.1.0
+v:a/pr-open-check/1.1.0
+v:wf/run_semgrep_scan/1.0.0
 ```
 
 Multiple version labels are allowed on a PR.
@@ -82,7 +90,7 @@ Use an untracked version label only when a PR modifies files outside of any vers
 **Format**
 
 ```text
-version:untracked
+v:untracked
 ```
 
 Rules for untracked:
@@ -98,7 +106,7 @@ Rules for untracked:
 A PR will fail automated validation if any of the following are true:
 
 - The PR does not have a version label
-- There are multiple version labels and one of them is version:untracked
+- There are multiple version labels and one of them is `v:untracked`
 - A version label uses an invalid component name
 - X.Y.Z version does not appear in the component’s CHANGELOG.md
 - There are duplicate or malformed version labels
@@ -157,16 +165,16 @@ Minimum requirements:
 
 - The header must contain `## X.Y.Z` exactly (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
-  (version:{component-name}/X.Y.Z).
+  (`v:a/{component-name}/X.Y.Z` or `v:wf/{component-name}/X.Y.Z`).
 
 The rest of the content (sections and bullets) is for humans, but strongly recommended.
 
 ### Interaction with Labels
 
-For versioned releases, A label like `version:actions/pr-open-check/1.2.0`
+For versioned releases, a label like `v:a/pr-open-check/1.2.0`
 requires that the `CHANGELOG.md` file under `.github/actions/pr-open-check/` contain a `## 1.2.0` entry.
 
-A label like `version:workflows/run_semgrep_scan/1.0.0` requires a `run_semgrep_scan.md` file under `.github/workflows/CHANGELOGS` containing a `## 1.0.0` entry.
+A label like `v:wf/run_semgrep_scan/1.0.0` requires a `run_semgrep_scan.md` file under `.github/workflows/CHANGELOGS` containing a `## 1.0.0` entry.
 
 Validation will fail if:
 

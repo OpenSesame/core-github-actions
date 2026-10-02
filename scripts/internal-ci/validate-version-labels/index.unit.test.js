@@ -3,6 +3,7 @@ const {
   getVersionLabelArray,
   getInvalidVersionLabels,
   getComponentVersionLabels,
+  expandComponentVersionLabel,
   parseComponentVersionLabels,
   getInvalidComponents,
   getMissingChangelogs,
@@ -28,6 +29,7 @@ describe('getVersionLabelArray', () => {
       `${versionLabelPrefix}abc`,
       'enhancement',
       'version',
+      'version:actions/old-format/1.0.0',
     ];
     const versionLabels = getVersionLabelArray(labels);
     expect(versionLabels).toEqual([
@@ -41,14 +43,15 @@ describe('getVersionLabelArray', () => {
 const versionLabels = [
   `${versionLabelPrefix}`, //incomplete version label
   `${untrackedLabel}`, // valid untracked label
-  `${versionLabelPrefix}valid/version/1.0.0`, // valid label
+  `${versionLabelPrefix}a/valid-component/1.0.0`, // valid action label
+  `${versionLabelPrefix}wf/valid-workflow/2.0.0`, // valid workflow label
   'invalid-label', // completely invalid label
   `${versionLabelPrefix}/1.0.0`, // missing component info
-  `${versionLabelPrefix}invalid/1.0.0`, // doesn't follow component-type/component-name format
-  `${versionLabelPrefix}invalid/version`, // missing version
-  `${versionLabelPrefix}invalid/version/1.0`, // not full semver
-  `${versionLabelPrefix}invalid/version/1.0.0-extra`, // don't support build metadata
-  `${versionLabelPrefix}invalid/version/v1.0.0`, // has 'v' prefix
+  `${versionLabelPrefix}invalid/component/1.0.0`, // invalid component type alias
+  `${versionLabelPrefix}a/invalid-component`, // missing version
+  `${versionLabelPrefix}a/invalid-component/1.0`, // not full semver
+  `${versionLabelPrefix}a/invalid-component/1.0.0-extra`, // don't support build metadata
+  `${versionLabelPrefix}a/invalid-component/v1.0.0`, // has 'v' prefix
 ];
 
 describe('getInvalidVersionLabels', () => {
@@ -58,11 +61,11 @@ describe('getInvalidVersionLabels', () => {
       `${versionLabelPrefix}`,
       'invalid-label',
       `${versionLabelPrefix}/1.0.0`,
-      `${versionLabelPrefix}invalid/1.0.0`,
-      `${versionLabelPrefix}invalid/version`,
-      `${versionLabelPrefix}invalid/version/1.0`,
-      `${versionLabelPrefix}invalid/version/1.0.0-extra`,
-      `${versionLabelPrefix}invalid/version/v1.0.0`,
+      `${versionLabelPrefix}invalid/component/1.0.0`,
+      `${versionLabelPrefix}a/invalid-component`,
+      `${versionLabelPrefix}a/invalid-component/1.0`,
+      `${versionLabelPrefix}a/invalid-component/1.0.0-extra`,
+      `${versionLabelPrefix}a/invalid-component/v1.0.0`,
     ]);
   });
 });
@@ -70,7 +73,19 @@ describe('getInvalidVersionLabels', () => {
 describe('getComponentVersionLabels', () => {
   it('should extract valid component version labels', () => {
     const componentLabels = getComponentVersionLabels(versionLabels);
-    expect(componentLabels).toEqual([`${versionLabelPrefix}valid/version/1.0.0`]);
+    expect(componentLabels).toEqual([
+      `${versionLabelPrefix}a/valid-component/1.0.0`,
+      `${versionLabelPrefix}wf/valid-workflow/2.0.0`,
+    ]);
+  });
+});
+
+describe('expandComponentVersionLabel', () => {
+  it.each([
+    [`${versionLabelPrefix}a/example-action/1.2.3`, 'actions/example-action/1.2.3'],
+    [`${versionLabelPrefix}wf/example-workflow/2.3.4`, 'workflows/example-workflow/2.3.4'],
+  ])('should expand %s to %s', (label, expectedTag) => {
+    expect(expandComponentVersionLabel(label)).toBe(expectedTag);
   });
 });
 
@@ -78,13 +93,13 @@ describe('getComponentVersionLabels', () => {
 describe('parseComponentVersionLabels', () => {
   it('should parse component version labels into a map', () => {
     const componentLabels = [
-      `${versionLabelPrefix}typeA/componentA/1.2.3`,
-      `${versionLabelPrefix}typeA/componentB/2.3.4`,
+      `${versionLabelPrefix}a/component-a/1.2.3`,
+      `${versionLabelPrefix}wf/component-b/2.3.4`,
     ];
     const componentVersionMap = parseComponentVersionLabels(componentLabels);
     expect(componentVersionMap).toEqual({
-      'typeA/componentA': '1.2.3',
-      'typeA/componentB': '2.3.4',
+      'actions/component-a': '1.2.3',
+      'workflows/component-b': '2.3.4',
     });
   });
 });

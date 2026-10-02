@@ -28,9 +28,10 @@ describe('get-version-tags main module integration', () => {
     fs.unlinkSync(outputFile);
   });
 
-  it('outputs correct values when component version labels are provided', () => {
-    const componentLabel = `${versionLabelPrefix}actions/pr-open-check/1.0.0`;
-    const labelInput = `${componentLabel}`;
+  it('expands compact component version labels into canonical tags', () => {
+    const actionLabel = `${versionLabelPrefix}a/pr-open-check/1.0.0`;
+    const workflowLabel = `${versionLabelPrefix}wf/tf_validate_plan_single_root/0.0.1`;
+    const labelInput = `${actionLabel}\n${workflowLabel}`;
     const unique = Date.now() + Math.random();
     const labelFile = path.join(tmp, `labels-${unique}.txt`);
     const outputFile = path.join(tmp, `gha_output-${unique}.txt`);
@@ -42,7 +43,9 @@ describe('get-version-tags main module integration', () => {
     });
     const outputs = parseGithubOutput(outputFile);
     expect(outputs.hasUntracked).toBe('false');
-    expect(outputs.componentTags).toBe('actions/pr-open-check/1.0.0');
+    expect(outputs.componentTags).toBe(
+      'actions/pr-open-check/1.0.0,workflows/tf_validate_plan_single_root/0.0.1'
+    );
     expect(result.status).toBe(0);
     fs.unlinkSync(labelFile);
     fs.unlinkSync(outputFile);

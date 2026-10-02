@@ -19,7 +19,7 @@ the repository map, consumer guidance, and migration context.
 - Preserve workflow and action inputs, outputs, permissions, and environment contracts unless a
   breaking change is explicitly requested.
 - Add the appropriate version label and update component changelogs when required by
-  [VERSIONING.md](VERSIONING.md). Use `version:untracked` only for changes outside versioned
+  [VERSIONING.md](VERSIONING.md). Use `v:untracked` only for changes outside versioned
   component behavior.
 - Run `npm run ci` before handing off changes.
 

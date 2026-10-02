@@ -25,7 +25,7 @@
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "npm development dependencies",
       "groupSlug": "npm-dev-dependencies",
-      "addLabels": ["dependencies", "version:untracked"],
+      "addLabels": ["dependencies", "v:untracked"],
       "automerge": true,
       "minimumReleaseAge": "7 days"
     }

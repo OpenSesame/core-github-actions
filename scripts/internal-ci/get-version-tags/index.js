@@ -10,9 +10,9 @@
 const fs = require('fs');
 const {
   getLabelArray,
-  versionLabelPrefix,
   untrackedLabel,
   componentVersionRegEx,
+  expandComponentVersionLabel,
 } = require('../validate-version-labels/index.js');
 
 // Main entry
@@ -26,7 +26,7 @@ if (require.main === module) {
 
   const componentTags = labels
     .filter(label => componentVersionRegEx.test(label))
-    .map(label => label.slice(versionLabelPrefix.length));
+    .map(expandComponentVersionLabel);
 
   // write outputs for use in later steps
   const githubOutput = process.env.GITHUB_OUTPUT;

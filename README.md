@@ -76,7 +76,7 @@ A complete policy is defined in [VERSIONING.md](VERSIONING.md). Highlights:
 
 - Versioned components use namespaced tags: actions/{component-name}/vX.Y.Z
 - PRs modifying a component must include a version label
-- version:untracked is allowed for non-behavior changes
+- `v:untracked` is allowed for non-behavior changes
 - Version/changelog validation runs automatically on PRs
 - Tags are automatically created when changes merge into main
 
@@ -101,6 +101,6 @@ Each action:
 - Has its own README.md
 - Maintains a component-level CHANGELOG.md
 - Must follow the repository-wide versioning rules in VERSIONING.md
-- Requires version labels on PRs (e.g., version:pr-open-check/1.0.0)
+- Requires version labels on PRs (e.g., `v:a/pr-open-check/1.0.0`)
 
 Versioning ensures that consumers can safely upgrade without unexpected breaking changes.

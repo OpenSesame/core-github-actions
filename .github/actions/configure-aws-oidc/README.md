@@ -108,4 +108,4 @@ The action pins each dependency to an immutable commit SHA:
 
 ## Versioning
 
-The initial release uses the PR label `version:actions/configure-aws-oidc/1.0.0` and the namespaced tag `actions/configure-aws-oidc/1.0.0`.
+The initial release uses the PR label `v:a/configure-aws-oidc/1.0.0` and the namespaced tag `actions/configure-aws-oidc/1.0.0`.
