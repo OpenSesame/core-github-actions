@@ -2,6 +2,19 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 1.0.3
+
+### Changed
+
+- Pinned the `run-semgrep` action to the immutable SHA from its Node 24 upgrade.
+- Removed redundant Node setup and npm dependency installation; the JavaScript action uses the
+  GitHub Actions Node 24 runtime and has no npm dependencies.
+
+### Fixed
+
+- Read the action's declared `numInfos` and `scanSummary` outputs throughout the workflow.
+- Hardened Semgrep installation and job-summary shell handling so values remain intact.
+
 ## 1.0.2
 
 ### Changed

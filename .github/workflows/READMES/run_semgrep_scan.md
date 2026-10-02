@@ -38,7 +38,7 @@ See the workflow file for full input documentation and defaults.
 
 1. Checks out the code at the specified commit or ref.
 2. Checks for an open PR and normalizes settings if one is found.
-3. Installs dependencies and Semgrep (customizable version).
+3. Installs Semgrep (customizable version).
 4. Runs Semgrep with the provided configuration and scan mode.
 5. Summarizes findings and posts results to the Actions UI, Job Summary, and if applicable, PR comments and Reviewdog review.
 6. Fails the workflow if findings meet or exceed the configured severity threshold.

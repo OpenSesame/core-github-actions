@@ -130,9 +130,9 @@ jobs:
       total_findings: ${{ steps.semgrep.outputs.totalFindings }}
       error_count: ${{ steps.semgrep.outputs.numErrors }}
       warning_count: ${{ steps.semgrep.outputs.numWarnings }}
-      info_count: ${{ steps.semgrep.outputs.numInfo }}
+      info_count: ${{ steps.semgrep.outputs.numInfos }}
       scan_status: ${{ steps.semgrep.outputs.scanStatus }}
-      scan_md_summary: ${{ steps.semgrep.outputs.scanFindings }}
+      scan_md_summary: ${{ steps.semgrep.outputs.scanSummary }}
       config_md_summary: ${{ steps.semgrep.outputs.configSummary }}
       normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
 
@@ -151,26 +151,18 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
 
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-
-      - name: Install dependencies
-        run: npm ci --omit=dev
-
       - name: Install Semgrep
         env:
           SEMGREP_VERSION: ${{ inputs.semgrep_version }}
         run: |
           if [ -n "$SEMGREP_VERSION" ]; then
-            python3 -m pip install semgrep==$SEMGREP_VERSION
+            python3 -m pip install "semgrep==$SEMGREP_VERSION"
           else
             python3 -m pip install semgrep
           fi
 
       - name: Run Semgrep
-        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@104e41467f4316a5f92518debe4959e67b7585ff # PR #116
         id: semgrep
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
@@ -257,13 +249,12 @@ jobs:
                 echo "- **PR context**: None for this push; PR-only input settings were overridden."
               fi
             fi
-          } >> $GITHUB_STEP_SUMMARY
 
-          echo -e "${SCAN_SUMMARY}" >> $GITHUB_STEP_SUMMARY
-          echo -e "${CONFIG_SUMMARY}" >> $GITHUB_STEP_SUMMARY
-
-          echo "- **Review filter**: \`${FILTER_MODE}\`"
-          echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+            echo -e "${SCAN_SUMMARY}"
+            echo -e "${CONFIG_SUMMARY}"
+            echo "- **Review filter**: \`${FILTER_MODE}\`"
+            echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate PR comment body
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
@@ -275,7 +266,7 @@ jobs:
           TOTAL_FINDINGS: ${{ steps.semgrep.outputs.totalFindings }}
           NUM_ERRORS: ${{ steps.semgrep.outputs.numErrors }}
           NUM_WARNINGS: ${{ steps.semgrep.outputs.numWarnings }}
-          NUM_INFO: ${{ steps.semgrep.outputs.numInfo }}
+          NUM_INFO: ${{ steps.semgrep.outputs.numInfos }}
           CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
         with:
           result-encoding: string
