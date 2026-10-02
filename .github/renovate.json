@@ -1,5 +1,8 @@
 {
   "dependencyDashboard": true,
   "dependencyDashboardApproval": true,
-  "dependencyDashboardAutoclose": true
+  "dependencyDashboardAutoclose": true,
+  "minimumReleaseAge": "7 days",
+  "minimumReleaseAgeBehaviour": "timestamp-required",
+  "internalChecksFilter": "strict"
 }

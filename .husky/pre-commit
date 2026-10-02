@@ -4,7 +4,7 @@ npm run format:fix
 
 #stash unstaged changes, run tests and checks
 git stash -k -u || { echo "Stash failed"; exit 1; }
-npm audit
+npm run audit
 npm test
 npm run lint:check
 npm run format:check

@@ -29,7 +29,7 @@ jobs:
         run: npm ci
 
       - name: Dependency Audit
-        run: npm audit
+        run: npm run audit
 
       - name: Test
         run: npm test
