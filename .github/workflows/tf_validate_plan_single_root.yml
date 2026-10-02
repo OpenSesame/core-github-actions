@@ -63,7 +63,7 @@ env:
 jobs:
   TF-Validate-Plan:
     name: Terraform Validate and Plan ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: ${{ inputs.environment }}
     defaults: # runs all steps in this directory
       run:

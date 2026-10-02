@@ -20,7 +20,7 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.1.0
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
@@ -63,6 +63,7 @@ The release-tag job only runs when the caller's event is a merged pull request o
 the same repository share one concurrency group.
 
 The workflow requests `id-token: write`, `contents: write`, and `pull-requests: write` permissions.
+Its direct and composed jobs run on Ubuntu 24.04.
 
 ## Contribution
 

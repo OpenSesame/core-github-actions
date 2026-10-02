@@ -2,10 +2,11 @@
 
 All notable changes to the **run_sonar_scan** callable workflow are documented in this file.
 
-## 1.0.1
+## 1.1.0
 
 ### Changed
 
+- Pinned the workflow job to Ubuntu 24.04 for a stable, versioned runner contract.
 - Bumped `SonarSource/sonarqube-scan-action` from `v8.2.1` to `v8.3.0`.
 
 ## 1.0.0

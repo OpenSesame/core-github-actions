@@ -20,7 +20,7 @@ optionally upload the rendered plan as an artifact.
 ```yaml
 jobs:
   terraform-plan:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@workflows/tf_validate_plan_single_root/0.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@workflows/tf_validate_plan_single_root/0.1.0
     with:
       environment: dev
       oidc-domain: core
@@ -80,7 +80,7 @@ When enabled, artifact upload looks for `terraform/<environment>/tfplan.txt`, re
 8. Optionally uploads the rendered plan text for seven days.
 
 Runs for the same repository and environment share a concurrency group. The job requests
-`id-token: write` and `contents: read` permissions.
+`id-token: write` and `contents: read` permissions and runs on Ubuntu 24.04.
 
 ## Contribution
 

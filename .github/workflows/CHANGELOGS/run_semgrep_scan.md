@@ -2,6 +2,12 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 1.1.0
+
+### Changed
+
+- Pinned the workflow job to Ubuntu 24.04 for a stable, versioned runner contract.
+
 ## 1.0.4
 
 ### Changed
