@@ -2,6 +2,12 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.2.0
+
+### Changed
+
+- Updated workflow jobs from Ubuntu 24.04 to Ubuntu 26.04.
+
 ## 0.1.0
 
 ### Changed

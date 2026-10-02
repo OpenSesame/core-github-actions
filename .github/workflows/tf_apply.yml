@@ -51,7 +51,7 @@ env:
 
 jobs:
   Summary:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Markdown Summary
         run: |
@@ -67,7 +67,7 @@ jobs:
 
   TF-Apply:
     name: Terraform Apply
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     environment: ${{ inputs.environment}}
     defaults:
       run:

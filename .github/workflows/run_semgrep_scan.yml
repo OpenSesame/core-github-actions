@@ -125,7 +125,7 @@ concurrency:
 jobs:
   semgrep:
     name: Run Semgrep
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     outputs:
       total_findings: ${{ steps.semgrep.outputs.totalFindings }}

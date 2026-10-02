@@ -47,7 +47,7 @@ permissions:
 
 jobs:
   Set-Release-Tag:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
     outputs:
       release-tag: ${{ steps.releaseTag.outputs.release-tag }}
@@ -108,7 +108,7 @@ jobs:
   CreateRelease:
     name: Create New Release
     needs: [Set-Release-Tag, DeployProd]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout Actions
@@ -126,7 +126,7 @@ jobs:
 
   ReportStatus:
     name: Report Status on PR
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs: [DeployDev, DeployStage, DeployProd, CreateRelease]
     if: always()
     env:
