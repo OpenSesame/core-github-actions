@@ -44,7 +44,7 @@ permissions:
 
 jobs:
   trigger:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     outputs:
       downstream_run_id: ${{ steps.run.outputs.downstream_run_id }}
       downstream_html_url: ${{ steps.run.outputs.downstream_html_url }}

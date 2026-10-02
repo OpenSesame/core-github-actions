@@ -19,7 +19,7 @@ the resulting run, waits for completion, and exposes the downstream run details 
 ```yaml
 jobs:
   downstream:
-    uses: OpenSesame/core-github-actions/.github/workflows/trigger_workflow_and_wait.yml@workflows/trigger_workflow_and_wait/0.1.0
+    uses: OpenSesame/core-github-actions/.github/workflows/trigger_workflow_and_wait.yml@workflows/trigger_workflow_and_wait/0.2.0
     with:
       owner: OpenSesame
       repo: example-service
@@ -68,7 +68,7 @@ jobs:
 Run discovery selects the newest run ID that appears after dispatch. The completion polling loop has
 no independent maximum duration; it waits as long as the downstream run remains incomplete. The
 workflow requests `id-token: write` and `contents: read` permissions in the caller repository.
-The workflow job runs on Ubuntu 24.04.
+The workflow job runs on Ubuntu 26.04.
 
 ## Contribution
 

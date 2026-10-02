@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.2.0
+
+### Changed
+
+- Updated the workflow's jobs and composed environment-deployment chain from Ubuntu 24.04 to
+  Ubuntu 26.04.
+
 ## 0.1.0
 
 ### Changed

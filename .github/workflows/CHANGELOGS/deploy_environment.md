@@ -2,6 +2,12 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.2.0
+
+### Changed
+
+- Updated the composed Terraform plan and apply jobs from Ubuntu 24.04 to Ubuntu 26.04.
+
 ## 0.1.0
 
 ### Changed

@@ -143,7 +143,7 @@ permissions:
 
 jobs:
   security:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

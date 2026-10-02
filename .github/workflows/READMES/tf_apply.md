@@ -19,7 +19,7 @@ GitHub environment and Terraform workspace.
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.1.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.2.0
     with:
       environment: dev
       oidc-domain: core
@@ -65,7 +65,7 @@ jobs:
 The apply job sets `TF_VAR_IACDeploymentRef` to the current Actions run URL and
 `TF_VAR_release_name` to `release-tag`. Runs for the same repository and environment share a
 concurrency group. The workflow requests `id-token: write` and `contents: read` permissions.
-Both workflow jobs run on Ubuntu 24.04.
+Both workflow jobs run on Ubuntu 26.04.
 
 ## Contribution
 

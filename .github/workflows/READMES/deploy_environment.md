@@ -20,7 +20,7 @@ successful plan.
 ```yaml
 jobs:
   deploy-dev:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.1.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.2.0
     with:
       environment: dev
       commit-identifier: ${{ github.sha }}
@@ -61,7 +61,7 @@ jobs:
 
 Runs for the same repository and environment share a concurrency group. The workflow declares
 `id-token: write` and `contents: read` permissions for its called workflows.
-The composed plan and apply jobs run on Ubuntu 24.04.
+The composed plan and apply jobs run on Ubuntu 26.04.
 
 ## Contribution
 
