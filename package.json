@@ -1,6 +1,8 @@
 {
   "name": "core-github-actions",
   "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@11.20.0",
   "description": "Core Team's reusable GitHub Actions",
   "repository": {
     "type": "git",
@@ -8,28 +10,32 @@
   },
   "author": "Core Services Team @ OpenSesame",
   "license": "UNLICENSED",
+  "engines": {
+    "node": "24.x",
+    "npm": ">=11.10.0 <12"
+  },
   "homepage": "https://github.com/OpenSesame/core-github-actions#readme",
   "devDependencies": {
-    "@eslint/js": "9.39.2",
-    "@eslint/json": "0.14.0",
-    "@eslint/markdown": "7.5.1",
-    "eslint": "9.39.2",
-    "globals": "16.5.0",
-    "husky": "9.0.11",
-    "jest": "30.2.0",
-    "prettier": "3.7.4",
+    "@eslint/js": "10.0.1",
+    "@eslint/json": "2.1.0",
+    "@eslint/markdown": "8.0.3",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
+    "husky": "9.1.7",
+    "jest": "30.5.2",
+    "prettier": "3.9.9",
     "semgrep": "0.0.1"
   },
   "scripts": {
     "prepare": "husky install",
     "test": "jest",
     "watch": "jest --watch",
-    "audit": "npm audit --audit-level=high --omit=dev",
-    "lint:check": "eslint *.js --ext .js,.json",
-    "lint:fix": "eslint *.js --ext .js,.json --fix",
-    "format:check": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
-    "format:fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "audit": "npm audit --audit-level=high",
+    "lint": "eslint *.js --ext .js,.json",
+    "lint-fix": "eslint *.js --ext .js,.json --fix",
+    "format": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "format-fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
     "scan": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
-    "check": "npm run audit && npm run test && npm run lint:check && npm run format:check && npm run scan"
+    "ci": "npm run audit && npm run test && npm run lint && npm run format && npm run scan"
   }
 }
