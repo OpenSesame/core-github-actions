@@ -3,6 +3,13 @@
 All notable changes to the **tf_validate_plan_env_roots** reusable workflow are documented in this
 file.
 
+## 0.1.0
+
+### Changed
+
+- Pinned the composed environment plan jobs to Ubuntu 24.04 for a stable, versioned runner
+  contract.
+
 ## 0.0.1
 
 ### Added

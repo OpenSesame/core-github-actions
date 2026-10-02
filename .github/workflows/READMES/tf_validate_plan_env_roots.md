@@ -19,7 +19,7 @@ workflow.
 ```yaml
 jobs:
   terraform-plans:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@workflows/tf_validate_plan_env_roots/0.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@workflows/tf_validate_plan_env_roots/0.1.0
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
@@ -54,6 +54,7 @@ jobs:
 - Uses the supplied `terraform-workspace` for every environment when present; otherwise uses the
   environment name.
 - Does not request plan artifacts from the called workflow.
+- Runs the composed plan jobs on Ubuntu 24.04.
 
 ## Contribution
 

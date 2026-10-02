@@ -63,7 +63,7 @@ env:
 jobs:
   TF-Validate-Plan:
     name: Terraform Validate and Plan ${{ inputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: ${{ inputs.environment }}
     defaults: # runs all steps in this directory
       run:
@@ -73,13 +73,13 @@ jobs:
 
     steps:
       - id: get-role-arn
-        uses: OpenSesame/gha-oidc-access/get-role-arn@1417c02442b956045a6930e271ce134faf8e09e6 # v2
+        uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9 # v2.0.2
         with:
           domain: ${{ inputs.oidc-domain }}
           env: ${{ inputs.environment }}
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
-      - uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
           role-session-name: ${{ inputs.terraform-workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}

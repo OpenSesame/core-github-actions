@@ -11,7 +11,7 @@ The consuming repository must include its SonarQube configuration, such as a `so
 ```yaml
 jobs:
   sonar-scan:
-    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@workflows/run_sonar_scan/1.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@workflows/run_sonar_scan/1.1.0
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
@@ -34,6 +34,8 @@ with:
 | Secret        | Required | Description                                    |
 | ------------- | -------- | ---------------------------------------------- |
 | `SONAR_TOKEN` | Yes      | Token used to authenticate the SonarQube scan. |
+
+The workflow job runs on Ubuntu 24.04.
 
 ## Contribution
 

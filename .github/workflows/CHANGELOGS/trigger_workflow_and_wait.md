@@ -3,6 +3,12 @@
 All notable changes to the **trigger_workflow_and_wait** reusable workflow are documented in this
 file.
 
+## 0.1.0
+
+### Changed
+
+- Pinned the workflow job to Ubuntu 24.04 for a stable, versioned runner contract.
+
 ## 0.0.1
 
 ### Added

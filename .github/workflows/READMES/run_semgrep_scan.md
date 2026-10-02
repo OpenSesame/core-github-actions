@@ -58,6 +58,8 @@ The workflow provides the following outputs for use in downstream jobs or for re
 
 Findings are also posted as PR comments and Reviewdog annotations (if enabled), and a summary is written to the GitHub Actions job summary.
 
+The workflow job runs on Ubuntu 24.04.
+
 ## Contribution
 
 - Update the workflow file and related javascript file

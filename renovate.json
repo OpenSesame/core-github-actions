@@ -19,10 +19,10 @@
   "platformAutomerge": false,
   "packageRules": [
     {
-      "description": "Group and automerge npm development dependency non-major updates.",
+      "description": "Group and automerge all npm development dependency updates.",
       "matchManagers": ["npm"],
       "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
       "groupName": "npm development dependencies",
       "groupSlug": "npm-dev-dependencies",
       "addLabels": ["dependencies", "v:untracked"],
