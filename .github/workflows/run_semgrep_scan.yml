@@ -28,9 +28,9 @@ on:
         type: string
         default: ''
       semgrep_version:
-        description: 'Semgrep version to install. Default: latest.'
+        description: 'Semgrep version to install. Default: 1.178.0.'
         type: string
-        default: ''
+        default: '1.178.0'
       fail_severity:
         description: 'error | warning | info'
         type: string
@@ -88,8 +88,9 @@ on:
         type: string
         required: false
       semgrep_version:
-        description: 'Semgrep version to install. Default: latest.'
+        description: 'Semgrep version to install. Default: 1.178.0.'
         type: string
+        default: '1.178.0'
         required: false
       fail_severity:
         description: 'error | warning | info'
@@ -187,7 +188,7 @@ jobs:
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f # v1.5.0
         with:
-          reviewdog_version: v0.20.3
+          reviewdog_version: v0.21.2
 
       - name: Normalize Reviewdog settings (push vs PR)
         id: normalized_settings
@@ -301,7 +302,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@79d5b970aaee3da47587c5e21d215c3c7cbdba1c # actions/upsert-pr-comment/1.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@3facf8375da0266732c48933ef95c3dd333817fc # actions/upsert-pr-comment/1.0.1
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
