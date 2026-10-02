@@ -2,6 +2,12 @@
 
 All notable changes to the **run_sonar_scan** callable workflow are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Bumped `SonarSource/sonarqube-scan-action` from `v8.2.1` to `v8.3.0`.
+
 ## 1.0.0
 
 ### Added

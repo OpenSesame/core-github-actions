@@ -2,6 +2,12 @@
 
 All notable changes to the `configure-aws-oidc` composite action are documented in this file.
 
+## 1.0.2
+
+### Changed
+
+- Bumped `aws-actions/configure-aws-credentials` from `v6.2.4` to `v6.3.0`.
+
 ## 1.0.1
 
 ### Changed
