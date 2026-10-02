@@ -2,7 +2,7 @@
   "name": "core-github-actions",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "npm@11.20.0",
+  "packageManager": "npm@12.1.0",
   "description": "Core Team's reusable GitHub Actions",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
   "license": "UNLICENSED",
   "engines": {
     "node": "24.x",
-    "npm": ">=11.10.0 <12"
+    "npm": ">=12.1.0 <13"
   },
   "homepage": "https://github.com/OpenSesame/core-github-actions#readme",
   "devDependencies": {

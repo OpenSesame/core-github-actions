@@ -6,7 +6,7 @@ the repository map, consumer guidance, and migration context.
 
 ## Commands
 
-- Install the pinned npm version: `npm install --global npm@11.20.0`
+- Install the pinned npm version: `npm install --global npm@12.1.0`
 - Install dependencies: `npm ci`
 - Run all non-mutating checks: `npm run ci`
 - Run tests in watch mode: `npm run watch`
