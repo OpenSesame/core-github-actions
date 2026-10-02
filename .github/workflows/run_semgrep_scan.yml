@@ -130,9 +130,9 @@ jobs:
       total_findings: ${{ steps.semgrep.outputs.totalFindings }}
       error_count: ${{ steps.semgrep.outputs.numErrors }}
       warning_count: ${{ steps.semgrep.outputs.numWarnings }}
-      info_count: ${{ steps.semgrep.outputs.numInfo }}
+      info_count: ${{ steps.semgrep.outputs.numInfos }}
       scan_status: ${{ steps.semgrep.outputs.scanStatus }}
-      scan_md_summary: ${{ steps.semgrep.outputs.scanFindings }}
+      scan_md_summary: ${{ steps.semgrep.outputs.scanSummary }}
       config_md_summary: ${{ steps.semgrep.outputs.configSummary }}
       normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
 
@@ -146,31 +146,23 @@ jobs:
 
       - name: Check for open PR (by commit)
         id: pr_check
-        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@46797fa9c6bc83156b46b2f81e6f7571a45ab092 # actions/pr-open-check/2.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           commit-identifier: ${{ inputs.commit_identifier }}
-
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-
-      - name: Install dependencies
-        run: npm ci --omit=dev
 
       - name: Install Semgrep
         env:
           SEMGREP_VERSION: ${{ inputs.semgrep_version }}
         run: |
           if [ -n "$SEMGREP_VERSION" ]; then
-            python3 -m pip install semgrep==$SEMGREP_VERSION
+            python3 -m pip install "semgrep==$SEMGREP_VERSION"
           else
             python3 -m pip install semgrep
           fi
 
       - name: Run Semgrep
-        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@bcdfc302926fb20a11d9b0250b4ea5fd6721bf4e # actions/run-semgrep/1.0.1
         id: semgrep
         env:
           INPUT_BASELINE: ${{ inputs.baseline_ref }}
@@ -257,13 +249,12 @@ jobs:
                 echo "- **PR context**: None for this push; PR-only input settings were overridden."
               fi
             fi
-          } >> $GITHUB_STEP_SUMMARY
 
-          echo -e "${SCAN_SUMMARY}" >> $GITHUB_STEP_SUMMARY
-          echo -e "${CONFIG_SUMMARY}" >> $GITHUB_STEP_SUMMARY
-
-          echo "- **Review filter**: \`${FILTER_MODE}\`"
-          echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+            echo -e "${SCAN_SUMMARY}"
+            echo -e "${CONFIG_SUMMARY}"
+            echo "- **Review filter**: \`${FILTER_MODE}\`"
+            echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate PR comment body
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
@@ -275,7 +266,7 @@ jobs:
           TOTAL_FINDINGS: ${{ steps.semgrep.outputs.totalFindings }}
           NUM_ERRORS: ${{ steps.semgrep.outputs.numErrors }}
           NUM_WARNINGS: ${{ steps.semgrep.outputs.numWarnings }}
-          NUM_INFO: ${{ steps.semgrep.outputs.numInfo }}
+          NUM_INFO: ${{ steps.semgrep.outputs.numInfos }}
           CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
         with:
           result-encoding: string
@@ -310,7 +301,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@actions/upsert-pr-comment/1.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@79d5b970aaee3da47587c5e21d215c3c7cbdba1c # actions/upsert-pr-comment/1.0.0
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
