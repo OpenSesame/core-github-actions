@@ -1,8 +1,38 @@
 {
-  "dependencyDashboard": true,
-  "dependencyDashboardApproval": true,
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests",
+    ":configMigration",
+    ":pinDevDependencies",
+    "abandonments:recommended",
+    "schedule:nonOfficeHours",
+    ":automergePr",
+    ":automergeRequireAllStatusChecks"
+  ],
   "dependencyDashboardAutoclose": true,
+  "timezone": "America/Los_Angeles",
+  "automergeSchedule": ["* 9-15 * * 2-4"],
   "minimumReleaseAge": "7 days",
   "minimumReleaseAgeBehaviour": "timestamp-required",
-  "internalChecksFilter": "strict"
+  "internalChecksFilter": "strict",
+  "platformAutomerge": false,
+  "packageRules": [
+    {
+      "description": "Group and automerge npm development dependency non-major updates.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm development dependencies",
+      "groupSlug": "npm-dev-dependencies",
+      "addLabels": ["dependencies", "version:untracked"],
+      "automerge": true,
+      "minimumReleaseAge": "7 days"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "commitMessageSuffix": "[SECURITY]"
+  }
 }
