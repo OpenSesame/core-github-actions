@@ -2,6 +2,13 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 1.0.4
+
+### Changed
+
+- Bumped `upsert-pr-comment` from `1.0.0` (which used the deprecated Node 20 runtime)
+  to `1.0.1` (Node 24), pinned by commit SHA.
+
 ## 1.0.3
 
 ### Changed

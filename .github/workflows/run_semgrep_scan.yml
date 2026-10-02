@@ -301,7 +301,7 @@ jobs:
 
       - name: Upsert PR comment
         if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@79d5b970aaee3da47587c5e21d215c3c7cbdba1c # actions/upsert-pr-comment/1.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@3facf8375da0266732c48933ef95c3dd333817fc # actions/upsert-pr-comment/1.0.1
         with:
           pr-number: ${{ steps.pr_check.outputs.pr_number }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
