@@ -60,7 +60,7 @@ Along with writing files for reviewdog annotations and inputs, this action provi
 | `totalFindings`      | Total number of findings                            |
 | `numErrors`          | Number of ERROR severity findings                   |
 | `numWarnings`        | Number of WARNING severity findings                 |
-| `numInfo`            | Number of INFO severity findings                    |
+| `numInfos`           | Number of INFO severity findings                    |
 
 ## 🚀 Usage
 

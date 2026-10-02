@@ -8,6 +8,10 @@ All notable changes to the run-semgrep GitHub Action will be documented in this 
 
 - Run the action directly on the Node.js 24 action runtime while preserving its environment and output contracts
 
+### Fixed
+
+- Write the info finding count to the declared `numInfos` output
+
 ## 1.0.0 - Initial Release
 
 ### Added
