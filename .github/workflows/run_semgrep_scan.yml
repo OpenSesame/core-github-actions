@@ -28,9 +28,9 @@ on:
         type: string
         default: ''
       semgrep_version:
-        description: 'Semgrep version to install. Default: latest.'
+        description: 'Semgrep version to install. Default: 1.178.0.'
         type: string
-        default: ''
+        default: '1.178.0'
       fail_severity:
         description: 'error | warning | info'
         type: string
@@ -88,8 +88,9 @@ on:
         type: string
         required: false
       semgrep_version:
-        description: 'Semgrep version to install. Default: latest.'
+        description: 'Semgrep version to install. Default: 1.178.0.'
         type: string
+        default: '1.178.0'
         required: false
       fail_severity:
         description: 'error | warning | info'
@@ -187,7 +188,7 @@ jobs:
         if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
         uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f # v1.5.0
         with:
-          reviewdog_version: v0.20.3
+          reviewdog_version: v0.21.2
 
       - name: Normalize Reviewdog settings (push vs PR)
         id: normalized_settings

@@ -25,7 +25,7 @@ You can customize the scan by providing the following inputs:
 | `semgrep_config`        | string  | p/default         | Semgrep rulesets to use (YAML array, newline, or space-separated) |
 | `semgrep_targets`       | string  | .                 | Files/directories to scan                                         |
 | `extra_args`            | string  | ''                | Additional arguments to pass to Semgrep                           |
-| `semgrep_version`       | string  | ''                | Semgrep version to install                                        |
+| `semgrep_version`       | string  | 1.178.0           | Semgrep version to install                                        |
 | `fail_severity`         | string  | error             | Minimum severity to fail the workflow (`error`, `warning`, `info`)|
 | `semgrep_scan_mode`     | string  | full              | Scan mode: `full`, `diff`, or `baseline`                          |
 | `baseline_ref`          | string  | origin/main       | Ref for diff/baseline scans                                       |
