@@ -61,4 +61,4 @@ This action does not require additional GitHub token permissions.
 
 ## Versioning
 
-This action follows the repository's component versioning policy. The initial release uses the PR label `version:actions/create-aws-role-session-name/1.0.0` and the namespaced tag `actions/create-aws-role-session-name/1.0.0`.
+This action follows the repository's component versioning policy. The initial release uses the PR label `v:a/create-aws-role-session-name/1.0.0` and the namespaced tag `actions/create-aws-role-session-name/1.0.0`.

@@ -3,7 +3,7 @@
 //
 // Usage:
 //   node validate-version-labels.js <labels-file>
-//   echo -e "version:type/foo/1.2.3\nversion:type/bar/2.0.0\nother" | node scripts/internal-ci/validate-version-labels.js
+//   echo -e "v:a/foo/1.2.3\nv:wf/bar/2.0.0\nother" | node scripts/internal-ci/validate-version-labels.js
 //
 // Inputs:
 //   - Newline-separated list of label strings (from file or stdin)
@@ -30,12 +30,16 @@ function getLabelArray(rawLabels) {
     .filter(Boolean);
 }
 
-const versionLabelPrefix = 'version:';
-const untrackedLabel = `${versionLabelPrefix}untracked`; // Special label for untracked versions, 'version:untracked'
+const versionLabelPrefix = 'v:';
+const untrackedLabel = `${versionLabelPrefix}untracked`; // Special label for untracked versions, 'v:untracked'
+const componentTypeAliases = {
+  a: 'actions',
+  wf: 'workflows',
+};
 const semverPattern = '\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern e.g., v1.2.3
-// Pattern for valid version label: version:component-type/component-name/X.Y.Z where type and name correspond to the path of the component under the repo root
+// Pattern for valid version label: v:<a|wf>/component-name/X.Y.Z
 const componentVersionRegEx = new RegExp(
-  `^${versionLabelPrefix}[a-z0-9_-]+/[a-z0-9_-]+/${semverPattern}$`
+  `^${versionLabelPrefix}(${Object.keys(componentTypeAliases).join('|')})/([a-z0-9_-]+)/(${semverPattern})$`
 );
 
 function getVersionLabelArray(labels) {
@@ -52,21 +56,29 @@ function getComponentVersionLabels(versionLabels) {
   return versionLabels.filter(label => componentVersionRegEx.test(label));
 }
 
+/// Expands a compact component version label into its canonical tag path
+/// It is assumed that the component version label is valid when this function is called
+function expandComponentVersionLabel(componentVersionLabel) {
+  const match = componentVersionLabel.match(componentVersionRegEx);
+  if (!match) {
+    return null;
+  }
+
+  const [, componentTypeAlias, componentName, version] = match;
+  return `${componentTypeAliases[componentTypeAlias]}/${componentName}/${version}`;
+}
+
 /// Parses component version labels into a map of component paths to versions
 /// It is assumed that component version labels are valid when this function is called
 function parseComponentVersionLabels(componentVersionLabels) {
   const componentVersionMap = {};
   componentVersionLabels.forEach(label => {
-    // Example label: version:type/name/X.Y.Z
-    const parts = label.split(':');
-    if (parts.length === 2) {
-      const componentPath = parts[1]; // type/name/X.Y.Z
-      const lastSlashIndex = componentPath.lastIndexOf('/');
-      if (lastSlashIndex !== -1) {
-        const component = componentPath.substring(0, lastSlashIndex);
-        const version = componentPath.substring(lastSlashIndex + 1);
-        componentVersionMap[component] = version;
-      }
+    const componentTag = expandComponentVersionLabel(label);
+    if (componentTag) {
+      const lastSlashIndex = componentTag.lastIndexOf('/');
+      const component = componentTag.substring(0, lastSlashIndex);
+      const version = componentTag.substring(lastSlashIndex + 1);
+      componentVersionMap[component] = version;
     }
   });
   return componentVersionMap;
@@ -256,11 +268,13 @@ module.exports = {
   getVersionLabelArray,
   getInvalidVersionLabels,
   getComponentVersionLabels,
+  expandComponentVersionLabel,
   parseComponentVersionLabels,
   getInvalidComponents,
   getMissingChangelogs,
   validate,
   versionLabelPrefix,
   untrackedLabel,
+  componentTypeAliases,
   componentVersionRegEx,
 };

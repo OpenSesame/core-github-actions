@@ -10,15 +10,16 @@ Jira: <https://opensesame.atlassian.net/browse/CORE-XXXX>
 
 ⚠️ Components in this repo are used by multiple repos and teams. Breaking changes to non-versioned components are high-risk. Always apply correct versioning to versioned components to ensure safe, controlled updates.
 
-Versioned components live under `./github/actions`
+Versioned components live under `.github/actions` and `.github/workflows`.
 
 Does this PR modify a versioned component?
 
-- [ ] **No** — label this PR with `version:untracked`
+- [ ] **No** — label this PR with `v:untracked`
 - [ ] **Yes**
-  - Add a version label: `version:<component-name>/X.Y.Z`
+  - For an action, add `v:a/<component-name>/X.Y.Z`
+  - For a workflow, add `v:wf/<component-name>/X.Y.Z`
   - Ensure the component’s `CHANGELOG.md` includes a `## X.Y.Z` entry
-  - Use `version:untracked` **only** if changes do _not_ alter behavior, inputs, or outputs
+  - Use `v:untracked` **only** if changes do _not_ alter behavior, inputs, or outputs
 
 **If version labels are incorrect or missing, automated version validation will fail and block merge.**
 
