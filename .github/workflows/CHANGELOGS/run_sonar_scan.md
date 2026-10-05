@@ -2,6 +2,12 @@
 
 All notable changes to the **run_sonar_scan** callable workflow are documented in this file.
 
+## 1.3.0
+
+### Added
+
+- Added optional `coverage-artifact-name` and `coverage-artifact-path` inputs to download a same-run coverage artifact before the SonarQube scan.
+
 ## 1.2.0
 
 ### Changed
