@@ -3,6 +3,15 @@
 All notable changes to the **tf_validate_plan_env_roots** reusable workflow are documented in this
 file.
 
+## 0.2.1
+
+### Fixed
+
+- Composes `tf_validate_plan_single_root` 0.2.1, so the lock-free dev, stage, and prod plans no
+  longer share a concurrency group with plans from other workflow runs. A burst of CI runs no longer
+  cancels another run's waiting plan. Calls within one run that use the same environment and
+  Terraform root still share a group.
+
 ## 0.2.0
 
 ### Changed
