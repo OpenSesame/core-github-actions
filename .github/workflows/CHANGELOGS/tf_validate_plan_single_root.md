@@ -10,7 +10,7 @@ this file.
 - Lock-free plans (`with-lock: false`) no longer share the per-repository, per-environment
   concurrency group. GitHub keeps only one waiting run per group, so a burst of lock-free CI plans
   could cancel another waiting plan, including a deployment's. Each lock-free run now gets its own
-  group; locked plans still queue per repository and environment.
+  group. Locked plans still share the per-repository, per-environment group.
 
 ## 0.2.0
 
