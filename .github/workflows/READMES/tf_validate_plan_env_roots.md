@@ -19,7 +19,7 @@ workflow.
 ```yaml
 jobs:
   terraform-plans:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@workflows/tf_validate_plan_env_roots/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@workflows/tf_validate_plan_env_roots/0.2.1
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
