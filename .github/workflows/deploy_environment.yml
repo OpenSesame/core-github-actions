@@ -46,8 +46,6 @@ permissions:
   contents: read
 
 jobs:
-  # Apply plans and validates as part of terraform apply. Callers validate and plan in CI before
-  # merge, so a separate plan job here only added time and a concurrency group shared with CI.
   TF-Apply:
     name: Terraform Apply
     uses: ./.github/workflows/tf_apply.yml
