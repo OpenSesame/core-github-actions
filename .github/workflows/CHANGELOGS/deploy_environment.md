@@ -2,6 +2,16 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.3.0
+
+### Removed
+
+- Removed the `Terraform Validate and Plan` job that ran before apply. `terraform apply` already
+  validates and plans, and the separate lock-free plan was never used by the apply. It added run
+  time and shared a concurrency group with callers' CI plans, so a burst of CI plans could cancel a
+  waiting deployment. Deployment runs no longer report `<caller> / Terraform Validate and Plan / …`
+  checks; validate and plan in CI before merge instead.
+
 ## 0.2.0
 
 ### Changed

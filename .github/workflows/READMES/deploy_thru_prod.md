@@ -20,7 +20,7 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.3.0
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core

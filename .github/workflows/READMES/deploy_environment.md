@@ -1,8 +1,9 @@
 # Deploy a Commit to One Environment
 
-This reusable workflow validates, plans, and applies one Terraform root to a selected environment.
-It composes the `tf_validate_plan_single_root` and `tf_apply` reusable workflows and gates apply on a
-successful plan.
+This reusable workflow applies one Terraform root to a selected environment by calling the
+`tf_apply` reusable workflow. `terraform apply` validates and plans as part of the apply, so the
+workflow has no separate plan job. Callers should validate and plan in CI before merge, for example
+with `tf_validate_plan_single_root`.
 
 > **Warning:** This workflow mutates live infrastructure. The apply phase runs Terraform with
 > automatic approval. Confirm the target ref, environment, Terraform root, workspace, and GitHub
@@ -20,7 +21,7 @@ successful plan.
 ```yaml
 jobs:
   deploy-dev:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.3.0
     with:
       environment: dev
       commit-identifier: ${{ github.sha }}
@@ -39,29 +40,28 @@ jobs:
 | Input                 | Type   | Required | Default   | Description                                                      |
 | --------------------- | ------ | -------- | --------- | ---------------------------------------------------------------- |
 | `environment`         | string | Yes      | —         | GitHub environment and AWS account environment to target.        |
-| `commit-identifier`   | string | Yes      | —         | Commit SHA, tag, or branch to plan and apply.                    |
+| `commit-identifier`   | string | Yes      | —         | Commit SHA, tag, or branch to apply.                             |
 | `release-tag`         | string | No       | `unnamed` | Release name passed to the apply workflow and Terraform.         |
 | `oidc-domain`         | string | Yes      | —         | Domain used to resolve the AWS role, such as `core` or `reveng`. |
 | `terraform-workspace` | string | Yes      | —         | Terraform workspace to select or create.                         |
 | `terraform-root`      | string | Yes      | —         | Terraform working directory relative to the repository root.     |
-| `terraform-version`   | string | Yes      | —         | Terraform CLI version used for plan and apply.                   |
+| `terraform-version`   | string | Yes      | —         | Terraform CLI version used for apply.                            |
 
 ## Secrets
 
 | Secret                                | Required | Description                                                                                          |
 | ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key forwarded to the plan and apply workflows for AWS role resolution and private GitHub access. |
-| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token forwarded to the plan and apply workflows.                                             |
+| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key forwarded to the apply workflow for AWS role resolution and private GitHub access.           |
+| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token forwarded to the apply workflow.                                                       |
 
 ## Behavior
 
-1. Calls `tf_validate_plan_single_root` with state locking disabled.
-2. If validation and planning succeed, calls `tf_apply` with the same target ref, environment,
-   workspace, root, and Terraform version.
+1. Calls `tf_apply` with the target ref, environment, workspace, root, Terraform version, and
+   release tag.
 
 Runs for the same repository and environment share a concurrency group. The workflow declares
 `id-token: write` and `contents: read` permissions for its called workflows.
-The composed plan and apply jobs run on Ubuntu 26.04.
+The composed apply job runs on Ubuntu 26.04.
 
 ## Contribution
 
@@ -70,5 +70,5 @@ The composed plan and apply jobs run on Ubuntu 26.04.
 
 ## References
 
-- [Single-root Terraform plan workflow](tf_validate_plan_single_root.md)
+- [Single-root Terraform plan workflow](tf_validate_plan_single_root.md) for CI plans before merge
 - [Terraform apply workflow](tf_apply.md)

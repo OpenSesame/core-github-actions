@@ -20,7 +20,7 @@ optionally upload the rendered plan as an artifact.
 ```yaml
 jobs:
   terraform-plan:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@workflows/tf_validate_plan_single_root/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@workflows/tf_validate_plan_single_root/0.2.1
     with:
       environment: dev
       oidc-domain: core
@@ -79,7 +79,10 @@ When enabled, artifact upload looks for `terraform/<environment>/tfplan.txt`, re
 7. Writes a human-readable plan to the GitHub Actions job summary.
 8. Optionally uploads the rendered plan text for seven days.
 
-Runs for the same repository and environment share a concurrency group. The job requests
+When `with-lock` is `true`, runs for the same repository and environment share a concurrency group:
+one locked plan runs at a time, and GitHub keeps only one pending run, so a newer locked plan
+replaces any plan already waiting. Lock-free plans only read state, so each run gets its own group
+and never waits behind, or replaces, another run's plan. The job requests
 `id-token: write` and `contents: read` permissions and runs on Ubuntu 26.04.
 
 ## Contribution

@@ -50,7 +50,7 @@ on:
         value: ${{ jobs.TF-Validate-Plan.outputs.plan-artifact-name}}
 
 concurrency:
-  group: ${{ github.repository }}-${{ inputs.environment }}-TF-Validate-Plan
+  group: ${{ inputs.with-lock && format('{0}-{1}-TF-Validate-Plan', github.repository, inputs.environment) || format('{0}-{1}-TF-Validate-Plan-{2}-{3}', github.repository, inputs.environment, github.run_id, inputs.terraform-root) }}
 
 permissions:
   id-token: write # required by configure-aws-credentials
