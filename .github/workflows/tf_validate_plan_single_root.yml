@@ -49,8 +49,10 @@ on:
         description: the name of the plan artifact, if write-artifact is true
         value: ${{ jobs.TF-Validate-Plan.outputs.plan-artifact-name}}
 
+# Plans that take the state lock queue per repository and environment. Lock-free plans only read
+# state, so each run gets its own group and never waits behind, or replaces, another run's plan.
 concurrency:
-  group: ${{ github.repository }}-${{ inputs.environment }}-TF-Validate-Plan
+  group: ${{ inputs.with-lock && format('{0}-{1}-TF-Validate-Plan', github.repository, inputs.environment) || format('{0}-{1}-TF-Validate-Plan-{2}-{3}', github.repository, inputs.environment, github.run_id, inputs.terraform-root) }}
 
 permissions:
   id-token: write # required by configure-aws-credentials

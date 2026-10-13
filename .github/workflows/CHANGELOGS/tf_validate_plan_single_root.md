@@ -3,6 +3,15 @@
 All notable changes to the **tf_validate_plan_single_root** reusable workflow are documented in
 this file.
 
+## 0.2.1
+
+### Fixed
+
+- Lock-free plans (`with-lock: false`) no longer share the per-repository, per-environment
+  concurrency group. GitHub keeps only one waiting run per group, so a burst of lock-free CI plans
+  could cancel another waiting plan, including a deployment's. Each lock-free run now gets its own
+  group; locked plans still queue per repository and environment.
+
 ## 0.2.0
 
 ### Changed

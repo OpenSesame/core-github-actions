@@ -2,6 +2,14 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.3.0
+
+### Changed
+
+- Each environment deployment uses `deploy_environment` 0.3.0, which applies without a separate
+  plan job. Runs finish sooner, and `Apply <Env> / Terraform Validate and Plan / …` checks are no
+  longer reported.
+
 ## 0.2.0
 
 ### Changed
