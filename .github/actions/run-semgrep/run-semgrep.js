@@ -1,75 +1,18 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
-const https = require('https');
 
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
 
-function getPrBaseBranch(owner, repo, branch, token) {
-  // Use GitHub API to find open PR for the branch and get its base branch
-  const url = `/repos/${owner}/${repo}/pulls?state=open&head=${owner}:${branch}`;
-  const options = {
-    hostname: 'api.github.com',
-    path: url,
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github.v3+json',
-      'User-Agent': 'normalize-push-baseline-script',
-    },
-  };
-
-  return new Promise(resolve => {
-    const req = https.request(options, res => {
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk;
-      });
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
-          return resolve(null);
-        }
-        try {
-          const prs = JSON.parse(data);
-          if (Array.isArray(prs) && prs.length > 0 && prs[0].base && prs[0].base.ref) {
-            resolve(prs[0].base.ref);
-          } else {
-            resolve(null);
-          }
-        } catch (_e) {
-          resolve(null);
-        }
-      });
-    });
-    req.on('error', _err => {
-      resolve(null);
-    });
-    req.end();
-  });
-}
-
-/* Normalize the baseline ref for push events in GitHub Actions.
+/* Resolve the baseline ref for diff scans.
  *
- * If a push event is detected but an open PR exists for the branch,
- * this script outputs the PR's base branch as the baseline. Otherwise,
- * it uses the provided INPUT_BASELINE environment variable.
+ * Pull request events use the PR's base branch. Every other event uses the
+ * provided INPUT_BASELINE. Semgrep diffs against the merge-base of the
+ * baseline and HEAD, so the baseline can be a branch tip.
  */
-async function normalizeBaseline(hasPr, inputBaseline, githubDetails) {
-  const { repo, eventName, refName, baseRef, githubToken } = githubDetails;
-  const [repoOwner, repoName] = repo.split('/');
-  let baseline = inputBaseline;
-  if (eventName === 'pull_request' || hasPr === 'true') {
-    let base = baseRef;
-    if (!(eventName === 'pull_request' && baseRef)) {
-      // Not a PR event or baseRef not set, try to resolve via API
-      base = await getPrBaseBranch(repoOwner, repoName, refName, githubToken);
-    }
-    if (base) {
-      baseline = `origin/${base}`;
-    } else {
-      baseline = inputBaseline;
-    }
-  }
+function normalizeBaseline(inputBaseline, githubDetails) {
+  const { eventName, baseRef } = githubDetails;
+  const baseline = eventName === 'pull_request' && baseRef ? `origin/${baseRef}` : inputBaseline;
   console.log(`Normalized baseline: ${baseline}\n`);
   return baseline;
 }
@@ -242,23 +185,14 @@ function evaluateScanStatus(failLevel, metrics) {
 
 async function main() {
   [
-    'HAS_PR',
     'INPUT_BASELINE',
     'GITHUB_EVENT_NAME',
-    'GITHUB_REF_NAME',
-    'GITHUB_TOKEN',
-    'GITHUB_REPOSITORY',
     'SEMGREP_CONFIG',
     'SEMGREP_TARGETS',
     'SCAN_MODE',
     'FAIL_LEVEL',
   ].forEach(key => validateEnvVar(key));
 
-  const prDetails = {
-    hasPr: process.env.HAS_PR,
-    prNumber: process.env.PR_NUMBER || '',
-    prUrl: process.env.PR_URL || '',
-  };
   const semgrepConfig = {
     rules: process.env.SEMGREP_CONFIG,
     targets: process.env.SEMGREP_TARGETS,
@@ -267,20 +201,16 @@ async function main() {
     extraArgs: process.env.EXTRA_ARGS || '',
   };
   const githubDetails = {
-    repo: process.env.GITHUB_REPOSITORY,
     eventName: process.env.GITHUB_EVENT_NAME,
-    refName: process.env.GITHUB_REF_NAME,
     baseRef: process.env.GITHUB_BASE_REF,
-    githubToken: process.env.GITHUB_TOKEN,
   };
   const inputBaseline = process.env.INPUT_BASELINE;
 
-  console.log(`prDetails: ${JSON.stringify(prDetails)}\n`);
   console.log(`semgrepConfig: ${JSON.stringify(semgrepConfig)}\n`);
   console.log(`githubDetails: ${JSON.stringify(githubDetails)}\n`);
   console.log(`inputBaseline: ${inputBaseline}`);
 
-  const baseline = await normalizeBaseline(prDetails.hasPr, inputBaseline, githubDetails);
+  const baseline = normalizeBaseline(inputBaseline, githubDetails);
 
   const semgrepCmd = constructSemgrepCommand(baseline, semgrepConfig, SEMGREP_RESULTS_FILE_NAME);
 
@@ -298,14 +228,14 @@ async function main() {
   // write GitHub Action outputs
   const githubOutput = process.env.GITHUB_OUTPUT;
   if (githubOutput) {
-    fs.appendFileSync(githubOutput, `normalizedBaseline=${baseline}\n`);
-    fs.appendFileSync(githubOutput, `scanSummary=${scanSummary.replace(/\n/g, '\\n')}\n`);
-    fs.appendFileSync(githubOutput, `configSummary=${configSummary.replace(/\n/g, '\\n')}\n`);
-    fs.appendFileSync(githubOutput, `scanStatus=${scanStatus}\n`);
-    fs.appendFileSync(githubOutput, `totalFindings=${metrics.totalFindings}\n`);
-    fs.appendFileSync(githubOutput, `numErrors=${metrics.numErrors}\n`);
-    fs.appendFileSync(githubOutput, `numWarnings=${metrics.numWarnings}\n`);
-    fs.appendFileSync(githubOutput, `numInfos=${metrics.numInfo}\n`);
+    fs.appendFileSync(githubOutput, `normalized-baseline=${baseline}\n`);
+    fs.appendFileSync(githubOutput, `scan-summary=${scanSummary.replace(/\n/g, '\\n')}\n`);
+    fs.appendFileSync(githubOutput, `config-summary=${configSummary.replace(/\n/g, '\\n')}\n`);
+    fs.appendFileSync(githubOutput, `scan-status=${scanStatus}\n`);
+    fs.appendFileSync(githubOutput, `total-findings=${metrics.totalFindings}\n`);
+    fs.appendFileSync(githubOutput, `error-count=${metrics.numErrors}\n`);
+    fs.appendFileSync(githubOutput, `warning-count=${metrics.numWarnings}\n`);
+    fs.appendFileSync(githubOutput, `info-count=${metrics.numInfo}\n`);
   }
 }
 
@@ -326,7 +256,6 @@ function validateEnvVar(name) {
 
 module.exports = {
   main,
-  getPrBaseBranch,
   normalizeBaseline,
   constructSemgrepCommand,
   runSemgrepAndCapture,
