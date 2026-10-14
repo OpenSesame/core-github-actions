@@ -2,6 +2,23 @@
 
 All notable changes to the **pr-open-check** composite action will be documented in this file.
 
+## 2.1.0 - Match the PR head branch
+
+### Added
+
+- Optional `head-ref` input. When set, only an open PR whose head branch equals `head-ref` and whose
+  head repository is the current repository is returned, so a push to a branch without a PR is not
+  matched to another branch's PR that contains the same commit, and fork PRs with the same branch name
+  are ignored. When unset, the action keeps the 2.0.0 behavior and returns the first open PR
+  associated with the commit.
+- Unit tests that run the action script against fixture API responses.
+
+### Fixed
+
+- A GitHub API response that is not a JSON array (rate limit or error JSON, HTML, empty body) no longer
+  fails the step. The action emits a warning and returns `pr_exists=false` with empty `pr_number` and
+  `pr_url`.
+
 ## 2.0.0 - Detect via API instead of CLI
 
 ### Added

@@ -7,13 +7,20 @@ Used to determine whether a PR exists and to provide its number and URL for usag
 
 - Outputs are written to $GITHUB_OUTPUT so they can be consumed by subsequent steps.
 - Returns pr_exists=false when no open PR includes the given commit.
+- When `head-ref` is set, only returns an open PR opened from that branch of the current repository.
 
 This allows conditional steps later in the workflow to skip PR updates cleanly.
 
 ## Scope/Limitations
 
 This action detects open pull requests **only for commits within the same repository**.  
-It does not detect PRs originating from forks.
+It does not detect PRs originating from forks. With `head-ref` set, a fork PR whose branch has the same
+name is never matched.
+
+Without `head-ref`, the action returns the first open PR associated with the commit, whatever its head
+branch. If two branches point at the same commit and only one has an open PR, a push to the other branch
+still reports that PR. Pass `head-ref: ${{ github.ref_name }}` when you use `pr_exists` to decide whether
+a push run is covered by a PR run.
 
 ## 🔒 Permissions
 
@@ -27,8 +34,8 @@ permissions:
 
 ## Dependencies
 
-- **GitHub CLI (`gh`)** - Used to query open pull requests. Must be available on the runner.
-- **`jq`** - Used to parse JSON output from `gh`.
+- **`curl`** - Used to query the GitHub API for pull requests associated with the commit.
+- **`jq`** - Used to parse the JSON API response.
 
 > Both tools are preinstalled on GitHub-hosted Ubuntu runners.  
 > If running in a container or on a self-hosted runner, they must be installed manually.
@@ -39,6 +46,19 @@ permissions:
 | ------------------- | -------- | ---------------------------------------------------------------------- |
 | `github-token`      | ✅       | GitHub token with `repo` read access (`secrets.GITHUB_TOKEN` is fine). |
 | `commit-identifier` | ✅       | If you don't allow specifying other commits, pass in (`github.sha`).   |
+| `head-ref`          |          | Branch the PR must be opened from, usually `github.ref_name`.          |
+
+### `head-ref` matching rules
+
+When `head-ref` is set, a PR is returned only if all of the following hold:
+
+- its `state` is `open`
+- its `head.ref` equals `head-ref`
+- its `head.repo.full_name` equals `GITHUB_REPOSITORY` (PRs from forks, including deleted forks, never
+  match)
+
+When `head-ref` is empty or omitted, the first open PR associated with the commit is returned, as in
+2.0.0.
 
 ## 📤 Outputs
 
@@ -53,10 +73,22 @@ permissions:
 ```yaml
 - name: Check for open PR
   id: pr_check
-  uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.0.0
+  uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.1.0
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     commit-identifier: ${{ github.sha }}
+```
+
+Only match a PR opened from the pushed branch:
+
+```yaml
+- name: Check for open PR
+  id: pr_check
+  uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@actions/pr-open-check/2.1.0
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    commit-identifier: ${{ github.sha }}
+    head-ref: ${{ github.ref_name }}
 ```
 
 Example outputs available to later steps:
@@ -82,5 +114,9 @@ run: echo "Found PR #${{ steps.pr_check.outputs.pr_number }}"
 ```bash
 api_url="https://api.github.com/repos/$OWNER/$REPO/commits/$COMMIT/pulls"
 pr_json=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.groot-preview+json" "$api_url" || true)
-pr_number=$(jq -r '[.[] | select(.state == "open")][0].number // empty' <<<"$pr_json")
+open_pr='[.[] | select(.state == "open") | select($head_ref == "" or (.head.ref == $head_ref and .head.repo.full_name == $repo))][0]'
+pr_number=$(jq -r --arg head_ref "$HEAD_REF" --arg repo "$REPO_FULL" "$open_pr.number // empty" <<<"$pr_json")
 ```
+
+- If the API response is not a JSON array (for example a rate-limit error, an HTML error page, or an
+  empty body), the step emits a `::warning::` and returns `pr_exists=false` instead of failing.
