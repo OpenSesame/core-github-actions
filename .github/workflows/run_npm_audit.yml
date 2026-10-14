@@ -1,0 +1,136 @@
+name: npm Audit
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to audit; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+      working-directories:
+        description: Newline-separated directories, relative to the repository root, that each contain a package-lock.json
+        type: string
+        required: false
+        default: .
+      audit-level:
+        description: Lowest advisory severity that fails the audit (low, moderate, high or critical)
+        type: string
+        required: false
+        default: high
+      node-version-file:
+        description: File that sets the Node.js version, relative to the repository root
+        type: string
+        required: false
+        default: .nvmrc
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  audit:
+    name: Audit
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the lockfiles to audit.
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+
+      - name: Audit production dependencies
+        id: audit
+        env:
+          WORKING_DIRECTORIES: ${{ inputs.working-directories }}
+          AUDIT_LEVEL: ${{ inputs.audit-level }}
+        run: |
+          set -Euo pipefail
+
+          case "$AUDIT_LEVEL" in
+            low | moderate | high | critical) ;;
+            *)
+              echo "::error title=Audit::audit-level must be low, moderate, high or critical, not '$AUDIT_LEVEL'"
+              exit 1
+              ;;
+          esac
+
+          # Advisories at or above audit-level, one table row per advisory
+          # shellcheck disable=SC2016
+          findings_filter='
+            def rank: {"low": 1, "moderate": 2, "high": 3, "critical": 4}[.] // 0;
+            ($level | rank) as $min
+            | .vulnerabilities[]
+            | . as $package
+            | .via[]
+            | objects
+            | select((.severity | rank) >= $min)
+            | "| `\($package.name)` | \(.severity) | [\(.title)](\(.url)) |"'
+
+          rows=""
+          details=""
+          audited=0
+          failed=0
+
+          while IFS= read -r directory; do
+            directory="${directory#"${directory%%[![:space:]]*}"}"
+            directory="${directory%"${directory##*[![:space:]]}"}"
+            [[ -z "$directory" ]] && continue
+            audited=$((audited + 1))
+
+            if [[ ! -f "$directory/package-lock.json" ]]; then
+              echo "::error title=Audit::No package-lock.json in '$directory'"
+              rows+="| \`$directory\` | - | - | - | - | ❌ No lockfile |"$'\n'
+              failed=1
+              continue
+            fi
+
+            status=0
+            report=$(cd "$directory" && npm audit --omit=dev --audit-level="$AUDIT_LEVEL" --json) || status=$?
+
+            if ! jq -e '.metadata.vulnerabilities' >/dev/null 2>&1 <<<"$report"; then
+              message=$(jq -r '(.error.summary | select(. != "")) // .message // empty' 2>/dev/null <<<"$report" || true)
+              echo "::error title=Audit::npm audit failed in '$directory': ${message:-unexpected output}"
+              rows+="| \`$directory\` | - | - | - | - | ❌ Audit error |"$'\n'
+              failed=1
+              continue
+            fi
+
+            counts=$(jq -r '.metadata.vulnerabilities | "\(.critical) | \(.high) | \(.moderate) | \(.low)"' <<<"$report")
+
+            if [[ "$status" -ne 0 ]]; then
+              echo "::error title=Audit::Production dependencies in '$directory' have $AUDIT_LEVEL or higher advisories"
+              rows+="| \`$directory\` | $counts | ❌ Fail |"$'\n'
+              findings=$(jq -r --arg level "$AUDIT_LEVEL" "$findings_filter" <<<"$report" | sort -u)
+              details+=$'\n'"### \`$directory\`"$'\n\n'"| Package | Severity | Advisory |"$'\n'"| --- | --- | --- |"$'\n'"$findings"$'\n'
+              failed=1
+            else
+              rows+="| \`$directory\` | $counts | ✅ Pass |"$'\n'
+            fi
+          done <<<"$WORKING_DIRECTORIES"
+
+          if [[ "$audited" -eq 0 ]]; then
+            echo "::error title=Audit::working-directories lists no directories"
+            exit 1
+          fi
+
+          summary="## npm audit"$'\n\n'
+          summary+="Production dependencies; fails on \`$AUDIT_LEVEL\` or higher."$'\n\n'
+          summary+="| Directory | Critical | High | Moderate | Low | Result |"$'\n'
+          summary+="| --- | ---: | ---: | ---: | ---: | --- |"$'\n'
+          summary+="$rows"
+          summary+="$details"
+
+          echo "$summary"
+          echo "$summary" >> "$GITHUB_STEP_SUMMARY"
+          exit "$failed"
