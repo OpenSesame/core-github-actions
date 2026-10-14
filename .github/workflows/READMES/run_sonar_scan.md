@@ -1,76 +1,92 @@
 # Run SonarQube Scan
 
-This reusable workflow checks out the ref that triggered the caller, or a specified commit or ref, and runs a SonarQube scan with full Git history. Callers can optionally download a coverage artifact produced earlier in the same workflow run before the scan starts.
+This reusable workflow checks out the ref that triggered the caller, or a specified commit or ref,
+downloads the coverage artifacts produced earlier in the same workflow run, and runs a SonarQube scan
+with full Git history. Runs triggered by `dependabot[bot]` or `renovate[bot]` skip the scan.
 
 ## Prerequisites
 
-The consuming repository must include its SonarQube configuration, such as a `sonar-project.properties` file, or otherwise provide configuration supported by the scan action.
+The consuming repository must include its SonarQube configuration, such as a `sonar-project.properties`
+file, or otherwise provide configuration supported by the scan action.
 
 ## Usage
 
 ```yaml
 jobs:
-  sonar-scan:
-    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@workflows/run_sonar_scan/1.3.0
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-```
-
-To scan a different commit, tag, or branch, pass `commit-identifier`:
-
-```yaml
-with:
-  commit-identifier: ${{ github.sha }}
-```
-
-To import coverage produced by another job, upload the report as an artifact and make the Sonar job depend on the test job:
-
-```yaml
-jobs:
-  unit-tests:
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run tests with coverage
-        run: npm test -- --coverage
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: unit-test-coverage
-          path: coverage/lcov.info
-          if-no-files-found: error
-
-  sonar-scan:
-    needs: unit-tests
-    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@<released-sha>
+  sonar:
+    name: Sonar
+    needs: [ci-context, app-ci]
+    if: ${{ !cancelled() && needs.ci-context.outputs.should-run-ci == 'true' }}
+    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@<released-sha> # workflows/run_sonar_scan/2.0.0
+    permissions:
+      contents: read # Required to check out the code to scan.
     with:
-      coverage-artifact-name: unit-test-coverage
-      coverage-artifact-path: .coverage
+      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
     secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 ```
 
-This downloads the report to `.coverage/lcov.info`. Configure SonarQube to read that location, for example with `sonar.javascript.lcov.reportPaths=.coverage/lcov.info`. The workflow does not run tests or generate coverage. If `coverage-artifact-name` is set but the artifact does not exist, the download step fails the job.
+The check is reported as `Sonar / Scan`.
+
+## Coverage
+
+Upload each package's lcov report as an artifact named `coverage-<package>`, including in
+single-package repositories:
+
+```yaml
+- name: Upload coverage
+  uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  with:
+    name: coverage-user-management-api
+    path: lambdas/user-management-api/coverage/lcov.info
+    if-no-files-found: error
+```
+
+The workflow downloads every artifact whose name matches `coverage-artifact-pattern` (default
+`coverage-*`) into `coverage-artifact-path` (default `.sonar-coverage`):
+
+- When two or more artifacts match, each is downloaded into its own directory:
+  `.sonar-coverage/coverage-<package>/lcov.info`.
+- When exactly one artifact matches, `actions/download-artifact` places its files directly in the path:
+  `.sonar-coverage/lcov.info`.
+- When no artifact matches, the download succeeds with nothing downloaded. The job emits a warning and a
+  job summary line, and the scan runs without coverage.
+
+Point SonarQube at every layout with one wildcard, the same value in every repository:
+
+```properties
+sonar.javascript.lcov.reportPaths=.sonar-coverage/**/lcov.info
+```
+
+SonarJS resolves this property with `WildcardPattern`, where `**/` matches zero or more directories, so
+the pattern covers both the single-artifact and multi-artifact layouts. SonarJS also matches each
+lcov `SF:` path to a project file by path suffix, so a report generated inside
+`lambdas/<package>` with paths like `SF:src/handler.ts` maps to `lambdas/<package>/src/handler.ts`.
+
+Set `coverage-artifact-pattern: ''` to skip the coverage download entirely. The workflow does not run
+tests or generate coverage.
 
 ## Inputs
 
-| Input                    | Type   | Required | Default               | Description                                                                 |
-| ------------------------ | ------ | -------- | --------------------- | --------------------------------------------------------------------------- |
-| `commit-identifier`      | string | No       | Triggering ref or SHA | Commit SHA, tag, or branch to check out and scan.                           |
-| `coverage-artifact-name` | string | No       | `''`                  | Name of a coverage artifact uploaded earlier in the same workflow run.      |
-| `coverage-artifact-path` | string | No       | `.`                   | Directory into which the coverage artifact is downloaded before the scan.  |
+| Input                       | Type   | Required | Default               | Description                                                                            |
+| --------------------------- | ------ | -------- | --------------------- | -------------------------------------------------------------------------------------- |
+| `commit-identifier`         | string | No       | Triggering ref or SHA | Commit SHA, tag, or branch to check out and scan.                                      |
+| `coverage-artifact-pattern` | string | No       | `coverage-*`          | Glob of same-run artifact names to download before the scan. Empty skips the download. |
+| `coverage-artifact-path`    | string | No       | `.sonar-coverage`     | Directory into which matching coverage artifacts are downloaded.                       |
 
 ## Secrets
 
 | Secret        | Required | Description                                    |
 | ------------- | -------- | ---------------------------------------------- |
 | `SONAR_TOKEN` | Yes      | Token used to authenticate the SonarQube scan. |
+
+## Permissions
+
+| Permission | Reason                              |
+| ---------- | ----------------------------------- |
+| `contents` | `read`: check out the code to scan. |
+
+Downloading artifacts from the same workflow run needs no extra permission.
 
 The workflow job runs on Ubuntu 26.04.
 
@@ -82,3 +98,4 @@ The workflow job runs on Ubuntu 26.04.
 ## References
 
 - [SonarQube scan action](https://github.com/SonarSource/sonarqube-scan-action)
+- [actions/download-artifact](https://github.com/actions/download-artifact)
