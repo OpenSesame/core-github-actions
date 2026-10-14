@@ -18,6 +18,8 @@ All notable changes to the **pr-open-check** composite action will be documented
 - A GitHub API response that is not a JSON array (rate limit or error JSON, HTML, empty body) no longer
   fails the step. The action emits a warning and returns `pr_exists=false` with empty `pr_number` and
   `pr_url`.
+- The PR lookup requests 100 results per page instead of the API default of 30, so a commit shared by
+  many PRs no longer hides the matching branch's PR beyond the first 30.
 
 ## 2.0.0 - Detect via API instead of CLI
 

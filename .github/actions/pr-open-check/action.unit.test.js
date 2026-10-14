@@ -102,13 +102,26 @@ function foundPullRequest(number) {
 }
 
 describe('pr-open-check', () => {
-  test('queries the pulls associated with the commit', () => {
+  test('queries up to 100 pulls associated with the commit', () => {
     const result = runAction({ response: [] });
 
     expect(result.status).toBe(0);
     expect(result.curlArgs).toContain(
-      `https://api.github.com/repos/${repository}/commits/${commit}/pulls`
+      `https://api.github.com/repos/${repository}/commits/${commit}/pulls?per_page=100`
     );
+  });
+
+  test('returns a matching PR beyond the first 30 results', () => {
+    const otherPullRequests = Array.from({ length: 40 }, (_value, index) =>
+      pullRequest({ number: 100 + index, headRef: `feature/other-${index}` })
+    );
+    const result = runAction({
+      headRef: 'feature/b',
+      response: [...otherPullRequests, pullRequest({ number: 200, headRef: 'feature/b' })],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual(foundPullRequest(200));
   });
 
   test('returns the open PR whose head ref matches', () => {

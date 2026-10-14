@@ -22,6 +22,9 @@ branch. If two branches point at the same commit and only one has an open PR, a 
 still reports that PR. Pass `head-ref: ${{ github.ref_name }}` when you use `pr_exists` to decide whether
 a push run is covered by a PR run.
 
+The action reads one page of up to 100 PRs associated with the commit. If more than 100 PRs contain the
+commit, a matching PR beyond the first 100 is not found.
+
 ## 🔒 Permissions
 
 The following GHA permissions are required to use this step

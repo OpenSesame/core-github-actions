@@ -58,7 +58,7 @@ runs:
         REPO=$(echo "$REPO_FULL" | cut -d'/' -f2)
 
         # Query GitHub API for PRs containing the commit
-        api_url="https://api.github.com/repos/$OWNER/$REPO/commits/$COMMIT/pulls"
+        api_url="https://api.github.com/repos/$OWNER/$REPO/commits/$COMMIT/pulls?per_page=100"
         pr_json=$(curl -sSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github.groot-preview+json" "$api_url" || true)
 
         if ! jq -e 'type == "array"' >/dev/null 2>&1 <<<"$pr_json"; then
