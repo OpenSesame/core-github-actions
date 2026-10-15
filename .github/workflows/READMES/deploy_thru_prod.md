@@ -55,7 +55,8 @@ jobs:
 2. Deploys dev by calling `deploy_environment`.
 3. Deploys stage only after dev succeeds.
 4. Deploys prod only after stage succeeds.
-5. Creates a GitHub release for `commit-identifier` only after prod succeeds.
+5. Creates a GitHub release for `commit-identifier` with `gh release create`, only after prod
+   succeeds.
 6. Posts stage, prod, and release results to the pull request when a PR context is available.
 
 The release-tag job only runs when the caller's event is a merged pull request or

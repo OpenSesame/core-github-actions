@@ -54,16 +54,26 @@ jobs:
     runs-on: ubuntu-26.04
     steps:
       - name: Markdown Summary
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ACTOR: ${{ github.actor }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+          WORKFLOW_SHA: ${{ github.workflow_sha }}
+          INPUTS_JSON: ${{ toJson(inputs) }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
         run: |
-          echo "### Apply Infrastructure Context"  >> $GITHUB_STEP_SUMMARY
-          echo "**Trigger**: ${{ github.event_name }} ${{ github.event.action }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Actor**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Workflow Ref (branch)**: ${{ github.workflow_ref }}" >> $GITHUB_STEP_SUMMARY
-          echo -e "**Workflow Sha (commit)**: ${{ github.workflow_sha }}\n" >> $GITHUB_STEP_SUMMARY
-          echo "**Inputs**" >> $GITHUB_STEP_SUMMARY
-          echo -e "${{ toJson(inputs) }}\n" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Tag**: ${{ inputs.release-tag }}" >> $GITHUB_STEP_SUMMARY
-          echo "*Note: Workflow Ref & Sha represent the branch and commit of the workflow defintion. This may not be the same as the branch/commit checked out supplying the code. The 'SHA or tag to apply' aka commit-identifier, is what specifies the code.*" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "### Apply Infrastructure Context"
+            echo "**Trigger**: $EVENT_NAME $EVENT_ACTION"
+            echo "**Actor**: $ACTOR"
+            echo "**Workflow Ref (branch)**: $WORKFLOW_REF"
+            echo -e "**Workflow Sha (commit)**: $WORKFLOW_SHA\n"
+            echo "**Inputs**"
+            echo -e "$INPUTS_JSON\n"
+            echo "**Release Tag**: $RELEASE_TAG"
+            echo "*Note: Workflow Ref & Sha represent the branch and commit of the workflow defintion. This may not be the same as the branch/commit checked out supplying the code. The 'SHA or tag to apply' aka commit-identifier, is what specifies the code.*"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   TF-Apply:
     name: Terraform Apply
@@ -94,14 +104,17 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
 
       - name: Configure Github Credentials
         id: configure-credentials
         shell: bash
+        env:
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo '${{ secrets.ORG_READ_ONLY_SSH_KEY }}' > ~/.ssh/id_rsa
+          printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > ~/.ssh/id_rsa
           ssh-keyscan github.com > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
@@ -115,7 +128,9 @@ jobs:
         run: terraform init -upgrade
 
       - name: Select Workspace
-        run: terraform workspace select -or-create ${{ inputs.terraform-workspace }}
+        env:
+          TF_WORKSPACE_NAME: ${{ inputs.terraform-workspace }}
+        run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 
       - name: Apply Terraform
         run: terraform apply -auto-approve -input=false

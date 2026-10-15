@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.3.1
+
+### Fixed
+
+- Composes `tf_apply` 0.2.1, which passes workflow expressions to its scripts through environment
+  variables and no longer persists checkout credentials.
+
 ## 0.3.0
 
 ### Removed
