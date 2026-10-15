@@ -1,0 +1,163 @@
+name: Infra CI
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to check; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  CONTRACT_DOCS: https://github.com/OpenSesame/core-github-actions/blob/main/.github/workflows/READMES/run_infra_ci.md
+
+jobs:
+  lint-gha:
+    name: Lint GHA
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the workflows to lint.
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Check for mise.toml
+        run: |
+          if [[ ! -f mise.toml ]]; then
+            echo "::error title=Infra CI contract::mise.toml is missing. See $CONTRACT_DOCS"
+            exit 1
+          fi
+
+      - name: Set up mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.9.17
+          sha256: 63049bc35fb9065e8dc35ac8b25fdae53e9bd6f1885a843aedeba398e046a1ee
+
+      - name: Check for the lint:gha task
+        run: |
+          if ! mise tasks info lint:gha >/dev/null 2>&1; then
+            echo "::error title=Infra CI contract::mise.toml has no lint:gha task. See $CONTRACT_DOCS"
+            exit 1
+          fi
+
+      - name: Run actionlint
+        id: run
+        run: |
+          status=0
+          # shellcheck disable=SC2016
+          mise run lint:gha -- \
+            -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}},title=actionlint {{$err.Kind}}::{{$err.Message}}\n{{end}}' \
+            || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Write job summary
+        if: ${{ !cancelled() && steps.run.outcome != 'skipped' }}
+        env:
+          STATUS: ${{ steps.run.outputs.status }}
+        run: |
+          config_file=.github/actionlint.yaml
+          if [[ ! -f "$config_file" ]]; then
+            entries=0
+          elif command -v yq >/dev/null 2>&1; then
+            entries=$(yq '[.paths[]?.ignore[]?] | length' "$config_file")
+          else
+            entries="unknown (yq not installed)"
+          fi
+
+          {
+            echo "## Lint GHA (actionlint)"
+            echo ""
+            if [[ "$STATUS" == "0" ]]; then
+              echo "✅ No findings."
+            else
+              echo "❌ Findings reported as annotations on this run."
+            fi
+            echo ""
+            echo "- **Suppressions** (\`$config_file\` \`paths.*.ignore\`): $entries"
+            echo "- **Run locally**: \`mise run lint:gha\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  scan-gha:
+    name: Scan GHA
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the workflows to audit.
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Check for mise.toml
+        run: |
+          if [[ ! -f mise.toml ]]; then
+            echo "::error title=Infra CI contract::mise.toml is missing. See $CONTRACT_DOCS"
+            exit 1
+          fi
+
+      - name: Set up mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.9.17
+          sha256: 63049bc35fb9065e8dc35ac8b25fdae53e9bd6f1885a843aedeba398e046a1ee
+
+      - name: Check for the scan:gha task
+        run: |
+          if ! mise tasks info scan:gha >/dev/null 2>&1; then
+            echo "::error title=Infra CI contract::mise.toml has no scan:gha task. See $CONTRACT_DOCS"
+            exit 1
+          fi
+
+      - name: Run zizmor
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=0
+          mise run scan:gha -- --format=github || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Write job summary
+        if: ${{ !cancelled() && steps.run.outcome != 'skipped' }}
+        env:
+          STATUS: ${{ steps.run.outputs.status }}
+        run: |
+          config_file=.github/zizmor.yml
+          if [[ ! -f "$config_file" ]]; then
+            entries=0
+          elif command -v yq >/dev/null 2>&1; then
+            entries=$(yq '[.rules[]?.ignore[]?] | length' "$config_file")
+          else
+            entries="unknown (yq not installed)"
+          fi
+          inline=$(grep -rhoE 'zizmor: ?ignore\[' .github 2>/dev/null | wc -l | tr -d ' ')
+
+          {
+            echo "## Scan GHA (zizmor)"
+            echo ""
+            if [[ "$STATUS" == "0" ]]; then
+              echo "✅ No findings."
+            else
+              echo "❌ Findings reported as annotations on this run."
+            fi
+            echo ""
+            echo "- **Suppressions** (\`$config_file\` \`rules.*.ignore\`): $entries"
+            echo "- **Inline ignores** (\`# zizmor: ignore[...]\` under \`.github\`): $inline"
+            echo "- **Run locally**: \`mise run scan:gha\` (offline unless \`GH_TOKEN\` is set)"
+          } >> "$GITHUB_STEP_SUMMARY"
