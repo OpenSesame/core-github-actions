@@ -1,0 +1,65 @@
+name: Resolve CI Context
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to run CI against; pass the caller's workflow_dispatch input, empty otherwise
+        type: string
+        required: false
+        default: ''
+    outputs:
+      commit-identifier:
+        description: The commit-identifier input, else the PR head SHA on pull_request runs, else github.sha
+        value: ${{ jobs.resolve.outputs.commit-identifier }}
+      should-run-ci:
+        description: "'true' for pull_request, workflow_dispatch and default-branch runs, and for pushes with no open PR from the pushed branch"
+        value: ${{ jobs.resolve.outputs.should-run-ci }}
+      pr-exists:
+        description: "'true' when the run has an open PR from its branch, otherwise 'false'"
+        value: ${{ jobs.resolve.outputs.pr-exists }}
+      pr-number:
+        description: Number of the open PR, empty when there is none
+        value: ${{ jobs.resolve.outputs.pr-number }}
+      pr-url:
+        description: URL of the open PR, empty when there is none
+        value: ${{ jobs.resolve.outputs.pr-url }}
+
+permissions: {}
+
+jobs:
+  resolve:
+    name: Resolve
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to read commit metadata for the open-PR lookup.
+      pull-requests: read # Required to find an open PR from the pushed branch.
+    outputs:
+      commit-identifier: ${{ inputs.commit-identifier || github.event.pull_request.head.sha || github.sha }}
+      should-run-ci: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.ref_name == github.event.repository.default_branch || steps.find-pr.outputs.pr_exists != 'true' }}
+      pr-exists: ${{ github.event_name == 'pull_request' && 'true' || steps.find-pr.outputs.pr_exists == 'true' && 'true' || 'false' }}
+      pr-number: ${{ github.event.pull_request.number || steps.find-pr.outputs.pr_number }}
+      pr-url: ${{ github.event.pull_request.html_url || steps.find-pr.outputs.pr_url }}
+
+    steps:
+      - name: Find open PR for branch
+        id: find-pr
+        if: ${{ github.event_name != 'pull_request' && github.ref_type == 'branch' && github.ref_name != github.event.repository.default_branch }}
+        continue-on-error: true
+        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@48cbaf1521a882a987733e03aaeffd04c1019a33 # actions/pr-open-check/2.1.0
+        with:
+          github-token: ${{ github.token }}
+          commit-identifier: ${{ github.sha }}
+          head-ref: ${{ github.ref_name }}
+
+      - name: Warn on failed PR lookup
+        if: ${{ steps.find-pr.outcome == 'failure' }}
+        run: echo "::warning title=Resolve CI context::The open-PR lookup failed; running CI on this push"
+
+      - name: Explain skipped push CI
+        if: ${{ github.event_name == 'push' && steps.find-pr.outputs.pr_exists == 'true' }}
+        env:
+          PR_NUMBER: ${{ steps.find-pr.outputs.pr_number }}
+          PR_URL: ${{ steps.find-pr.outputs.pr_url }}
+        run: |
+          printf '## Push CI skipped\n\nThis commit belongs to open PR [#%s](%s).\nThe pull request run will execute CI with PR context.\n' "$PR_NUMBER" "$PR_URL" >> "$GITHUB_STEP_SUMMARY"
