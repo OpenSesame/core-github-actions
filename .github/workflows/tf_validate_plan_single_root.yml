@@ -155,39 +155,39 @@ jobs:
           TF_VERSION: ${{ inputs.terraform-version }}
         run: |
           if [ -f tfplan ]; then
-            # Get workspace name for display
             WORKSPACE_NAME=$(basename "$(pwd)")
 
             terraform show tfplan -no-color > tfplan.txt
 
-            # Create beautiful header with emoji and styling
-            echo "## 🚀 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Workspace:** \`$WORKSPACE_NAME\`" >> $GITHUB_STEP_SUMMARY
-            echo "**AWS Environment:** \`$TF_ENVIRONMENT\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Terraform Root:** \`$TF_ROOT\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Terraform Version:** \`$TF_VERSION\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            # Create collapsible section with better styling
-            echo "<details>" >> $GITHUB_STEP_SUMMARY
-            echo "<summary><strong>📋 Click to view detailed Terraform plan</strong></summary>" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "~~~ terraform" >> $GITHUB_STEP_SUMMARY
-            cat tfplan.txt >> $GITHUB_STEP_SUMMARY
-            echo "~~~" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "</details>" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "---" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## 🚀 Terraform Plan Summary"
+              echo ""
+              echo "**Workspace:** \`$WORKSPACE_NAME\`"
+              echo "**AWS Environment:** \`$TF_ENVIRONMENT\`"
+              echo "**Terraform Root:** \`$TF_ROOT\`"
+              echo "**Terraform Version:** \`$TF_VERSION\`"
+              echo ""
+              echo "<details>"
+              echo "<summary><strong>📋 Click to view detailed Terraform plan</strong></summary>"
+              echo ""
+              echo "~~~ terraform"
+              cat tfplan.txt
+              echo "~~~"
+              echo ""
+              echo "</details>"
+              echo ""
+              echo "---"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ⚠️ Warning" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No Terraform plan file found in \`$(pwd)\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "This may indicate an issue with the Terraform plan generation." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "---" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## ⚠️ Warning"
+              echo ""
+              echo "No Terraform plan file found in \`$(pwd)\`"
+              echo ""
+              echo "This may indicate an issue with the Terraform plan generation."
+              echo ""
+              echo "---"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Set plan artifact name

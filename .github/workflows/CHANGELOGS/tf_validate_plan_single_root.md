@@ -15,7 +15,7 @@ this file.
 - **Breaking:** workflow-level permissions are `{}` and the job requests `id-token: write` and
   `contents: read` itself, so the caller job must grant both.
 - Step names are sentence case, workflow expressions in `run` scripts move into environment
-  variables, and the checkout no longer persists credentials.
+  variables, run scripts pass shellcheck, and the checkout no longer persists credentials.
 
 ### Fixed
 
