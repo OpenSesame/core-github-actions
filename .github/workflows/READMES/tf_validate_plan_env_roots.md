@@ -18,8 +18,12 @@ workflow.
 
 ```yaml
 jobs:
-  terraform-plans:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@workflows/tf_validate_plan_env_roots/0.2.1
+  terraform:
+    name: Terraform
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_env_roots.yml@<released-sha> # workflows/tf_validate_plan_env_roots/1.0.0
+    permissions:
+      id-token: write # Required to assume the plan roles.
+      contents: read # Required to check out the Terraform code.
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
@@ -48,7 +52,12 @@ jobs:
 
 ## Behavior
 
-- Runs dev, stage, and prod plan jobs through a matrix with fail-fast disabled.
+- Runs dev, stage, and prod plan jobs through a matrix with fail-fast disabled. Each matrix job is
+  named after its environment, so with a caller job named `Terraform` the checks read
+  `Terraform / dev / Validate Plan`, `Terraform / stage / Validate Plan`, and
+  `Terraform / prod / Validate Plan`.
+- Requests `id-token: write` and `contents: read` for the composed plan jobs; the caller job must grant
+  both. The workflow declares no other permissions.
 - Uses `terraform/<environment>` as each Terraform root.
 - Disables Terraform state locking for all three plan jobs.
 - Uses the supplied `terraform-workspace` for every environment when present; otherwise uses the

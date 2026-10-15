@@ -19,8 +19,12 @@ optionally upload the rendered plan as an artifact.
 
 ```yaml
 jobs:
-  terraform-plan:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@workflows/tf_validate_plan_single_root/0.2.1
+  terraform:
+    name: Terraform
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_validate_plan_single_root.yml@<released-sha> # workflows/tf_validate_plan_single_root/1.0.0
+    permissions:
+      id-token: write # Required to assume the plan role.
+      contents: read # Required to check out the Terraform code.
     with:
       environment: dev
       oidc-domain: core
@@ -54,10 +58,8 @@ jobs:
 | `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key used by the AWS role resolver and for private GitHub module access. |
 | `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token required by the declared workflow contract.                   |
 
-The current implementation also references `ORG_GITHUB_PACKAGES_READ_WRITE_TOKEN` while running
-`terraform plan`, but that secret is not declared by `workflow_call` and is not part of the
-`0.0.1` contract. Terraform configurations that depend on that environment variable may fail until
-the workflow contract is corrected.
+The workflow passes no GitHub token to Terraform. Terraform roots that need one, for example through
+`TF_VAR_github_personal_access_token`, are not supported by this workflow.
 
 ## Outputs
 
@@ -65,8 +67,8 @@ the workflow contract is corrected.
 | -------------------- | --------------------------------------------------------------- |
 | `plan-artifact-name` | Artifact name when `write-artifact` is `true`; otherwise empty. |
 
-When enabled, artifact upload looks for `terraform/<environment>/tfplan.txt`, regardless of the
-`terraform-root` value supplied by the caller.
+When enabled, the rendered plan `<terraform-root>/tfplan.txt` is uploaded as
+`terraform-plan-<environment>`.
 
 ## Behavior
 
@@ -82,8 +84,12 @@ When enabled, artifact upload looks for `terraform/<environment>/tfplan.txt`, re
 When `with-lock` is `true`, runs for the same repository and environment share a concurrency group:
 one locked plan runs at a time, and GitHub keeps only one pending run, so a newer locked plan
 replaces any plan already waiting. Lock-free plans only read state, so each run gets its own group
-and never waits behind, or replaces, another run's plan. The job requests
-`id-token: write` and `contents: read` permissions and runs on Ubuntu 26.04.
+and never waits behind, or replaces, another run's plan.
+
+The job is `validate-plan` ("Validate Plan"), so the check reads `<caller job name> / Validate Plan`.
+It requests `id-token: write` and `contents: read`; the caller job must grant both. The workflow
+declares no other permissions, and the checkout does not persist credentials. The job runs on
+Ubuntu 26.04.
 
 ## Contribution
 

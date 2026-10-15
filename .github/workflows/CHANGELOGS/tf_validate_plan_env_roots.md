@@ -3,6 +3,22 @@
 All notable changes to the **tf_validate_plan_env_roots** reusable workflow are documented in this
 file.
 
+## 1.0.0
+
+### Changed
+
+- **Breaking:** composes `tf_validate_plan_single_root` 1.0.0, and the matrix job is renamed from
+  `TF-Validate-Plan-Roots` ("TF Validate/Plan ENV Roots (<environment>, false)") to `environment`,
+  named after its environment. With a caller job named `Terraform`, checks read
+  `Terraform / <environment> / Validate Plan`. Required status checks that use the old names must be
+  updated.
+- **Breaking:** workflow-level permissions are `{}` and the job requests `id-token: write` and
+  `contents: read`, so the caller job must grant both.
+
+### Removed
+
+- The `with-lock` matrix dimension, which was `false` for every environment. Plans stay lock-free.
+
 ## 0.2.1
 
 ### Fixed
