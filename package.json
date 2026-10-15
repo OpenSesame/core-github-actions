@@ -2,7 +2,7 @@
   "name": "core-github-actions",
   "version": "1.0.0",
   "private": true,
-  "packageManager": "npm@12.1.0",
+  "packageManager": "npm@12.2.0",
   "description": "Core Team's reusable GitHub Actions",
   "repository": {
     "type": "git",
