@@ -49,8 +49,10 @@ The workflow downloads every artifact whose name matches `coverage-artifact-patt
   `.sonar-coverage/coverage-<package>/lcov.info`.
 - When exactly one artifact matches, `actions/download-artifact` places its files directly in the path:
   `.sonar-coverage/lcov.info`.
-- When no artifact matches, the download succeeds with nothing downloaded. The job emits a warning and a
-  job summary line, and the scan runs without coverage.
+- When no artifact matches, or the matching artifacts contain no `lcov.info`, the job emits a warning
+  and a job summary line, and the scan runs without coverage.
+- `coverage-artifact-path` must not already exist with content in the checkout; the job fails if it
+  does, so repository files are never mistaken for downloaded coverage.
 
 Point SonarQube at every layout with one wildcard, the same value in every repository:
 
@@ -59,9 +61,28 @@ sonar.javascript.lcov.reportPaths=.sonar-coverage/**/lcov.info
 ```
 
 SonarJS resolves this property with `WildcardPattern`, where `**/` matches zero or more directories, so
-the pattern covers both the single-artifact and multi-artifact layouts. SonarJS also matches each
-lcov `SF:` path to a project file by path suffix, so a report generated inside
-`lambdas/<package>` with paths like `SF:src/handler.ts` maps to `lambdas/<package>/src/handler.ts`.
+the pattern covers both the single-artifact and multi-artifact layouts.
+
+### Repository-relative `SF:` paths
+
+Write each lcov report with paths relative to the repository root, such as
+`SF:lambdas/user-management-api/src/handler.ts`. By default Jest (Istanbul) writes paths relative to
+the directory the tests run in (`SF:src/handler.ts`). SonarJS can only resolve those against the
+report's own directory, and this workflow moves every report into `.sonar-coverage/`. It then falls
+back to matching by path suffix and guesses when two packages share a path such as `src/index.ts`, so
+coverage can land on the wrong file. Set the lcov reporter's `projectRoot` in each package's Jest
+config:
+
+```js
+// lambdas/user-management-api/jest.config.js
+const path = require('node:path');
+
+module.exports = {
+  coverageReporters: [['lcov', { projectRoot: path.resolve(__dirname, '../..') }], 'text'],
+};
+```
+
+Single-package repositories that run Jest from the repository root already get root-relative paths.
 
 Set `coverage-artifact-pattern: ''` to skip the coverage download entirely. The workflow does not run
 tests or generate coverage.

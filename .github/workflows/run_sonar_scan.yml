@@ -44,6 +44,16 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Check coverage path is empty
+        if: ${{ inputs.coverage-artifact-pattern != '' }}
+        env:
+          COVERAGE_PATH: ${{ inputs.coverage-artifact-path }}
+        run: |
+          if [[ -e "$COVERAGE_PATH" && -n "$(ls -A "$COVERAGE_PATH" 2>/dev/null)" ]]; then
+            echo "::error title=Coverage::coverage-artifact-path '$COVERAGE_PATH' already exists in the checkout and is not empty. Use a directory that only holds downloaded coverage, such as the default .sonar-coverage."
+            exit 1
+          fi
+
       - name: Download coverage artifacts
         if: ${{ inputs.coverage-artifact-pattern != '' }}
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -61,15 +71,15 @@ jobs:
 
           files=""
           if [[ -d "$COVERAGE_PATH" ]]; then
-            files=$(find "$COVERAGE_PATH" -type f | sort)
+            files=$(find "$COVERAGE_PATH" -type f -name lcov.info | sort)
           fi
 
           if [[ -z "$files" ]]; then
-            echo "::warning title=Coverage::No coverage artifact matched '$COVERAGE_PATTERN'; Sonar will report no coverage"
+            echo "::warning title=Coverage::No lcov.info found in artifacts matching '$COVERAGE_PATTERN'; Sonar will report no coverage"
             {
               echo "## Coverage"
               echo ""
-              echo "⚠️ No coverage artifact matched \`$COVERAGE_PATTERN\`; Sonar will report no coverage."
+              echo "⚠️ No \`lcov.info\` found in artifacts matching \`$COVERAGE_PATTERN\`; Sonar will report no coverage."
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi

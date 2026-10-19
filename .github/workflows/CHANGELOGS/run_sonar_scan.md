@@ -9,7 +9,10 @@ All notable changes to the **run_sonar_scan** callable workflow are documented i
 - `coverage-artifact-pattern` input (default `coverage-*`). Every same-run artifact whose name matches
   is downloaded into `coverage-artifact-path`, one directory per artifact when more than one matches,
   so callers no longer need a coverage merge job or a conditional artifact-name output.
-- A warning and a job summary line when no coverage artifact matches; the scan still runs.
+- A warning and a job summary line when no downloaded artifact contains an `lcov.info`; the scan still
+  runs.
+- A check that fails the job when `coverage-artifact-path` already exists with content in the
+  checkout, so repository files are never reported as coverage.
 - A job summary listing the downloaded coverage files.
 
 ### Changed
