@@ -8,41 +8,93 @@ on:
         type: string
         required: false
         default: ''
-      coverage-artifact-name:
-        description: Name of a coverage artifact uploaded earlier in the same workflow run
+      coverage-artifact-pattern:
+        description: Glob of coverage artifact names uploaded earlier in the same workflow run; empty skips the download
         type: string
         required: false
-        default: ''
+        default: coverage-*
       coverage-artifact-path:
-        description: Directory into which the coverage artifact is downloaded
+        description: Directory into which matching coverage artifacts are downloaded
         type: string
         required: false
-        default: '.'
+        default: .sonar-coverage
     secrets:
       SONAR_TOKEN:
         required: true
 
-permissions:
-  contents: read
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  sonar-scan:
-    name: Run SonarQube scan
+  scan:
+    name: Scan
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the code to scan.
 
     steps:
-      - name: Checkout
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.commit-identifier }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Download coverage artifact
-        if: ${{ inputs.coverage-artifact-name != '' }}
+      - name: Check coverage path is empty
+        if: ${{ inputs.coverage-artifact-pattern != '' }}
+        env:
+          COVERAGE_PATH: ${{ inputs.coverage-artifact-path }}
+        run: |
+          if [[ -e "$COVERAGE_PATH" && -n "$(ls -A "$COVERAGE_PATH" 2>/dev/null)" ]]; then
+            echo "::error title=Coverage::coverage-artifact-path '$COVERAGE_PATH' already exists in the checkout and is not empty. Use a directory that only holds downloaded coverage, such as the default .sonar-coverage."
+            exit 1
+          fi
+
+      - name: Download coverage artifacts
+        if: ${{ inputs.coverage-artifact-pattern != '' }}
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          name: ${{ inputs.coverage-artifact-name }}
+          pattern: ${{ inputs.coverage-artifact-pattern }}
           path: ${{ inputs.coverage-artifact-path }}
+
+      - name: Report coverage files
+        if: ${{ inputs.coverage-artifact-pattern != '' }}
+        env:
+          COVERAGE_PATTERN: ${{ inputs.coverage-artifact-pattern }}
+          COVERAGE_PATH: ${{ inputs.coverage-artifact-path }}
+        run: |
+          set -Eeuo pipefail
+
+          files=""
+          if [[ -d "$COVERAGE_PATH" ]]; then
+            files=$(find "$COVERAGE_PATH" -type f -name lcov.info | sort)
+          fi
+
+          if [[ -z "$files" ]]; then
+            echo "::warning title=Coverage::No lcov.info found in artifacts matching '$COVERAGE_PATTERN'; Sonar will report no coverage"
+            {
+              echo "## Coverage"
+              echo ""
+              echo "⚠️ No \`lcov.info\` found in artifacts matching \`$COVERAGE_PATTERN\`; Sonar will report no coverage."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "Coverage files downloaded:"
+          echo "$files"
+          {
+            echo "## Coverage"
+            echo ""
+            echo "Artifacts matching \`$COVERAGE_PATTERN\` downloaded to \`$COVERAGE_PATH\`:"
+            echo ""
+            while IFS= read -r file; do
+              echo "- \`$file\`"
+            done <<<"$files"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Run SonarQube scan
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
