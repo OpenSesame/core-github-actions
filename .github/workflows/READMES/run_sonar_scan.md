@@ -69,9 +69,9 @@ Write each lcov report with paths relative to the repository root, such as
 `SF:lambdas/user-management-api/src/handler.ts`. By default Jest (Istanbul) writes paths relative to
 the directory the tests run in (`SF:src/handler.ts`). SonarJS can only resolve those against the
 report's own directory, and this workflow moves every report into `.sonar-coverage/`. It then falls
-back to matching by path suffix and guesses when two packages share a path such as `src/index.ts`, so
-coverage can land on the wrong file. Set the lcov reporter's `projectRoot` in each package's Jest
-config:
+back to matching by path suffix and guesses when more than one file ends with that path, such as
+`src/index.ts` in two directories, so coverage can land on the wrong file. Set the lcov reporter's `projectRoot` in the Jest config of every
+package whose tests don't run from the repository root:
 
 ```js
 // lambdas/user-management-api/jest.config.js
@@ -82,7 +82,9 @@ module.exports = {
 };
 ```
 
-Single-package repositories that run Jest from the repository root already get root-relative paths.
+This applies whenever Jest runs outside the repository root, including single-package repositories
+whose code lives in a subdirectory (for example `lambdas/auth-api`). Only repositories that run Jest
+from the root already get root-relative paths.
 
 Set `coverage-artifact-pattern: ''` to skip the coverage download entirely. The workflow does not run
 tests or generate coverage.
