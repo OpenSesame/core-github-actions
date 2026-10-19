@@ -2,13 +2,19 @@
 
 This reusable workflow audits production npm dependencies and fails when any audited lockfile has an
 advisory at or above `audit-level` (High by default). It runs
-`npm audit --omit=dev --audit-level=<level>` in each directory listed in `working-directories` and
+`npm audit --omit=dev --omit=optional --audit-level=<level>` against the public npm registry in each
+directory listed in `working-directories` and
 writes a job summary table with one row per directory. Directories that fail also get a table of the
 advisories that caused the failure.
 
-The audit reads `package-lock.json` directly, so the workflow does not run `npm ci` and needs no
-registry token. Private `@opensesame` packages resolved from GitHub Packages are listed in the lockfile
-but have no public advisories, and the audit request goes only to the public npm registry.
+The audit reads `package-lock.json` directly, so the workflow does not run `npm ci`, disables
+`setup-node`'s dependency cache, and needs no registry token. Private `@opensesame` packages resolved
+from GitHub Packages are listed in the lockfile but have no public advisories. The audit always sends
+its advisory request to `https://registry.npmjs.org/`, even if the repository's `.npmrc` sets another
+default registry.
+
+Development and optional dependencies are excluded. Optional dependencies are usually platform-specific
+binaries; an advisory in one that is installed in production is not gated by this workflow.
 
 ## Prerequisites
 
