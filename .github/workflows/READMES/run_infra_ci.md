@@ -36,7 +36,7 @@ needs.
    run = "actionlint"
 
    [tasks."scan:gha"]
-   run = "zizmor .github"
+   run = "zizmor --offline .github"
 
    [tasks.infra-ci]
    depends = ["lint:gha", "scan:gha"]
@@ -54,7 +54,8 @@ needs.
 4. npm repos: add `"lint:gha": "mise run lint:gha"` and `"scan:gha": "mise run scan:gha"`. CI calls
    specific scripts, never the `lint`/`scan` aggregates, so CI jobs don't need mise.
 
-Run locally with `mise run infra-ci`. zizmor runs offline unless `GH_TOKEN` is set; CI runs it online.
+Run locally with `mise run infra-ci`. zizmor runs `--offline` locally and in CI: its online audits need a
+token that can read the org's private action repos.
 
 ## Findings
 

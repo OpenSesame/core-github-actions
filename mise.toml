@@ -9,7 +9,7 @@ run = "actionlint"
 
 [tasks."scan:gha"]
 description = "Audit GitHub Actions workflows for security issues"
-run = "zizmor .github"
+run = "zizmor --offline .github"
 
 [tasks.infra-ci]
 description = "Run every infra-ci check"

@@ -125,8 +125,6 @@ jobs:
 
       - name: Run zizmor
         id: run
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           status=0
           mise run scan:gha -- --format=github || status=$?
@@ -159,5 +157,5 @@ jobs:
             echo ""
             echo "- **Suppressions** (\`$config_file\` \`rules.*.ignore\`): $entries"
             echo "- **Inline ignores** (\`# zizmor: ignore[...]\` under \`.github\`): $inline"
-            echo "- **Run locally**: \`mise run scan:gha\` (offline unless \`GH_TOKEN\` is set)"
+            echo "- **Run locally**: \`mise run scan:gha\` "
           } >> "$GITHUB_STEP_SUMMARY"

@@ -11,5 +11,5 @@ All notable changes to the **run_infra_ci** reusable workflow are documented in 
   running the consuming repository's `lint:gha` or `scan:gha` mise task with GitHub annotation output.
 - A contract check that fails with a README link when `mise.toml` or the job's task is missing.
 - mise 2026.9.17 installed through `jdx/mise-action` 5.0.0, with the binary checksum pinned.
-- zizmor online audits using the job's `github.token`.
+- zizmor runs offline (`scan:gha` uses `--offline`), so no token is needed.
 - Job summaries with the result, the suppression count, and the local command.
