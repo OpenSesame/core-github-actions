@@ -1,114 +1,44 @@
 # Run Semgrep Action
 
-## 🧭 Summary
+Runs Semgrep and exposes finding counts and markdown summaries; writes `reviewdog_input.txt` for
+reviewdog. Used by the [`run_semgrep_scan`](../../workflows/READMES/run_semgrep_scan.md) workflow.
 
-Runs a Semgrep scan normalizing the baseline for diff scans depending on push vs PR context. Outputs scan results and summaries for downstream steps.
+Diff scans use `origin/$GITHUB_BASE_REF` on `pull_request` events and `INPUT_BASELINE` otherwise;
+Semgrep compares against the merge-base with `HEAD`. Diff scans need `fetch-depth: 0`. Semgrep must
+already be installed.
 
-## Scope/Limitations
-
-- Supports both push and pull request events.
-- Runs on the GitHub Actions Node.js 24 runtime.
-- Requires Semgrep to be installed and available in the runner environment.
-- Expects environment variables for configuration (see below).
-
-## 🔒 Permissions
-
-The following GHA permissions are required to use this step:
-
-```yaml
-permissions:
-  contents: read
-```
-
-## Dependencies
-
-- `semgrep` — must be installed in the runner environment.
-- `https` — standard Node.js module for API requests included in default action runners
-- `reviewdog` — for annotation output (optional, for downstream steps).
-
-## ⚙️ Inputs
-
-This action is environment-driven. The following environment variables are required:
-
-| Name                | Required | Description                                                                                 |
-| ------------------- | -------- | ------------------------------------------------------------------------------------------- |
-| `HAS_PR`            | ✅       | Whether the current context has an associated PR (true/false)                               |
-| `PR_NUMBER`         | ❌       | PR number if applicable                                                                     |
-| `PR_URL`            | ❌       | PR URL if applicable                                                                        |
-| `INPUT_BASELINE`    | ✅       | Baseline ref to use for diffing (e.g., origin/main)                                         |
-| `GITHUB_EVENT_NAME` | ✅       | GitHub provided environment variable for event name (e.g., push, pull_request)              |
-| `GITHUB_REF_NAME`   | ✅       | GitHub provided environment variable for the branch or tag name that triggered the workflow |
-| `GITHUB_BASE_REF`   | ❌       | GitHub provided environment variable for the base ref of a PR (if applicable)               |
-| `GITHUB_REPOSITORY` | ✅       | GitHub provided environment variable for the repository (e.g., owner/repo)                  |
-| `GITHUB_TOKEN`      | ✅       | GitHub token for API access                                                                 |
-| `SCAN_MODE`         | ✅       | 'diff' or 'full' scan mode                                                                  |
-| `SEMGREP_CONFIG`    | ✅       | Semgrep ruleset(s) to use                                                                   |
-| `SEMGREP_TARGETS`   | ✅       | Targets to scan (default: current directory)                                                |
-| `FAIL_LEVEL`        | ✅       | Severity level to fail on (e.g., ERROR, WARNING)                                            |
-| `EXTRA_ARGS`        | ❌       | Additional arguments to pass to Semgrep                                                     |
-
-## 📤 Outputs
-
-Along with writing files for reviewdog annotations and inputs, this action provides the following outputs:
-
-| Name                 | Description                                         |
-| -------------------- | --------------------------------------------------- |
-| `normalizedBaseline` | The resolved baseline ref                           |
-| `scanSummary`        | Summary of findings in markdown format              |
-| `configSummary`      | Summary of scan config in markdown format           |
-| `scanStatus`         | 'success' or 'failure' based on findings/fail level |
-| `totalFindings`      | Total number of findings                            |
-| `numErrors`          | Number of ERROR severity findings                   |
-| `numWarnings`        | Number of WARNING severity findings                 |
-| `numInfos`           | Number of INFO severity findings                    |
-
-## 🚀 Usage
-
-Basic usage example:
+## Usage
 
 ```yaml
 - name: Run Semgrep
   id: semgrep
-  uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@actions/run-semgrep/1.0.0
+  uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@<released-sha> # actions/run-semgrep/2.0.0
   env:
-    HAS_PR: ${{ env.HAS_PR }}
-    INPUT_BASELINE: ${{ env.INPUT_BASELINE }}
-    GITHUB_EVENT_NAME: ${{ github.event_name }}
-    GITHUB_REF_NAME: ${{ github.ref_name }}
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    GITHUB_REPOSITORY: ${{ github.repository }}
-    SEMGREP_CONFIG: 'p/default'
-    SEMGREP_TARGETS: '.'
-    SCAN_MODE: 'full'
-    FAIL_LEVEL: 'error'
+    INPUT_BASELINE: origin/${{ github.event.repository.default_branch }}
+    SCAN_MODE: diff # or full
+    SEMGREP_CONFIG: p/default
+    SEMGREP_TARGETS: .
+    FAIL_LEVEL: error
     EXTRA_ARGS: ''
 ```
 
-Example outputs:
+## Environment
 
-```yaml
-steps.semgrep.outputs.scanStatus
-steps.semgrep.outputs.totalFindings
-```
+| Name              | Required | Description                                        |
+| ----------------- | -------- | -------------------------------------------------- |
+| `INPUT_BASELINE`  | Yes      | Baseline ref for diff scans outside `pull_request` |
+| `SCAN_MODE`       | Yes      | `diff` or `full`                                   |
+| `SEMGREP_CONFIG`  | Yes      | Rulesets, space- or comma-separated                |
+| `SEMGREP_TARGETS` | Yes      | Files or directories to scan                       |
+| `FAIL_LEVEL`      | Yes      | `error`, `warning`, or `info`                      |
+| `EXTRA_ARGS`      | No       | Extra Semgrep arguments                            |
 
-Example usage of outputs in later steps:
+## Outputs
 
-```yaml
-if: steps.semgrep.outputs.scanStatus == 'failure'
-  run: echo "Semgrep scan failed at or above threshold."
-```
+`scan-status` (`success`/`failure`), `total-findings`, `error-count`, `warning-count`, `info-count`,
+`scan-summary`, `config-summary`, `normalized-baseline`.
 
-## 🧠 Notes
+## Contribution
 
-- This action writes a file for reviewdog annotations (`reviewdog_input.txt`).
-- Unit tests for the script are included in `run-semgrep.unit.test.js` (not used by the action, but kept for maintainability).
-
-## Versioning
-
-This action uses namespaced tags for versioning and is tracked in the CHANGELOG.
-
-```text
-actions/run-semgrep/vX.Y.Z
-```
-
-See the repository's versioning documentation for details on how tags are validated and created.
+Update the action, README, and changelog together, and set a version label per
+[VERSIONING.md](../../../VERSIONING.md).

@@ -1,21 +1,21 @@
 name: 'Run Semgrep'
 description: 'Run a Semgrep scan and output results for reviewdog and future steps'
 outputs:
-  normalizedBaseline:
-    description: 'The resolved baseline ref used for reviewdog annotations'
-  scanSummary:
+  normalized-baseline:
+    description: 'The resolved baseline ref used for diff scans'
+  scan-summary:
     description: 'Markdown summary of the Semgrep scan results'
-  configSummary:
+  config-summary:
     description: 'Markdown summary of the Semgrep configuration used'
-  scanStatus:
+  scan-status:
     description: 'success/failure based on findings and input fail level'
-  totalFindings:
+  total-findings:
     description: 'Total number of findings from the Semgrep scan'
-  numErrors:
+  error-count:
     description: 'Number of findings at error severity level'
-  numWarnings:
+  warning-count:
     description: 'Number of findings at warning severity level'
-  numInfos:
+  info-count:
     description: 'Number of findings at info severity level'
 
 runs:

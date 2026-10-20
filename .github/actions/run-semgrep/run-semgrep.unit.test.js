@@ -1,6 +1,5 @@
 const fs = require('fs');
 const {
-  getPrBaseBranch,
   normalizeBaseline,
   constructSemgrepCommand,
   stageResultsForReviewdog,
@@ -50,149 +49,28 @@ const exampleSemgrepOutput = {
 };
 const emptySemgrepOutput = '{"results":[]}';
 
-const https = require('https');
-
-function mockHttpsRequest(responseData, statusCode = 200) {
-  https.request = jest.fn((options, callback) => {
-    const res = require('stream').Readable({ read() {} });
-    res.statusCode = statusCode;
-    setImmediate(() => {
-      callback(res);
-      res.emit('data', Buffer.from(responseData));
-      res.emit('end');
-    });
-    return { on: jest.fn(), end: jest.fn() };
-  });
-}
-
-describe('getPrBaseBranch', () => {
-  const OWNER = 'test-owner';
-  const REPO = 'test-repo';
-  const BRANCH = 'feature-branch';
-  const TOKEN = 'ghp_testtoken';
-  let originalRequest;
-
-  beforeAll(() => {
-    originalRequest = https.request;
-  });
-
-  afterEach(() => {
-    https.request = originalRequest;
-  });
-
-  it('returns base branch when PR exists', async () => {
-    const responseData = JSON.stringify([
-      {
-        base: { ref: 'main' },
-      },
-    ]);
-    mockHttpsRequest(responseData, 200);
-    const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
-    expect(baseBranch).toBe('main');
-  });
-
-  it('returns null when no PR exists', async () => {
-    const responseData = JSON.stringify([]);
-    mockHttpsRequest(responseData, 200);
-    const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
-    expect(baseBranch).toBeNull();
-  });
-
-  it('returns null on HTTP error', async () => {
-    const responseData = '';
-    mockHttpsRequest(responseData, 404);
-    const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
-    expect(baseBranch).toBeNull();
-  });
-
-  it('returns null on invalid JSON', async () => {
-    const responseData = 'not-json';
-    mockHttpsRequest(responseData, 200);
-    const baseBranch = await getPrBaseBranch(OWNER, REPO, BRANCH, TOKEN);
-    expect(baseBranch).toBeNull();
-  });
-});
-
 describe('normalizeBaseline', () => {
-  const FULL_REPO_NAME = 'repo-owner/test-repo';
-  const GITHUB_TOKEN = 'ghp_testtoken';
   const inputBaseline = 'origin/main';
-  let originalRequest;
 
-  beforeAll(() => {
-    originalRequest = https.request;
-  });
-
-  afterEach(() => {
-    https.request = originalRequest;
-  });
-
-  it('returns input baseline for non-PR event', async () => {
-    const hasPr = 'false';
-    const githubDetails = {
-      eventName: 'push',
-      baseRef: '',
-      githubRefName: 'feature-branch',
-      githubToken: GITHUB_TOKEN,
-      repo: FULL_REPO_NAME,
-    };
-    const baseline = await normalizeBaseline(hasPr, inputBaseline, githubDetails);
-
-    expect(baseline).toBe('origin/main');
-  });
-
-  it('returns origin/baseRef for PR event with baseRef', async () => {
-    const hasPr = 'true';
-    const githubDetails = {
+  it('returns origin/baseRef for a pull_request event', () => {
+    const baseline = normalizeBaseline(inputBaseline, {
       eventName: 'pull_request',
       baseRef: 'develop',
-      githubRefName: 'feature-branch',
-      githubToken: GITHUB_TOKEN,
-      repo: FULL_REPO_NAME,
-    };
+    });
 
-    const baseline = await normalizeBaseline(hasPr, inputBaseline, githubDetails);
-
-    expect(baseline).toBe(`origin/${githubDetails.baseRef}`);
+    expect(baseline).toBe('origin/develop');
   });
 
-  it('fetches base branch when baseRef is not provided', async () => {
-    const mockResponse = JSON.stringify([
-      {
-        base: { ref: 'staging' },
-      },
-    ]);
-    mockHttpsRequest(mockResponse, 200);
+  it.each(['push', 'workflow_dispatch'])('returns the input baseline for a %s event', eventName => {
+    const baseline = normalizeBaseline(inputBaseline, { eventName, baseRef: '' });
 
-    const hasPr = 'true';
-    const githubDetails = {
-      eventName: 'push',
-      baseRef: '',
-      githubRefName: 'feature-branch',
-      githubToken: GITHUB_TOKEN,
-      repo: FULL_REPO_NAME,
-    };
-
-    const baseline = await normalizeBaseline(hasPr, inputBaseline, githubDetails);
-
-    expect(baseline).toBe('origin/staging');
+    expect(baseline).toBe(inputBaseline);
   });
 
-  it('falls back to input baseline when base branch cannot be fetched', async () => {
-    mockHttpsRequest('', 404);
+  it('returns the input baseline for a pull_request event without baseRef', () => {
+    const baseline = normalizeBaseline(inputBaseline, { eventName: 'pull_request', baseRef: '' });
 
-    const hasPr = 'true';
-    const githubDetails = {
-      eventName: 'push',
-      baseRef: '',
-      githubRefName: 'feature-branch',
-      githubToken: GITHUB_TOKEN,
-      repo: FULL_REPO_NAME,
-    };
-
-    const baseline = await normalizeBaseline(hasPr, inputBaseline, githubDetails);
-
-    expect(baseline).toBe('origin/main');
+    expect(baseline).toBe(inputBaseline);
   });
 });
 
