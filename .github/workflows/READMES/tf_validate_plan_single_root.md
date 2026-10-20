@@ -1,19 +1,7 @@
 # Terraform Validate and Plan a Single Root
 
-This reusable workflow initializes, validates, and plans one Terraform root against a selected
-GitHub environment and Terraform workspace. It writes the rendered plan to the job summary and can
-optionally upload the rendered plan as an artifact.
-
-> **Safety:** The workflow authenticates to AWS and runs `terraform init -upgrade`, workspace
-> selection, and `terraform plan`. It does not apply the plan, but providers and data sources may
-> still contact live systems during initialization and planning.
-
-## Prerequisites
-
-- The caller repository contains the requested Terraform root at `terraform-root`.
-- The requested GitHub environment exists and permits the deployment job to run.
-- The OIDC domain and environment resolve to an AWS role through `gha-oidc-access`.
-- The requested Terraform version is available through `hashicorp/setup-terraform`.
+Runs `terraform init`, `validate`, and `plan` for one root in a GitHub environment and writes the plan
+to the job summary. It never applies, but providers and data sources may contact live systems.
 
 ## Usage
 
@@ -37,65 +25,25 @@ jobs:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 ```
 
+The check is reported as `<caller job name> / Validate Plan`.
+
 ## Inputs
 
-| Input                      | Type    | Required | Default | Description                                                                                      |
-| -------------------------- | ------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
-| `environment`              | string  | Yes      | —       | GitHub environment and AWS account environment to target.                                        |
-| `oidc-domain`              | string  | Yes      | —       | Domain used to resolve the AWS role, such as `core` or `reveng`.                                 |
-| `commit-identifier`        | string  | Yes      | —       | Commit SHA, tag, or branch to check out and plan.                                                |
-| `with-lock`                | boolean | No       | `true`  | Whether Terraform should lock state while creating the plan.                                     |
-| `write-artifact`           | boolean | No       | `false` | Whether to upload the rendered plan text as an artifact.                                         |
-| `terraform-workspace`      | string  | Yes      | —       | Terraform workspace to select or create.                                                         |
-| `terraform-root`           | string  | Yes      | —       | Terraform working directory relative to the repository root.                                     |
-| `terraform-version`        | string  | Yes      | —       | Terraform CLI version to install.                                                                |
-| `build-artifact-directory` | string  | No       | —       | Newline-separated directories to create beneath the Terraform working directory before planning. |
+| Input                      | Required | Default | Description                                                          |
+| -------------------------- | -------- | ------- | -------------------------------------------------------------------- |
+| `environment`              | Yes      |         | GitHub environment and AWS account environment                       |
+| `oidc-domain`              | Yes      |         | AWS role domain, such as `core` or `reveng`                          |
+| `commit-identifier`        | Yes      |         | Commit SHA, tag, or branch to plan                                   |
+| `terraform-workspace`      | Yes      |         | Workspace to select or create                                        |
+| `terraform-root`           | Yes      |         | Terraform directory relative to the repo root                        |
+| `terraform-version`        | Yes      |         | Terraform CLI version                                                |
+| `with-lock`                | No       | `true`  | Lock state while planning; locked plans for an env run one at a time |
+| `write-artifact`           | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`           |
+| `build-artifact-directory` | No       |         | Newline-separated directories to create under the root               |
 
-## Secrets
-
-| Secret                                | Required | Description                                                                 |
-| ------------------------------------- | -------- | --------------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key used by the AWS role resolver and for private GitHub module access. |
-| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token required by the declared workflow contract.                   |
-
-The workflow passes no GitHub token to Terraform. Terraform roots that need one, for example through
-`TF_VAR_github_personal_access_token`, are not supported by this workflow.
-
-## Outputs
-
-| Output               | Description                                                     |
-| -------------------- | --------------------------------------------------------------- |
-| `plan-artifact-name` | Artifact name when `write-artifact` is `true`; otherwise empty. |
-
-When enabled, the rendered plan `<terraform-root>/tfplan.txt` is uploaded as
-`terraform-plan-<environment>`.
-
-## Behavior
-
-1. Resolves an AWS role, configures temporary credentials, and checks out `commit-identifier`.
-2. Configures SSH access for private GitHub dependencies.
-3. Installs the requested Terraform version.
-4. Creates any requested build-artifact directories.
-5. Runs `terraform init -upgrade`, `terraform validate`, and workspace selection.
-6. Reinitializes Terraform and creates `tfplan` with the configured lock behavior.
-7. Writes a human-readable plan to the GitHub Actions job summary.
-8. Optionally uploads the rendered plan text for seven days.
-
-When `with-lock` is `true`, runs for the same repository and environment share a concurrency group:
-one locked plan runs at a time, and GitHub keeps only one pending run, so a newer locked plan
-replaces any plan already waiting. Lock-free plans only read state, so each run gets its own group
-and never waits behind, or replaces, another run's plan.
-
-The job is `validate-plan` ("Validate Plan"), so the check reads `<caller job name> / Validate Plan`.
-It requests `id-token: write` and `contents: read`; the caller job must grant both. The workflow
-declares no other permissions, and the checkout does not persist credentials. The job runs on
-Ubuntu 26.04.
+Output: `plan-artifact-name` (empty unless `write-artifact` is `true`). Terraform gets no GitHub token.
 
 ## Contribution
 
-- Update the workflow, README, and changelog together.
-- Create a PR and set a version label following the [versioning instructions](../../../VERSIONING.md).
-
-## References
-
-- [Terraform plan documentation](https://developer.hashicorp.com/terraform/cli/commands/plan)
+Update the workflow, README, and changelog together, and set a version label per
+[VERSIONING.md](../../../VERSIONING.md).

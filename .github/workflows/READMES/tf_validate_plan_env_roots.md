@@ -1,18 +1,8 @@
 # Terraform Validate and Plan Environment Roots
 
-This reusable workflow validates and plans the conventional `terraform/dev`, `terraform/stage`, and
-`terraform/prod` roots in parallel. Each matrix job delegates to the single-root Terraform plan
-workflow.
-
-> **Safety:** The workflow authenticates to the dev, stage, and prod AWS environments and runs
-> Terraform initialization and planning against each one. It does not apply infrastructure changes,
-> but providers and data sources may contact live systems.
-
-## Prerequisites
-
-- The caller repository contains `terraform/dev`, `terraform/stage`, and `terraform/prod` roots.
-- The `dev`, `stage`, and `prod` GitHub environments exist and permit the plan jobs to run.
-- The OIDC domain resolves roles for all three environments.
+Plans `terraform/dev`, `terraform/stage`, and `terraform/prod` in parallel, without state locking,
+through [`tf_validate_plan_single_root`](tf_validate_plan_single_root.md). It never applies, but
+providers and data sources may contact live systems.
 
 ## Usage
 
@@ -33,43 +23,20 @@ jobs:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 ```
 
+Checks are reported as `Terraform / dev / Validate Plan`, `Terraform / stage / Validate Plan`, and
+`Terraform / prod / Validate Plan`.
+
 ## Inputs
 
-| Input                      | Type   | Required | Default          | Description                                                                                         |
-| -------------------------- | ------ | -------- | ---------------- | --------------------------------------------------------------------------------------------------- |
-| `commit-identifier`        | string | Yes      | —                | Commit SHA, tag, or branch to check out and plan.                                                   |
-| `oidc-domain`              | string | Yes      | —                | Domain used to resolve AWS roles, such as `core` or `reveng`.                                       |
-| `terraform-workspace`      | string | No       | Environment name | Workspace used for every environment when supplied; otherwise each job uses its matrix environment. |
-| `terraform-version`        | string | Yes      | —                | Terraform CLI version used for all plan jobs.                                                       |
-| `build-artifact-directory` | string | No       | —                | Newline-separated directories forwarded to each single-root plan job for creation before planning.  |
-
-## Secrets
-
-| Secret                                | Required | Description                                                          |
-| ------------------------------------- | -------- | -------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key forwarded for AWS role resolution and private GitHub access. |
-| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token forwarded to each plan job.                            |
-
-## Behavior
-
-- Runs dev, stage, and prod plan jobs through a matrix with fail-fast disabled. Each matrix job is
-  named after its environment, so with a caller job named `Terraform` the checks read
-  `Terraform / dev / Validate Plan`, `Terraform / stage / Validate Plan`, and
-  `Terraform / prod / Validate Plan`.
-- Requests `id-token: write` and `contents: read` for the composed plan jobs; the caller job must grant
-  both. The workflow declares no other permissions.
-- Uses `terraform/<environment>` as each Terraform root.
-- Disables Terraform state locking for all three plan jobs.
-- Uses the supplied `terraform-workspace` for every environment when present; otherwise uses the
-  environment name.
-- Does not request plan artifacts from the called workflow.
-- Runs the composed plan jobs on Ubuntu 26.04.
+| Input                      | Required | Default          | Description                                             |
+| -------------------------- | -------- | ---------------- | ------------------------------------------------------- |
+| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                      |
+| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`             |
+| `terraform-version`        | Yes      |                  | Terraform CLI version                                   |
+| `terraform-workspace`      | No       | Environment name | Workspace for every environment                         |
+| `build-artifact-directory` | No       |                  | Newline-separated directories to create under each root |
 
 ## Contribution
 
-- Update the workflow, README, and changelog together.
-- Create a PR and set a version label following the [versioning instructions](../../../VERSIONING.md).
-
-## References
-
-- [Single-root Terraform plan workflow](tf_validate_plan_single_root.md)
+Update the workflow, README, and changelog together, and set a version label per
+[VERSIONING.md](../../../VERSIONING.md).
