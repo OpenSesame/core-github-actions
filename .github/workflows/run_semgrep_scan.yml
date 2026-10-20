@@ -7,154 +7,98 @@ defaults:
 on:
   workflow_call:
     inputs:
-      commit_identifier:
-        description: 'Commit SHA or ref to scan (default: current ref)'
+      commit-identifier:
+        description: Commit SHA or ref to scan; defaults to the ref that triggered the workflow
         type: string
-        required: true
-      cancel_in_progress:
-        description: 'Cancel in-progress run for the same ref'
-        type: boolean
-        default: true
-      semgrep_config:
-        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list. Default is "p/default"
-        type: string
-        default: p/default
-      semgrep_targets:
-        description: les/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
-        type: string
-        default: .
-      extra_args:
-        description: 'Additional arguments to pass to Semgrep (e.g., --exclude, --timeout). Optional.'
-        type: string
+        required: false
         default: ''
-      semgrep_version:
-        description: 'Semgrep version to install. Default: 1.178.0.'
-        type: string
-        default: '1.178.0'
-      fail_severity:
-        description: 'error | warning | info'
-        type: string
-        default: 'error'
-      semgrep_scan_mode:
-        description: What should Semgrep scan? "full | diff | baseline"
-        type: string
-        default: 'full'
-      baseline_ref:
-        description: 'Ref for diff/baseline (e.g., origin/main)'
-        type: string
-        default: 'origin/main'
-      reviewdog_filter_mode:
-        description: What should reviewdog display (does not change what Semgrep scans)? "added | diff_context | nofilter"
-        type: string
-        default: 'nofilter'
-      reviewdog_reporter:
-        description: 'review output: github-pr-review | github-pr-check (only applies if PR context exists, on push github-check is used)'
-        type: string
-        default: 'github-pr-review'
-    outputs:
-      total_findings:
-        description: 'Total number of findings'
-        value: ${{ jobs.semgrep.outputs.total_findings }}
-      error_count:
-        description: 'Number of ERROR findings'
-        value: ${{ jobs.semgrep.outputs.error_count }}
-      warning_count:
-        description: 'Number of WARNING findings'
-        value: ${{ jobs.semgrep.outputs.warning_count }}
-      info_count:
-        description: 'Number of INFO findings'
-        value: ${{ jobs.semgrep.outputs.info_count }}
-
-  workflow_dispatch:
-    inputs:
-      commit_identifier:
-        description: 'Commit SHA or ref to scan (default: current ref)'
+      semgrep-config:
+        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list
         type: string
         required: false
-      cancel_in_progress:
-        description: 'Cancel in-progress run for the same ref'
-        type: boolean
-        default: true
-      semgrep_config:
-        description: Semgrep rulesets to use. Accepts a YAML array, newline or space-separated list. Default is "p/default"
-        type: string
         default: p/default
-      semgrep_targets:
-        description: Files/directories to scan. Accepts a YAML array, newline or space-separated list. Default is current directory (`.`)
+      semgrep-targets:
+        description: Files or directories to scan. Accepts a YAML array, newline or space-separated list
         type: string
+        required: false
         default: .
-      extra_args:
-        description: 'Additional arguments to pass to Semgrep (e.g., --exclude, --timeout). Optional.'
+      extra-args:
+        description: Additional arguments to pass to Semgrep (e.g., --exclude, --timeout)
         type: string
         required: false
-      semgrep_version:
-        description: 'Semgrep version to install. Default: 1.178.0.'
+        default: ''
+      semgrep-version:
+        description: Semgrep version to install
         type: string
+        required: false
         default: '1.178.0'
+      fail-severity:
+        description: Lowest finding severity that fails the job (error | warning | info)
+        type: string
         required: false
-      fail_severity:
-        description: 'error | warning | info'
+        default: error
+      semgrep-scan-mode:
+        description: What Semgrep scans (full | diff)
         type: string
-        default: 'error'
-      semgrep_scan_mode:
-        description: What should Semgrep scan? "full | diff | baseline"
+        required: false
+        default: full
+      baseline-ref:
+        description: Baseline ref for diff scans outside pull_request events; defaults to origin/<default branch>
         type: string
-        default: 'full'
-      baseline_ref:
-        description: 'Ref for diff/baseline (e.g., origin/main)'
+        required: false
+        default: ''
+      reviewdog-filter-mode:
+        description: Which findings reviewdog posts on pull_request events (added | diff_context | nofilter); does not change what Semgrep scans
         type: string
-        default: 'origin/main'
-      reviewdog_filter_mode:
-        description: What should reviewdog display (does not change what Semgrep scans)? "added | diff_context | nofilter"
+        required: false
+        default: added
+      reviewdog-reporter:
+        description: Reviewdog reporter on pull_request events (github-pr-review | github-pr-check); other events use github-check
         type: string
-        default: 'nofilter'
-      reviewdog_reporter:
-        description: 'review output: github-pr-review | github-pr-check (only applies if PR context exists, on push github-check is used)'
-        type: string
-        default: 'github-pr-review'
+        required: false
+        default: github-pr-review
+    outputs:
+      total-findings:
+        description: Total number of findings
+        value: ${{ jobs.scan.outputs.total-findings }}
+      error-count:
+        description: Number of ERROR findings
+        value: ${{ jobs.scan.outputs.error-count }}
+      warning-count:
+        description: Number of WARNING findings
+        value: ${{ jobs.scan.outputs.warning-count }}
+      info-count:
+        description: Number of INFO findings
+        value: ${{ jobs.scan.outputs.info-count }}
 
-permissions:
-  contents: read
-  pull-requests: write
-  checks: write # needed if reporter is github-pr-check or github-check
-
-concurrency:
-  group: semgrep-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ inputs.cancel_in_progress }}
+permissions: {}
 
 jobs:
-  semgrep:
-    name: Run Semgrep
+  scan:
+    name: Scan
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the code to scan.
+      pull-requests: write # Required to post review comments and the summary comment on pull requests.
+      checks: write # Required for the github-check and github-pr-check reviewdog reporters.
 
     outputs:
-      total_findings: ${{ steps.semgrep.outputs.totalFindings }}
-      error_count: ${{ steps.semgrep.outputs.numErrors }}
-      warning_count: ${{ steps.semgrep.outputs.numWarnings }}
-      info_count: ${{ steps.semgrep.outputs.numInfos }}
-      scan_status: ${{ steps.semgrep.outputs.scanStatus }}
-      scan_md_summary: ${{ steps.semgrep.outputs.scanSummary }}
-      config_md_summary: ${{ steps.semgrep.outputs.configSummary }}
-      normalized_baseline: ${{ steps.semgrep.outputs.normalizedBaseline }}
+      total-findings: ${{ steps.semgrep.outputs.total-findings }}
+      error-count: ${{ steps.semgrep.outputs.error-count }}
+      warning-count: ${{ steps.semgrep.outputs.warning-count }}
+      info-count: ${{ steps.semgrep.outputs.info-count }}
 
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.commit_identifier }}
-          # Full history only when diff/baseline is requested
-          fetch-depth: ${{ inputs.semgrep_scan_mode == 'full' && '1' || '0' }}
-
-      - name: Check for open PR (by commit)
-        id: pr_check
-        uses: OpenSesame/core-github-actions/.github/actions/pr-open-check@46797fa9c6bc83156b46b2f81e6f7571a45ab092 # actions/pr-open-check/2.0.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          commit-identifier: ${{ inputs.commit_identifier }}
+          ref: ${{ inputs.commit-identifier }}
+          fetch-depth: ${{ inputs.semgrep-scan-mode == 'full' && '1' || '0' }}
+          persist-credentials: false
 
       - name: Install Semgrep
         env:
-          SEMGREP_VERSION: ${{ inputs.semgrep_version }}
+          SEMGREP_VERSION: ${{ inputs.semgrep-version }}
         run: |
           if [ -n "$SEMGREP_VERSION" ]; then
             python3 -m pip install "semgrep==$SEMGREP_VERSION"
@@ -163,20 +107,18 @@ jobs:
           fi
 
       - name: Run Semgrep
-        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@bcdfc302926fb20a11d9b0250b4ea5fd6721bf4e # actions/run-semgrep/1.0.1
         id: semgrep
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@356f6834fd7f1a77a36ef31b1d93537246a74218 # actions/run-semgrep/2.0.0
         env:
-          INPUT_BASELINE: ${{ inputs.baseline_ref }}
-          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SCAN_MODE: ${{ inputs.semgrep_scan_mode }}
-          SEMGREP_CONFIG: ${{ inputs.semgrep_config }}
-          SEMGREP_TARGETS: ${{ inputs.semgrep_targets }}
-          FAIL_LEVEL: ${{ inputs.fail_severity }}
-          EXTRA_ARGS: ${{ inputs.extra_args }}
+          INPUT_BASELINE: ${{ inputs.baseline-ref || format('origin/{0}', github.event.repository.default_branch) }}
+          SCAN_MODE: ${{ inputs.semgrep-scan-mode }}
+          SEMGREP_CONFIG: ${{ inputs.semgrep-config }}
+          SEMGREP_TARGETS: ${{ inputs.semgrep-targets }}
+          FAIL_LEVEL: ${{ inputs.fail-severity }}
+          EXTRA_ARGS: ${{ inputs.extra-args }}
 
-      - name: Upload Artifact
-        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
+      - name: Upload results artifact
+        if: ${{ steps.semgrep.outputs.total-findings > 0 }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: semgrep-${{ github.run_id }}.json
@@ -184,91 +126,75 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Set up Reviewdog
-        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
+      - name: Set up reviewdog
+        if: ${{ steps.semgrep.outputs.total-findings > 0 }}
         uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f # v1.5.0
         with:
           reviewdog_version: v0.21.2
 
-      - name: Normalize Reviewdog settings (push vs PR)
-        id: normalized_settings
-        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
+      - name: Select reviewdog settings
+        id: reviewdog-settings
+        if: ${{ steps.semgrep.outputs.total-findings > 0 }}
         env:
           EVENT_NAME: ${{ github.event_name }}
-          REPORTER: ${{ inputs.reviewdog_reporter }}
-          FILTER_MODE: ${{ inputs.reviewdog_filter_mode }}
-          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
+          REPORTER: ${{ inputs.reviewdog-reporter }}
+          FILTER_MODE: ${{ inputs.reviewdog-filter-mode }}
         run: |
           set -Eeuo pipefail
-          echo "Inputs: event=$EVENT_NAME, has_pr=$HAS_PR"
-          echo "- reporter: $REPORTER"
-          echo "- filter mode: $FILTER_MODE"
 
-          # Normalize settings so later steps do not need to branch on PR context
-          if [[ "$EVENT_NAME" != "pull_request" && "$HAS_PR" != "true" ]]; then
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
             REPORTER="github-check"
             FILTER_MODE="nofilter"
-            echo -e "\nNo PR context; using github-check reporter with nofilter"
+            echo "Not a pull_request event; using the github-check reporter with nofilter"
           fi
 
           echo "reporter=$REPORTER" >> "$GITHUB_OUTPUT"
-          echo "filterMode=$FILTER_MODE" >> "$GITHUB_OUTPUT"
+          echo "filter-mode=$FILTER_MODE" >> "$GITHUB_OUTPUT"
 
-      - name: Reviewdog report
-        if: ${{ steps.semgrep.outputs.totalFindings > 0 }}
+      - name: Report findings with reviewdog
+        if: ${{ steps.semgrep.outputs.total-findings > 0 }}
         env:
-          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
-          REVIEWDOG_FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
-          REVIEWDOG_FAIL_LEVEL: ${{ inputs.fail_severity }}
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
+          REVIEWDOG_REPORTER: ${{ steps.reviewdog-settings.outputs.reporter }}
+          REVIEWDOG_FILTER_MODE: ${{ steps.reviewdog-settings.outputs.filter-mode }}
         run: |
-          cat reviewdog_input.txt | reviewdog \
+          reviewdog \
             -efm="%t:%f:%l %m" \
             -name="semgrep" \
             -reporter="$REVIEWDOG_REPORTER" \
             -filter-mode="$REVIEWDOG_FILTER_MODE" \
-            -fail-level="$REVIEWDOG_FAIL_LEVEL"
+            -fail-level=none < reviewdog_input.txt
 
       - name: Write job summary
         env:
-          HAS_PR: ${{ steps.pr_check.outputs.pr_exists }}
-          PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
-          PR_URL: ${{ steps.pr_check.outputs.pr_url }}
-          SCAN_SUMMARY: ${{ steps.semgrep.outputs.scanSummary }}
-          CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
-          FILTER_MODE: ${{ steps.normalized_settings.outputs.filterMode }}
-          REVIEWDOG_REPORTER: ${{ steps.normalized_settings.outputs.reporter }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          SCAN_SUMMARY: ${{ steps.semgrep.outputs.scan-summary }}
+          CONFIG_SUMMARY: ${{ steps.semgrep.outputs.config-summary }}
+          FILTER_MODE: ${{ steps.reviewdog-settings.outputs.filter-mode }}
+          REVIEWDOG_REPORTER: ${{ steps.reviewdog-settings.outputs.reporter }}
         run: |
           {
             echo "## 🔎 Semgrep Summary"
-            echo "triggered by: \`${{ github.event_name }}\` on \`${{ github.ref }}\`"
-
-            if [ "${{ github.event_name }}" = "push" ]; then
-              if [ "${HAS_PR}" = "true" ]; then
-                echo "- **PR context**: Detected open PR [#${PR_NUMBER}](${PR_URL}); PR-style review settings applied."
-              else
-                echo "- **PR context**: None for this push; PR-only input settings were overridden."
-              fi
-            fi
-
+            echo "triggered by: \`${EVENT_NAME}\` on \`${REF}\`"
             echo -e "${SCAN_SUMMARY}"
             echo -e "${CONFIG_SUMMARY}"
-            echo "- **Review filter**: \`${FILTER_MODE}\`"
-            echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+            if [[ -n "$REVIEWDOG_REPORTER" ]]; then
+              echo "- **Review filter**: \`${FILTER_MODE}\`"
+              echo "- **Reviewdog reporter**: \`${REVIEWDOG_REPORTER}\`"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate PR comment body
-        if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
-        id: generate_body
+        if: ${{ github.event_name == 'pull_request' }}
+        id: generate-body
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          PR_NUMBER: ${{ steps.pr_check.outputs.pr_number }}
-          SCAN_STATUS: ${{ steps.semgrep.outputs.scanStatus }}
-          TOTAL_FINDINGS: ${{ steps.semgrep.outputs.totalFindings }}
-          NUM_ERRORS: ${{ steps.semgrep.outputs.numErrors }}
-          NUM_WARNINGS: ${{ steps.semgrep.outputs.numWarnings }}
-          NUM_INFO: ${{ steps.semgrep.outputs.numInfos }}
-          CONFIG_SUMMARY: ${{ steps.semgrep.outputs.configSummary }}
+          SCAN_STATUS: ${{ steps.semgrep.outputs.scan-status }}
+          TOTAL_FINDINGS: ${{ steps.semgrep.outputs.total-findings }}
+          NUM_ERRORS: ${{ steps.semgrep.outputs.error-count }}
+          NUM_WARNINGS: ${{ steps.semgrep.outputs.warning-count }}
+          NUM_INFO: ${{ steps.semgrep.outputs.info-count }}
         with:
           result-encoding: string
           script: |
@@ -290,7 +216,7 @@ jobs:
 
             const findings = total > 0 ? `\n\n${parts.join(", ")}` : "\n\n🎉 No security issues found!";
 
-            const runUrl = `https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
 
             const body = `${heading}
             ${findings}
@@ -301,19 +227,18 @@ jobs:
             core.setOutput('body', body);
 
       - name: Upsert PR comment
-        if: ${{ github.event_name == 'pull_request' || steps.pr_check.outputs.pr_exists == 'true' }}
+        if: ${{ github.event_name == 'pull_request' }}
         uses: OpenSesame/core-github-actions/.github/actions/upsert-pr-comment@3facf8375da0266732c48933ef95c3dd333817fc # actions/upsert-pr-comment/1.0.1
         with:
-          pr-number: ${{ steps.pr_check.outputs.pr_number }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-number: ${{ github.event.pull_request.number }}
+          github-token: ${{ github.token }}
           comment-marker: semgrep-summary
-          body-content: ${{ steps.generate_body.outputs.body }}
+          body-content: ${{ steps.generate-body.outputs.body }}
 
-      - name: Fail on findings at/above threshold
-        if: ${{ steps.semgrep.outputs.scanStatus == 'failure' }}
+      - name: Fail on findings at or above threshold
+        if: ${{ steps.semgrep.outputs.scan-status == 'failure' }}
         env:
-          FAIL_SEVERITY: ${{ inputs.fail_severity }}
+          FAIL_SEVERITY: ${{ inputs.fail-severity }}
         run: |
-          echo "❌ Semgrep exceeded fail_severity='${FAIL_SEVERITY}'"
+          echo "❌ Semgrep exceeded fail-severity='${FAIL_SEVERITY}'"
           exit 1
-          # Note: this will fail the job, but we still got findings posted via reviewdog and summary comment.

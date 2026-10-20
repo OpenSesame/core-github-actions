@@ -1,71 +1,48 @@
 # Run Semgrep Scan
 
-This workflow runs [Semgrep](https://semgrep.dev/) on your repository to perform static code analysis, to report security issues, bugs, and code quality problems.
-
-## Purpose
-
-The `run_semgrep_scan` workflow designed to be reusable and configurable for different scan scenarios. It supports both full and differential scans, integrates with pushes and PRs, and can be customized for different rule sets, targets, and failure thresholds. The workflow is intended to:
-
-- Enforce code security and quality standards
-- Catch issues early in the development lifecycle
-- Provide actionable feedback directly in GitHub
+Runs [Semgrep](https://semgrep.dev/) and reports findings with reviewdog. On `pull_request` runs it
+posts review comments and a summary comment; other runs report as check annotations.
 
 ## Usage
 
-This workflow is intended to be called by other workflows using `workflow_call`.
+```yaml
+jobs:
+  semgrep:
+    name: Semgrep
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
+    uses: OpenSesame/core-github-actions/.github/workflows/run_semgrep_scan.yml@<released-sha> # workflows/run_semgrep_scan/2.0.0
+    permissions:
+      contents: read # Required to check out the code to scan.
+      pull-requests: write # Required to post review comments and the summary comment on pull requests.
+      checks: write # Required for reviewdog check annotations outside pull requests.
+    with:
+      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+      semgrep-scan-mode: ${{ github.ref_name == github.event.repository.default_branch && 'full' || 'diff' }}
+```
 
-### Inputs
+This runs a full scan on the default branch and a diff scan elsewhere. The check is reported as
+`Semgrep / Scan`. Pair it with [`resolve_ci_context`](resolve_ci_context.md) so pushes covered by a PR
+run are skipped.
 
-You can customize the scan by providing the following inputs:
+## Inputs
 
-| Input Name              | Type    | Default           | Description                                                       |
-|-------------------------|---------|-------------------|-------------------------------------------------------------------|
-| `commit_identifier`     | string  | (required)        | Commit SHA or ref to scan                                         |
-| `cancel_in_progress`    | boolean | true              | Cancel in-progress run for the same ref                           |
-| `semgrep_config`        | string  | p/default         | Semgrep rulesets to use (YAML array, newline, or space-separated) |
-| `semgrep_targets`       | string  | .                 | Files/directories to scan                                         |
-| `extra_args`            | string  | ''                | Additional arguments to pass to Semgrep                           |
-| `semgrep_version`       | string  | 1.178.0           | Semgrep version to install                                        |
-| `fail_severity`         | string  | error             | Minimum severity to fail the workflow (`error`, `warning`, `info`)|
-| `semgrep_scan_mode`     | string  | full              | Scan mode: `full`, `diff`, or `baseline`                          |
-| `baseline_ref`          | string  | origin/main       | Ref for diff/baseline scans                                       |
-| `reviewdog_filter_mode` | string  | nofilter          | Reviewdog display filter: `added`, `diff_context`, `nofilter`     |
-| `reviewdog_reporter`    | string  | github-pr-review  | Reviewdog reporter type                                           |
+| Input                   | Default                   | Description                                                    |
+| ----------------------- | ------------------------- | -------------------------------------------------------------- |
+| `commit-identifier`     | Triggering ref or SHA     | Commit SHA or ref to scan                                      |
+| `semgrep-scan-mode`     | `full`                    | `full` or `diff`                                               |
+| `semgrep-config`        | `p/default`               | Rulesets, space- or newline-separated                          |
+| `semgrep-targets`       | `.`                       | Files or directories to scan                                   |
+| `fail-severity`         | `error`                   | Lowest severity that fails the job: `error`, `warning`, `info` |
+| `baseline-ref`          | `origin/<default branch>` | Diff baseline outside `pull_request` (PRs use their base)      |
+| `extra-args`            | `''`                      | Extra Semgrep arguments                                        |
+| `semgrep-version`       | `1.178.0`                 | Semgrep version to install                                     |
+| `reviewdog-filter-mode` | `added`                   | PR comments: `added`, `diff_context`, or `nofilter`            |
+| `reviewdog-reporter`    | `github-pr-review`        | PR reporter: `github-pr-review` or `github-pr-check`           |
 
-See the workflow file for full input documentation and defaults.
-
-### How it works
-
-1. Checks out the code at the specified commit or ref.
-2. Checks for an open PR and normalizes settings if one is found.
-3. Installs Semgrep (customizable version).
-4. Runs Semgrep with the provided configuration and scan mode.
-5. Summarizes findings and posts results to the Actions UI, Job Summary, and if applicable, PR comments and Reviewdog review.
-6. Fails the workflow if findings meet or exceed the configured severity threshold.
-
-## Outputs
-
-The workflow provides the following outputs for use in downstream jobs or for reporting:
-
-- `total_findings`: Total number of findings
-- `error_count`: Number of ERROR findings
-- `warning_count`: Number of WARNING findings
-- `info_count`: Number of INFO findings
-- `scan_status`: `success` or `failure` based on findings and fail threshold
-- `scan_md_summary`: Markdown summary of findings
-- `config_md_summary`: Markdown summary of the config settings used
-- `normalized_baseline`: The resolved baseline ref used for diff/baseline scans
-
-Findings are also posted as PR comments and Reviewdog annotations (if enabled), and a summary is written to the GitHub Actions job summary.
-
-The workflow job runs on Ubuntu 26.04.
+Outputs: `total-findings`, `error-count`, `warning-count`, `info-count`.
 
 ## Contribution
 
-- Update the workflow file and related javascript file
-- Update the README and CHANGELOG
-- Create a PR and set a version label following [versioning instructions](../../../VERSIONING.md)
-
-## References
-
-- [Semgrep Documentation](https://semgrep.dev/docs/)
+Update the workflow, the [`run-semgrep`](../../actions/run-semgrep/README.md) action if needed, the
+README, and the changelog together, and set a version label per [VERSIONING.md](../../../VERSIONING.md).

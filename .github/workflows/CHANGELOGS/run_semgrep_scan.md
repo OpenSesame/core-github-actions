@@ -2,6 +2,39 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 2.0.0
+
+### Changed
+
+- **Breaking:** inputs are kebab-case: `commit-identifier`, `semgrep-config`, `semgrep-targets`,
+  `extra-args`, `semgrep-version`, `fail-severity`, `semgrep-scan-mode`, `baseline-ref`,
+  `reviewdog-filter-mode` and `reviewdog-reporter`. Outputs are `total-findings`, `error-count`,
+  `warning-count` and `info-count`.
+- **Breaking:** the job is renamed from `semgrep` ("Run Semgrep") to `scan` ("Scan"), so with a caller
+  job named `Semgrep` the check reads `Semgrep / Scan`.
+- **Breaking:** PR context comes only from the event. A push to a branch with an open PR is scanned
+  against `baseline-ref`, reported with `github-check`, and gets no PR comment.
+- **Breaking:** `baseline-ref` defaults to `origin/<default branch>` instead of `origin/main`.
+- **Breaking:** `reviewdog-filter-mode` defaults to `added` instead of `nofilter`.
+- **Breaking:** workflow-level permissions are `{}`, and the job requests `contents: read`,
+  `pull-requests: write` and `checks: write`, so the caller job must grant them.
+- `commit-identifier` is optional and defaults to the triggering ref.
+- Uses `run-semgrep` 2.0.0. The checkout no longer persists credentials.
+
+### Fixed
+
+- The job summary and PR comment are written when findings meet `fail-severity`. reviewdog runs with
+  `-fail-level=none`, and the final threshold step is the only step that fails the job.
+
+### Removed
+
+- **Breaking:** the `pr-open-check` lookup and the push-with-open-PR handling.
+- **Breaking:** the `cancel_in_progress` input and the workflow's own `concurrency` block. Callers
+  set concurrency for their whole CI workflow.
+- **Breaking:** the `workflow_dispatch` trigger and its duplicated inputs. The workflow had never been
+  dispatched.
+- The `baseline` scan mode from the documentation. It never added a baseline and ran a full scan.
+
 ## 1.2.0
 
 ### Changed

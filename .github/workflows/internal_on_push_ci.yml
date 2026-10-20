@@ -1,57 +1,115 @@
 name: Internal CI
+run-name: "${{ github.event_name == 'pull_request' && format('PR #{0} CI', github.event.pull_request.number) || github.event_name == 'push' && format('Push {0} CI', github.ref_name) || format('Manual {0} CI', inputs.commit-identifier || github.ref_name) }}"
 
 on:
   push:
-    branches-ignore:
-      - main
+  pull_request:
   workflow_dispatch:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to test and scan; when omitted, the selected branch head is used
+        type: string
+        required: false
 
-permissions:
-  contents: read
-  pull-requests: write
-  checks: write # needed if reporter is github-pr-check or github-check
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
-  internal-ci:
-    name: Internal CI
+  ci-context:
+    name: CI Context
+    uses: ./.github/workflows/resolve_ci_context.yml
+    permissions:
+      contents: read # Required to read commit metadata for the open-PR lookup.
+      pull-requests: read # Required to find an open PR from the pushed branch.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  app-ci:
+    name: App CI
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
     runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the code under test.
 
     steps:
-      - name: Checkout repo
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.ci-context.outputs.commit-identifier }}
+          persist-credentials: false
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
 
       - name: Set up npm
-        run: npm install --global npm@12.1.0
+        run: npm install --global npm@12.1.0 # zizmor: ignore[adhoc-packages] AGENTS.md pins npm 12.1.0 and setup-node has no npm version input.
 
       - name: Install dependencies
+        id: install
         run: npm ci
 
-      - name: Dependency Audit
+      - name: Audit dependencies
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run audit
 
       - name: Test
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test
 
       - name: Lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run lint
 
-      - name: Format
+      - name: Check formatting
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run format
 
   semgrep:
+    name: Semgrep
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
     uses: ./.github/workflows/run_semgrep_scan.yml
-    secrets: inherit
+    permissions:
+      contents: read # Required to check out the code to scan.
+      pull-requests: write # Required to post review comments and the summary comment on pull requests.
+      checks: write # Required for reviewdog check annotations outside pull requests.
     with:
-      commit_identifier: ${{ github.sha }}
-      cancel_in_progress: true
-      semgrep_config: 'p/ci p/security-audit p/javascript'
-      semgrep_targets: './*.js ./*.mjs ./*.json scripts/ .github/actions/' ## only scanning recently changed files, eventually should cover whole .github/actions/ folder
-      fail_severity: 'error'
-      semgrep_scan_mode: 'diff'
-      reviewdog_filter_mode: 'added'
-      reviewdog_reporter: 'github-pr-review'
+      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+      semgrep-config: 'p/ci p/security-audit p/javascript'
+      semgrep-targets: './*.js ./*.mjs ./*.json scripts/ .github/actions/'
+      semgrep-scan-mode: ${{ github.ref_name == github.event.repository.default_branch && 'full' || 'diff' }}
+
+  ci-result:
+    name: CI Result
+    needs: [ci-context, app-ci, semgrep]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-26.04
+    permissions: {}
+
+    steps:
+      - name: Check CI job results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -Eeuo pipefail
+
+          {
+            echo "## CI Result"
+            echo ""
+            echo "| Job | Result |"
+            echo "| --- | --- |"
+            jq -r 'to_entries[] | "| `\(.key)` | \(.value.result) |"' <<<"$NEEDS"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          failed=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key) (\(.value.result))"] | join(", ")' <<<"$NEEDS")
+          if [[ -n "$failed" ]]; then
+            echo "::error title=CI Result::Jobs did not succeed: $failed"
+            exit 1
+          fi
+          echo "All CI jobs succeeded or were intentionally skipped"
