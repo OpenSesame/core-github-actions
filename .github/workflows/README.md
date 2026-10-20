@@ -32,6 +32,10 @@ This repository exposes externally reusable workflows, those that expose `workfl
   - Path: `READMEs/{workflow_name}.md`
   - Example: `READMEs/run_semgrep_scan.md`
 
+- **Test files (optional):**
+  - Path: `TESTS/{workflow_name}.unit.test.js`
+  - Example: `TESTS/run_infra_ci.unit.test.js`
+
 ### Example Structure
 
 ```text

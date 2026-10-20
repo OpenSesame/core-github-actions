@@ -144,7 +144,7 @@ jobs:
           else
             entries="unknown (yq not installed)"
           fi
-          inline=$(grep -rhoE 'zizmor: ?ignore\[' .github 2>/dev/null | wc -l | tr -d ' ')
+          inline=$( { grep -rhoE 'zizmor: ?ignore\[' .github 2>/dev/null || true; } | wc -l | tr -d ' ')
 
           {
             echo "## Scan GHA (zizmor)"
