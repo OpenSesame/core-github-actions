@@ -157,14 +157,13 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ github.token }}
           REVIEWDOG_REPORTER: ${{ steps.reviewdog-settings.outputs.reporter }}
           REVIEWDOG_FILTER_MODE: ${{ steps.reviewdog-settings.outputs.filter-mode }}
-          REVIEWDOG_FAIL_LEVEL: ${{ inputs.fail-severity }}
         run: |
           reviewdog \
             -efm="%t:%f:%l %m" \
             -name="semgrep" \
             -reporter="$REVIEWDOG_REPORTER" \
             -filter-mode="$REVIEWDOG_FILTER_MODE" \
-            -fail-level="$REVIEWDOG_FAIL_LEVEL" < reviewdog_input.txt
+            -fail-level=none < reviewdog_input.txt
 
       - name: Write job summary
         env:

@@ -21,6 +21,11 @@ All notable changes to the **run_semgrep_scan** callable workflow are documented
 - `commit-identifier` is optional and defaults to the triggering ref.
 - Uses `run-semgrep` 2.0.0. The checkout no longer persists credentials.
 
+### Fixed
+
+- The job summary and PR comment are written when findings meet `fail-severity`. reviewdog runs with
+  `-fail-level=none`, and the final threshold step is the only step that fails the job.
+
 ### Removed
 
 - **Breaking:** the `pr-open-check` lookup and the push-with-open-PR handling.
