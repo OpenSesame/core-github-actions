@@ -47,67 +47,72 @@ on:
     outputs:
       plan-artifact-name:
         description: the name of the plan artifact, if write-artifact is true
-        value: ${{ jobs.TF-Validate-Plan.outputs.plan-artifact-name}}
+        value: ${{ jobs.validate-plan.outputs.plan-artifact-name }}
 
 concurrency:
   group: ${{ inputs.with-lock && format('{0}-{1}-TF-Validate-Plan', github.repository, inputs.environment) || format('{0}-{1}-TF-Validate-Plan-{2}-{3}', github.repository, inputs.environment, github.run_id, inputs.terraform-root) }}
 
-permissions:
-  id-token: write # required by configure-aws-credentials
-  contents: read
+permissions: {}
 
 env:
   TF_INPUT: false
   TF_IN_AUTOMATION: true
 
 jobs:
-  TF-Validate-Plan:
-    name: Terraform Validate and Plan ${{ inputs.environment }}
+  validate-plan:
+    name: Validate Plan
     runs-on: ubuntu-26.04
     environment: ${{ inputs.environment }}
+    permissions:
+      id-token: write # Required by configure-aws-credentials to assume the plan role.
+      contents: read # Required to check out the Terraform code.
     defaults: # runs all steps in this directory
       run:
         working-directory: ${{ inputs.terraform-root }}
     outputs:
-      plan-artifact-name: ${{ steps.set-plan-artifact-name.outputs.artifact_name }}
+      plan-artifact-name: ${{ steps.set-plan-artifact-name.outputs.artifact-name }}
 
     steps:
-      - id: get-role-arn
+      - name: Get role ARN
+        id: get-role-arn
         uses: OpenSesame/gha-oidc-access/get-role-arn@42e851ba54935047834bc50a3e2de800cc4952b9 # v2.0.2
         with:
           domain: ${{ inputs.oidc-domain }}
           env: ${{ inputs.environment }}
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
-      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: ${{ steps.get-role-arn.outputs.role-arn }}
           role-session-name: ${{ inputs.terraform-workspace }}-${{ inputs.environment }}-Run${{ github.run_id }}
           aws-region: ${{ steps.get-role-arn.outputs.region }}
 
-      - name: Checkout Actions
+      - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
 
-      - name: Configure Github Credentials
+      - name: Configure GitHub SSH credentials
         id: configure-credentials
         shell: bash
+        env:
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          echo '${{ secrets.ORG_READ_ONLY_SSH_KEY }}' > ~/.ssh/id_rsa
+          printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > ~/.ssh/id_rsa
           ssh-keyscan github.com > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
-      - name: Setup Terraform
+      - name: Set up Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
           terraform_wrapper: false # required to access terraform outputs after apply
 
-      # Step to create the directory if the build-artifact-directory input is provided
-      - name: Ensure Build Artifact Directories Exist
+      - name: Create build artifact directories
         if: ${{ inputs.build-artifact-directory != '' }}
         env:
           BUILD_ARTIFACT_DIRECTORY: ${{ inputs.build-artifact-directory }}
@@ -122,25 +127,27 @@ jobs:
             mkdir -p -- "$dir"
           done <<< "$BUILD_ARTIFACT_DIRECTORY"
 
-      - name: Terraform Init
+      - name: Initialize Terraform
         run: terraform init -upgrade
 
-      - name: Terraform Validate
+      - name: Validate Terraform
         run: terraform validate
 
-      - name: Select Workplace
-        run: terraform workspace select -or-create ${{ inputs.terraform-workspace }}
+      - name: Select workspace
+        env:
+          TF_WORKSPACE_NAME: ${{ inputs.terraform-workspace }}
+        run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 
-      - name: Terraform Re-Init
+      - name: Reinitialize Terraform
         run: terraform init -upgrade
 
-      - name: Terraform Plan
+      - name: Plan Terraform
         id: plan
-        run: |
-          export TF_VAR_github_personal_access_token="${{ secrets.ORG_GITHUB_PACKAGES_READ_WRITE_TOKEN }}"
-          terraform plan -lock=${{ inputs.with-lock }} -out=tfplan
+        env:
+          WITH_LOCK: ${{ inputs.with-lock }}
+        run: terraform plan -lock="$WITH_LOCK" -out=tfplan
 
-      - name: Write Plans to Run Comment
+      - name: Write plan summary
         id: write-plans
         env:
           TF_ENVIRONMENT: ${{ inputs.environment }}
@@ -148,50 +155,52 @@ jobs:
           TF_VERSION: ${{ inputs.terraform-version }}
         run: |
           if [ -f tfplan ]; then
-            # Get workspace name for display
             WORKSPACE_NAME=$(basename "$(pwd)")
 
             terraform show tfplan -no-color > tfplan.txt
 
-            # Create beautiful header with emoji and styling
-            echo "## 🚀 Terraform Plan Summary" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**Workspace:** \`$WORKSPACE_NAME\`" >> $GITHUB_STEP_SUMMARY
-            echo "**AWS Environment:** \`$TF_ENVIRONMENT\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Terraform Root:** \`$TF_ROOT\`" >> $GITHUB_STEP_SUMMARY
-            echo "**Terraform Version:** \`$TF_VERSION\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            # Create collapsible section with better styling
-            echo "<details>" >> $GITHUB_STEP_SUMMARY
-            echo "<summary><strong>📋 Click to view detailed Terraform plan</strong></summary>" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "~~~ terraform" >> $GITHUB_STEP_SUMMARY
-            cat tfplan.txt >> $GITHUB_STEP_SUMMARY
-            echo "~~~" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "</details>" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "---" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## 🚀 Terraform Plan Summary"
+              echo ""
+              echo "**Workspace:** \`$WORKSPACE_NAME\`"
+              echo "**AWS Environment:** \`$TF_ENVIRONMENT\`"
+              echo "**Terraform Root:** \`$TF_ROOT\`"
+              echo "**Terraform Version:** \`$TF_VERSION\`"
+              echo ""
+              echo "<details>"
+              echo "<summary><strong>📋 Click to view detailed Terraform plan</strong></summary>"
+              echo ""
+              echo "~~~ terraform"
+              cat tfplan.txt
+              echo "~~~"
+              echo ""
+              echo "</details>"
+              echo ""
+              echo "---"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "## ⚠️ Warning" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "No Terraform plan file found in \`$(pwd)\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "This may indicate an issue with the Terraform plan generation." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "---" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "## ⚠️ Warning"
+              echo ""
+              echo "No Terraform plan file found in \`$(pwd)\`"
+              echo ""
+              echo "This may indicate an issue with the Terraform plan generation."
+              echo ""
+              echo "---"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      - name: Set Plan Artifact Name
+      - name: Set plan artifact name
         id: set-plan-artifact-name
         if: ${{ inputs.write-artifact }}
-        run: echo "artifact_name=${{ inputs.environment }}-tfplan-${{ github.run_id }}" >> $GITHUB_OUTPUT
+        env:
+          TF_ENVIRONMENT: ${{ inputs.environment }}
+        run: echo "artifact-name=terraform-plan-${TF_ENVIRONMENT}" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Plans to Artifact
+      - name: Upload plan artifact
         id: plan-artifact
         if: ${{ inputs.write-artifact }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{steps.set-plan-artifact-name.outputs.artifact_name}}
-          path: terraform/${{ inputs.environment }}/tfplan.txt
+          name: ${{ steps.set-plan-artifact-name.outputs.artifact-name }}
+          path: ${{ inputs.terraform-root }}/tfplan.txt

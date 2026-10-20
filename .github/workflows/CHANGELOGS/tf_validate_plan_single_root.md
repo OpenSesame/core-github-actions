@@ -3,6 +3,31 @@
 All notable changes to the **tf_validate_plan_single_root** reusable workflow are documented in
 this file.
 
+## 1.0.0
+
+### Changed
+
+- **Breaking:** the job is renamed from `TF-Validate-Plan` ("Terraform Validate and Plan
+  <environment>") to `validate-plan` ("Validate Plan"), so the check reads
+  `<caller job name> / Validate Plan`. Required status checks that use the old name must be updated.
+- **Breaking:** the plan artifact is named `terraform-plan-<environment>` instead of
+  `<environment>-tfplan-<run id>`. Read the name from the `plan-artifact-name` output.
+- **Breaking:** workflow-level permissions are `{}` and the job requests `id-token: write` and
+  `contents: read` itself, so the caller job must grant both.
+- Step names are sentence case, workflow expressions in `run` scripts move into environment
+  variables, run scripts pass shellcheck, and the checkout no longer persists credentials.
+
+### Fixed
+
+- The plan artifact uploads `<terraform-root>/tfplan.txt` instead of always
+  `terraform/<environment>/tfplan.txt`.
+
+### Removed
+
+- The undeclared `ORG_GITHUB_PACKAGES_READ_WRITE_TOKEN` reference that set
+  `TF_VAR_github_personal_access_token`. No caller passes that secret, so the variable was always
+  empty.
+
 ## 0.2.1
 
 ### Fixed
