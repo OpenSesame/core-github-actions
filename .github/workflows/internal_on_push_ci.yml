@@ -48,7 +48,7 @@ jobs:
           node-version-file: .nvmrc
 
       - name: Set up npm
-        run: npm install --global npm@12.1.0
+        run: npm install --global npm@12.1.0 # zizmor: ignore[adhoc-packages] AGENTS.md pins npm 12.1.0 and setup-node has no npm version input.
 
       - name: Install dependencies
         id: install

@@ -108,7 +108,7 @@ jobs:
 
       - name: Run Semgrep
         id: semgrep
-        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@6f65168d25177f593463432bd03587c0733c7913 # actions/run-semgrep/2.0.0
+        uses: OpenSesame/core-github-actions/.github/actions/run-semgrep@356f6834fd7f1a77a36ef31b1d93537246a74218 # actions/run-semgrep/2.0.0
         env:
           INPUT_BASELINE: ${{ inputs.baseline-ref || format('origin/{0}', github.event.repository.default_branch) }}
           SCAN_MODE: ${{ inputs.semgrep-scan-mode }}
