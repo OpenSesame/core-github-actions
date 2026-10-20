@@ -23,6 +23,7 @@
     "globals": "17.13.0",
     "husky": "9.1.7",
     "jest": "30.5.2",
+    "npm-run-all2": "9.0.3",
     "prettier": "3.9.9",
     "semgrep": "0.0.1"
   },
@@ -31,11 +32,18 @@
     "test": "jest",
     "watch": "jest --watch",
     "audit": "npm audit --audit-level=high",
-    "lint": "eslint *.js --ext .js,.json",
-    "lint-fix": "eslint *.js --ext .js,.json --fix",
-    "format": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
-    "format-fix": "prettier --write './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
-    "scan": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
-    "ci": "npm run audit && npm run test && npm run lint && npm run format && npm run scan"
+    "lint": "npm-run-all --continue-on-error lint:*",
+    "lint:js": "eslint *.js --ext .js,.json",
+    "lint:gha": "mise run lint:gha",
+    "lint-fix": "npm-run-all --continue-on-error lint-fix:*",
+    "lint-fix:js": "eslint *.js --ext .js,.json --fix",
+    "format": "npm-run-all --continue-on-error format:*",
+    "format:prettier": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "format-fix": "npm-run-all --continue-on-error format-fix:*",
+    "format-fix:prettier": "prettier --write './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
+    "scan": "npm-run-all --continue-on-error scan:*",
+    "scan:semgrep": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
+    "scan:gha": "mise run scan:gha",
+    "ci": "npm-run-all --continue-on-error audit test lint format scan"
   }
 }

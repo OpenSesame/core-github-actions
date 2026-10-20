@@ -1,0 +1,16 @@
+[tools]
+"aqua:rhysd/actionlint" = "1.7.12"
+"aqua:koalaman/shellcheck" = "0.11.0"
+"aqua:zizmorcore/zizmor" = "1.29.0"
+
+[tasks."lint:gha"]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+
+[tasks."scan:gha"]
+description = "Audit GitHub Actions workflows for security issues"
+run = "zizmor --offline .github"
+
+[tasks.infra-ci]
+description = "Run every infra-ci check"
+depends = ["lint:gha", "scan:gha"]

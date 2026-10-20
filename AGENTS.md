@@ -9,6 +9,7 @@ the repository map, consumer guidance, and migration context.
 - Use Node.js 24.15.0 or newer in the Node.js 24 release line: `nvm use`
 - Install the pinned npm version: `npm install --global npm@12.1.0`
 - Install dependencies: `npm ci`
+- Install the GitHub Actions lint and scan tools (needs [mise](https://mise.jdx.dev/)): `mise install`
 - Run all non-mutating checks: `npm run ci`
 - Run tests in watch mode: `npm run watch`
 - Fix lint issues: `npm run lint-fix`

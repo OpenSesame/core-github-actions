@@ -4,27 +4,30 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  contents: write
-  pull-requests: read
+permissions: {}
 
 jobs:
   no-merge:
     if: github.event.pull_request.merged == false
     runs-on: ubuntu-26.04
+    permissions: {}
     steps:
       - name: No Merge Detected
         run: |
-          const message = "Pull request was closed without merge. No version tags will be created."
+          message="Pull request was closed without merge. No version tags will be created."
           echo "ℹ️ $message" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=No Merge::$message"
 
   set-version-tags:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-26.04
+    permissions:
+      contents: write # Required to push the version tags.
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true # Required for git push of the version tags.
 
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -60,7 +63,7 @@ jobs:
       - name: Untracked Version Check
         if: ${{ steps.get_tags.outputs.hasUntracked == 'true' }}
         run: |
-          const message = "Untracked version label detected. Skipping tag creation."
+          message="Untracked version label detected. Skipping tag creation."
           echo "ℹ️ $message" >> "$GITHUB_STEP_SUMMARY"
           echo "::notice title=Untracked Version::$message"
 
@@ -69,7 +72,7 @@ jobs:
         env:
           COMPONENT_TAGS: ${{ steps.get_tags.outputs.componentTags }}
         run: |
-          IFS=',' read -r -a tagsArray <<< "${{ env.COMPONENT_TAGS }}"
+          IFS=',' read -r -a tagsArray <<< "$COMPONENT_TAGS"
           for tag in "${tagsArray[@]}"; do
             git tag "$tag"
             git push origin "$tag"
