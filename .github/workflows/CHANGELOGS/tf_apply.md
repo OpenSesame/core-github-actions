@@ -2,6 +2,20 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.2.1
+
+### Fixed
+
+- Workflow expressions in `run` scripts (the context summary, the SSH key and the workspace name) are
+  passed through environment variables instead of being interpolated into the script, closing a
+  template-injection path. Summary output and behavior are unchanged.
+- The summary step quotes `$GITHUB_STEP_SUMMARY` and writes through one grouped redirect.
+
+### Changed
+
+- The checkout no longer persists the job's `GITHUB_TOKEN` in the git config. Terraform modules are
+  fetched with the SSH key, which is unchanged.
+
 ## 0.2.0
 
 ### Changed

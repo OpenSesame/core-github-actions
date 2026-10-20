@@ -55,7 +55,7 @@ jobs:
     steps:
       - name: Set Release Tag
         id: releaseTag
-        run: echo "release-tag=$(date +'%Y.%m.%d-%H-%M')" >> $GITHUB_OUTPUT
+        run: echo "release-tag=$(date +'%Y.%m.%d-%H-%M')" >> "$GITHUB_OUTPUT"
 
   DeployDev:
     name: Apply Dev
@@ -111,18 +111,13 @@ jobs:
     runs-on: ubuntu-26.04
 
     steps:
-      - name: Checkout Actions
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.commit-identifier }}
-          fetch-depth: "0"
-
       - name: Create release
-        uses: ncipollo/release-action@339a81892b84b4eeb0f6e744e4574d79d0d9b8dd # v1.21.0
-        with:
-          tag: ${{ needs.Set-Release-Tag.outputs.release-tag }}
-          commit: ${{ inputs.commit-identifier }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.Set-Release-Tag.outputs.release-tag }}
+          COMMIT_IDENTIFIER: ${{ inputs.commit-identifier }}
+        run: gh release create "$RELEASE_TAG" --target "$COMMIT_IDENTIFIER" --title "$RELEASE_TAG" --notes ""
 
   ReportStatus:
     name: Report Status on PR

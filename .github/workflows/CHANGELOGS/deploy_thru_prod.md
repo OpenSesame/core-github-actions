@@ -2,6 +2,19 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.3.1
+
+### Fixed
+
+- Composes `deploy_environment` 0.3.1.
+- The release-tag step quotes `$GITHUB_OUTPUT`.
+
+### Changed
+
+- The release is created with `gh release create` instead of `ncipollo/release-action`, with the
+  same tag, target commit, and title, and an empty body. The release job no longer checks out the
+  repository.
+
 ## 0.3.0
 
 ### Changed
