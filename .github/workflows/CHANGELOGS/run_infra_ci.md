@@ -2,6 +2,13 @@
 
 All notable changes to the **run_infra_ci** reusable workflow are documented in this file.
 
+## 1.0.1
+
+### Fixed
+
+- The `Scan GHA` job summary no longer fails the job when the repo has no inline
+  `# zizmor: ignore[...]` comments.
+
 ## 1.0.0
 
 ### Added
