@@ -1,0 +1,55 @@
+name: Resolve feature workspace
+description: Derives the feature-environment Terraform workspace name and resource name prefix from a branch name
+
+inputs:
+  branch-name:
+    description: Branch name, or an environment name such as dev, to derive the workspace from
+    required: true
+
+outputs:
+  workspace:
+    description: Terraform workspace name
+    value: ${{ steps.resolve.outputs.workspace }}
+  name-prefix:
+    description: Lowercased workspace name for AWS resource names
+    value: ${{ steps.resolve.outputs.name-prefix }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve workspace name
+      id: resolve
+      shell: bash
+      env:
+        BRANCH_NAME: ${{ inputs.branch-name }}
+      run: |
+        set -Eeuo pipefail
+        export LC_ALL=C
+
+        # Git ref names cannot contain control characters; rejecting them keeps
+        # newlines out of GITHUB_OUTPUT.
+        if [[ "$BRANCH_NAME" == *[[:cntrl:]]* ]]; then
+          echo "::error title=Invalid branch name::branch-name must not contain control characters"
+          exit 1
+        fi
+
+        workspace="$(
+          printf '%s\n' "$BRANCH_NAME" \
+            | awk -F'/' '{print $NF}' \
+            | tr '_' '-' \
+            | cut -c 1-15 \
+            | sed 's/-*$//'
+        )"
+
+        if [[ -z "$workspace" ]]; then
+          printf '::error title=Empty workspace name::No workspace name could be derived from branch-name %q\n' "$BRANCH_NAME"
+          exit 1
+        fi
+
+        name_prefix="$(printf '%s' "$workspace" | tr '[:upper:]' '[:lower:]')"
+
+        printf 'Workspace: %s\nName prefix: %s\n' "$workspace" "$name_prefix"
+        {
+          printf 'workspace=%s\n' "$workspace"
+          printf 'name-prefix=%s\n' "$name_prefix"
+        } >> "$GITHUB_OUTPUT"
