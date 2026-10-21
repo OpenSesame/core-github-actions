@@ -2,7 +2,7 @@
 
 ## Summary
 
-Derives a feature environment's lowercase Terraform workspace name from a branch name. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
+Derives a feature environment's Terraform workspace name from a branch name. The name uses only `a-z`, `0-9` and `-`, so it also works as a prefix for AWS resource names such as S3 buckets. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
 
 ## Inputs
 
@@ -12,17 +12,16 @@ Derives a feature environment's lowercase Terraform workspace name from a branch
 
 ## Outputs
 
-| Name        | Description                         |
-| ----------- | ----------------------------------- |
-| `workspace` | Lowercase Terraform workspace name. |
+| Name        | Description                                   |
+| ----------- | --------------------------------------------- |
+| `workspace` | Terraform workspace name (`a-z`, `0-9`, `-`). |
 
 ## Naming rule
 
 1. Keep the text after the last `/`.
-2. Replace `_` with `-`.
-3. Lowercase.
-4. Keep the first 15 characters.
-5. Trim trailing `-`.
+2. Lowercase.
+3. Replace each character other than `a-z`, `0-9` and `-` with `-` (including `_`, `.`, `+` and `[]`).
+4. Trim leading `-`, keep the first 15 characters, then trim trailing `-`.
 
 | `branch-name`                       | `workspace`       |
 | ----------------------------------- | ----------------- |
@@ -30,9 +29,10 @@ Derives a feature environment's lowercase Terraform workspace name from a branch
 | `feature/my_fix`                    | `my-fix`          |
 | `feature/CORE-6135_add_widget_flow` | `core-6135-add-w` |
 | `feature/CORE-6135-abcd-xyz`        | `core-6135-abcd`  |
+| `release/2026.10.21`                | `2026-10-21`      |
 | `dev`                               | `dev`             |
 
-Other characters pass through unchanged: `feature/a+b` gives `a+b`. Check AWS naming rules before using the workspace in resource names such as S3 buckets. The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
+The output starts and ends with a letter or digit. The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
 
 ## Usage
 
@@ -55,6 +55,6 @@ Other characters pass through unchanged: `feature/a+b` gives `a+b`. Check AWS na
 
 ## Migrating
 
-The result equals the lowercase name prefix that consumer repos already compute with the copied `awk | tr | cut | sed` pipeline, but the workspace itself is now lowercase too. Workspace names are case-sensitive, so a branch such as `feature/CORE-6135` moves from workspace `CORE-6135` to `core-6135`. Migrate deploy and cleanup together, and only when no feature environment with uppercase letters in its workspace name is open; otherwise cleanup can't find the old workspace and its resources are orphaned.
+For branch names made of letters, digits, `-` and `_`, the result equals the lowercase name prefix that consumer repos compute with the copied `awk | tr | cut | sed` pipeline. The workspace itself is now lowercase too, and other characters are replaced. Workspace names are case-sensitive, so `feature/CORE-6135` moves from workspace `CORE-6135` to `core-6135`. Migrate deploy and cleanup together, and only when no open feature environment's workspace would change name; otherwise cleanup can't find the old workspace and its resources are orphaned.
 
 This action does not require additional GitHub token permissions.

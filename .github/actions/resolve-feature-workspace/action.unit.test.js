@@ -5,7 +5,8 @@ const { spawnSync } = require('node:child_process');
 
 const actionPath = path.join(__dirname, 'action.yml');
 
-// The name prefix computed by the pipeline copied into consumer workflows.
+// The name prefix computed by the pipeline copied into consumer workflows. It matches the
+// action for branch segments made of letters, digits, `-` and `_` that don't start with `-`.
 const legacyPipeline = `
 workspace=$(echo "$BRANCH_NAME" | awk -F'/' '{print $NF}' | tr '_' '-' | cut -c 1-15 | sed 's/-*$//')
 echo "$workspace" | tr '[:upper:]' '[:lower:]'
@@ -97,8 +98,12 @@ describe('resolve-feature-workspace', () => {
     ['feature/CORE-6135_add_widget_flow', 'core-6135-add-w'],
     ['feature/CORE-6135-abcd-xyz', 'core-6135-abcd'],
     ['feature/ab_____________xyz', 'ab'],
-    ['feature/-leading', '-leading'],
-    ['feature/a+b', 'a+b'],
+    ['feature/-leading', 'leading'],
+    ['feature/a+b', 'a-b'],
+    ['release/2026.10.21', '2026-10-21'],
+    ['dependabot/npm_and_yarn/lodash-4.17.21', 'lodash-4-17-21'],
+    ['feature/renovate[bot]', 'renovate-bot'],
+    ['feature/naïve-branch', 'na--ve-branch'],
   ])('resolves %s to %s', (branchName, workspace) => {
     const result = runAction(branchName);
 
@@ -109,13 +114,10 @@ describe('resolve-feature-workspace', () => {
   test.each([
     'feature/CORE-6135',
     'CORE-6135',
-    'release/2026.10.21',
     'feature/CORE-6135_Add_Widget_Flow',
     'renovate/npm-dev-dependencies',
-    'dependabot/npm_and_yarn/lodash-4.17.21',
     'feature/a-b-c-d-e-f-g-h-i-j-k',
     'feature/x'.repeat(10),
-    'feature/naïve-branch',
   ])('matches the name prefix from the copied consumer pipeline for %s', branchName => {
     const result = runAction(branchName);
 
@@ -123,7 +125,7 @@ describe('resolve-feature-workspace', () => {
     expect(result.outputs).toEqual({ workspace: runLegacyPipeline(branchName) });
   });
 
-  test.each(['', 'feature/', 'feature/---', 'feature/___'])(
+  test.each(['', 'feature/', 'feature/---', 'feature/___', 'feature/+[]'])(
     'fails when no workspace name can be derived from %p',
     branchName => {
       const result = runAction(branchName);
@@ -149,7 +151,20 @@ describe('resolve-feature-workspace', () => {
     const result = runAction('feature/$(touch marker)`touch marker`');
 
     expect(result.status).toBe(0);
-    expect(result.outputs.workspace).toBe('$(touch marker)');
+    expect(result.outputs.workspace).toBe('touch-marker--t');
     expect(result.shellMarkerCreated).toBe(false);
+  });
+
+  test.each([
+    'feature/CORE-6135.v2+hotfix',
+    'feature/-_-Mixed.Case_Name-_-',
+    'feature/emoji-🚀-launch',
+    'feature/a@b#c$d%e^f&g*h(i)j',
+    'feature/x.y.z',
+  ])('produces a name usable in an S3 bucket name for %s', branchName => {
+    const result = runAction(branchName);
+
+    expect(result.status).toBe(0);
+    expect(result.outputs.workspace).toMatch(/^[a-z0-9]([a-z0-9-]{0,13}[a-z0-9])?$/);
   });
 });
