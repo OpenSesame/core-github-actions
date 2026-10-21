@@ -2,7 +2,7 @@
 
 ## Summary
 
-Derives a feature environment's lowercase Terraform workspace name from a branch name. The same value works as the AWS resource name prefix. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
+Derives a feature environment's lowercase Terraform workspace name from a branch name. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
 
 ## Inputs
 
@@ -12,9 +12,9 @@ Derives a feature environment's lowercase Terraform workspace name from a branch
 
 ## Outputs
 
-| Name        | Description                                             |
-| ----------- | ------------------------------------------------------- |
-| `workspace` | Lowercase Terraform workspace name and resource prefix. |
+| Name        | Description                         |
+| ----------- | ----------------------------------- |
+| `workspace` | Lowercase Terraform workspace name. |
 
 ## Naming rule
 
@@ -32,7 +32,7 @@ Derives a feature environment's lowercase Terraform workspace name from a branch
 | `feature/CORE-6135-abcd-xyz`        | `core-6135-abcd`  |
 | `dev`                               | `dev`             |
 
-The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
+Other characters pass through unchanged: `feature/a+b` gives `a+b`. Check AWS naming rules before using the workspace in resource names such as S3 buckets. The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
 
 ## Usage
 
@@ -50,6 +50,8 @@ The action fails when the result is empty (for example `feature/` or `feature/--
     TF_WORKSPACE_NAME: ${{ steps.workspace.outputs.workspace }}
   run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 ```
+
+`github.head_ref` is set only for `pull_request` events. Pass `github.ref_name` on `push` and `github.event.ref` on `delete` (when `github.event.ref_type` is `branch`).
 
 ## Migrating
 

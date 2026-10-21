@@ -98,6 +98,7 @@ describe('resolve-feature-workspace', () => {
     ['feature/CORE-6135-abcd-xyz', 'core-6135-abcd'],
     ['feature/ab_____________xyz', 'ab'],
     ['feature/-leading', '-leading'],
+    ['feature/a+b', 'a+b'],
   ])('resolves %s to %s', (branchName, workspace) => {
     const result = runAction(branchName);
 

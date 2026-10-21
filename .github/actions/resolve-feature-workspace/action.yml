@@ -8,7 +8,7 @@ inputs:
 
 outputs:
   workspace:
-    description: Lowercase Terraform workspace name, also usable as an AWS resource name prefix
+    description: Lowercase Terraform workspace name
     value: ${{ steps.resolve.outputs.workspace }}
 
 runs:
