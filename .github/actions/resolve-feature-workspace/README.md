@@ -2,7 +2,7 @@
 
 ## Summary
 
-Derives a feature environment's Terraform workspace name and resource name prefix from a branch name. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
+Derives a feature environment's lowercase Terraform workspace name from a branch name. The same value works as the AWS resource name prefix. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
 
 ## Inputs
 
@@ -12,27 +12,27 @@ Derives a feature environment's Terraform workspace name and resource name prefi
 
 ## Outputs
 
-| Name          | Description                                     |
-| ------------- | ----------------------------------------------- |
-| `workspace`   | Terraform workspace name.                       |
-| `name-prefix` | `workspace` lowercased, for AWS resource names. |
+| Name        | Description                                             |
+| ----------- | ------------------------------------------------------- |
+| `workspace` | Lowercase Terraform workspace name and resource prefix. |
 
 ## Naming rule
 
 1. Keep the text after the last `/`.
 2. Replace `_` with `-`.
-3. Keep the first 15 characters.
-4. Trim trailing `-`.
+3. Lowercase.
+4. Keep the first 15 characters.
+5. Trim trailing `-`.
 
-| `branch-name`                       | `workspace`       | `name-prefix`     |
-| ----------------------------------- | ----------------- | ----------------- |
-| `feature/CORE-6135`                 | `CORE-6135`       | `core-6135`       |
-| `feature/my_fix`                    | `my-fix`          | `my-fix`          |
-| `feature/CORE-6135_add_widget_flow` | `CORE-6135-add-w` | `core-6135-add-w` |
-| `feature/CORE-6135-abcd-xyz`        | `CORE-6135-abcd`  | `core-6135-abcd`  |
-| `dev`                               | `dev`             | `dev`             |
+| `branch-name`                       | `workspace`       |
+| ----------------------------------- | ----------------- |
+| `feature/CORE-6135`                 | `core-6135`       |
+| `feature/my_fix`                    | `my-fix`          |
+| `feature/CORE-6135_add_widget_flow` | `core-6135-add-w` |
+| `feature/CORE-6135-abcd-xyz`        | `core-6135-abcd`  |
+| `dev`                               | `dev`             |
 
-The result matches the `awk | tr | cut | sed` pipeline and the local `get-feature-workspace-name` actions already used in consumer repos, so open feature environments keep their workspace when a repo migrates. The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
+The action fails when the result is empty (for example `feature/` or `feature/---`) or when `branch-name` contains control characters.
 
 ## Usage
 
@@ -50,5 +50,9 @@ The result matches the `awk | tr | cut | sed` pipeline and the local `get-featur
     TF_WORKSPACE_NAME: ${{ steps.workspace.outputs.workspace }}
   run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 ```
+
+## Migrating
+
+The result equals the lowercase name prefix that consumer repos already compute with the copied `awk | tr | cut | sed` pipeline, but the workspace itself is now lowercase too. Workspace names are case-sensitive, so a branch such as `feature/CORE-6135` moves from workspace `CORE-6135` to `core-6135`. Migrate deploy and cleanup together, and only when no feature environment with uppercase letters in its workspace name is open; otherwise cleanup can't find the old workspace and its resources are orphaned.
 
 This action does not require additional GitHub token permissions.

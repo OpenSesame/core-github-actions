@@ -5,11 +5,10 @@ const { spawnSync } = require('node:child_process');
 
 const actionPath = path.join(__dirname, 'action.yml');
 
-// The pipeline copied into consumer workflows and local get-feature-workspace-name actions.
+// The name prefix computed by the pipeline copied into consumer workflows.
 const legacyPipeline = `
 workspace=$(echo "$BRANCH_NAME" | awk -F'/' '{print $NF}' | tr '_' '-' | cut -c 1-15 | sed 's/-*$//')
-prefix=$(echo "$workspace" | tr '[:upper:]' '[:lower:]')
-printf '%s\\n%s' "$workspace" "$prefix"
+echo "$workspace" | tr '[:upper:]' '[:lower:]'
 `;
 
 function extractRunScript() {
@@ -71,9 +70,7 @@ function runLegacyPipeline(branchName) {
     encoding: 'utf8',
     env: { ...process.env, LC_ALL: 'C', BRANCH_NAME: branchName },
   });
-  const [workspace, namePrefix] = result.stdout.split('\n');
-
-  return { workspace, 'name-prefix': namePrefix };
+  return result.stdout.replace(/\n$/, '');
 }
 
 describe('resolve-feature-workspace', () => {
@@ -92,20 +89,20 @@ describe('resolve-feature-workspace', () => {
   });
 
   test.each([
-    ['feature/CORE-6135', 'CORE-6135', 'core-6135'],
-    ['CORE-6135', 'CORE-6135', 'core-6135'],
-    ['dev', 'dev', 'dev'],
-    ['bugfix/team/CORE-6135', 'CORE-6135', 'core-6135'],
-    ['feature/my_fix', 'my-fix', 'my-fix'],
-    ['feature/CORE-6135_add_widget_flow', 'CORE-6135-add-w', 'core-6135-add-w'],
-    ['feature/CORE-6135-abcd-xyz', 'CORE-6135-abcd', 'core-6135-abcd'],
-    ['feature/ab_____________xyz', 'ab', 'ab'],
-    ['feature/-leading', '-leading', '-leading'],
-  ])('resolves %s to %s / %s', (branchName, workspace, namePrefix) => {
+    ['feature/CORE-6135', 'core-6135'],
+    ['CORE-6135', 'core-6135'],
+    ['dev', 'dev'],
+    ['bugfix/team/CORE-6135', 'core-6135'],
+    ['feature/my_fix', 'my-fix'],
+    ['feature/CORE-6135_add_widget_flow', 'core-6135-add-w'],
+    ['feature/CORE-6135-abcd-xyz', 'core-6135-abcd'],
+    ['feature/ab_____________xyz', 'ab'],
+    ['feature/-leading', '-leading'],
+  ])('resolves %s to %s', (branchName, workspace) => {
     const result = runAction(branchName);
 
     expect(result.status).toBe(0);
-    expect(result.outputs).toEqual({ workspace, 'name-prefix': namePrefix });
+    expect(result.outputs).toEqual({ workspace });
   });
 
   test.each([
@@ -118,11 +115,11 @@ describe('resolve-feature-workspace', () => {
     'feature/a-b-c-d-e-f-g-h-i-j-k',
     'feature/x'.repeat(10),
     'feature/naïve-branch',
-  ])('matches the copied consumer pipeline for %s', branchName => {
+  ])('matches the name prefix from the copied consumer pipeline for %s', branchName => {
     const result = runAction(branchName);
 
     expect(result.status).toBe(0);
-    expect(result.outputs).toEqual(runLegacyPipeline(branchName));
+    expect(result.outputs).toEqual({ workspace: runLegacyPipeline(branchName) });
   });
 
   test.each(['', 'feature/', 'feature/---', 'feature/___'])(
@@ -136,7 +133,7 @@ describe('resolve-feature-workspace', () => {
     }
   );
 
-  test.each(['feature/a\nname-prefix=injected', 'feature/a\rb', 'feature/a\tb'])(
+  test.each(['feature/a\nworkspace=injected', 'feature/a\rb', 'feature/a\tb'])(
     'rejects control characters in %p',
     branchName => {
       const result = runAction(branchName);

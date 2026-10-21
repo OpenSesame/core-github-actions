@@ -1,5 +1,5 @@
 name: Resolve feature workspace
-description: Derives the feature-environment Terraform workspace name and resource name prefix from a branch name
+description: Derives the lowercase feature-environment Terraform workspace name from a branch name
 
 inputs:
   branch-name:
@@ -8,11 +8,8 @@ inputs:
 
 outputs:
   workspace:
-    description: Terraform workspace name
+    description: Lowercase Terraform workspace name, also usable as an AWS resource name prefix
     value: ${{ steps.resolve.outputs.workspace }}
-  name-prefix:
-    description: Lowercased workspace name for AWS resource names
-    value: ${{ steps.resolve.outputs.name-prefix }}
 
 runs:
   using: composite
@@ -37,6 +34,7 @@ runs:
           printf '%s\n' "$BRANCH_NAME" \
             | awk -F'/' '{print $NF}' \
             | tr '_' '-' \
+            | tr '[:upper:]' '[:lower:]' \
             | cut -c 1-15 \
             | sed 's/-*$//'
         )"
@@ -46,10 +44,5 @@ runs:
           exit 1
         fi
 
-        name_prefix="$(printf '%s' "$workspace" | tr '[:upper:]' '[:lower:]')"
-
-        printf 'Workspace: %s\nName prefix: %s\n' "$workspace" "$name_prefix"
-        {
-          printf 'workspace=%s\n' "$workspace"
-          printf 'name-prefix=%s\n' "$name_prefix"
-        } >> "$GITHUB_OUTPUT"
+        printf 'Workspace: %s\n' "$workspace"
+        printf 'workspace=%s\n' "$workspace" >> "$GITHUB_OUTPUT"
