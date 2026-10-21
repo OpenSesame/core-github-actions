@@ -1,5 +1,5 @@
 name: Resolve feature workspace
-description: Derives an AWS-safe feature-environment Terraform workspace name from a branch name
+description: Derives the feature-environment Terraform workspace name from a branch name
 
 inputs:
   branch-name:
@@ -8,7 +8,7 @@ inputs:
 
 outputs:
   workspace:
-    description: Terraform workspace name containing only a-z, 0-9 and -
+    description: Terraform workspace name containing only a-z, 0-9 and single hyphens
     value: ${{ steps.resolve.outputs.workspace }}
 
 runs:
@@ -30,15 +30,15 @@ runs:
           exit 1
         fi
 
-        # Keep the last path segment, lowercase it, and replace every byte outside
-        # a-z, 0-9 and - so the name also works in AWS names such as S3 buckets.
+        # Keep the last path segment, lowercase it, replace every byte outside
+        # a-z, 0-9 and - with -, and collapse repeated hyphens.
         workspace="$(
           printf '%s' "${BRANCH_NAME##*/}" \
             | tr '[:upper:]' '[:lower:]' \
             | tr -c 'a-z0-9-' '-' \
-            | sed 's/^-*//' \
+            | sed -e 's/--*/-/g' -e 's/^-//' \
             | cut -c 1-15 \
-            | sed 's/-*$//'
+            | sed 's/-$//'
         )"
 
         if [[ -z "$workspace" ]]; then

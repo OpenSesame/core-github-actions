@@ -2,7 +2,7 @@
 
 ## Summary
 
-Derives a feature environment's Terraform workspace name from a branch name. The name uses only `a-z`, `0-9` and `-`, so it also works as a prefix for AWS resource names such as S3 buckets. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
+Derives a feature environment's Terraform workspace name from a branch name. The name uses only `a-z`, `0-9` and single hyphens. Use the same action in deploy and cleanup workflows so both always select the same workspace. It only computes names; it does not run Terraform.
 
 ## Inputs
 
@@ -20,8 +20,8 @@ Derives a feature environment's Terraform workspace name from a branch name. The
 
 1. Keep the text after the last `/`.
 2. Lowercase.
-3. Replace each character other than `a-z`, `0-9` and `-` with `-` (including `_`, `.`, `+` and `[]`).
-4. Trim leading `-`, keep the first 15 characters, then trim trailing `-`.
+3. Replace each character other than `a-z`, `0-9` and `-` with `-` (including `_`, `.`, `+` and `[]`), then collapse repeated `-`.
+4. Trim a leading `-`, keep the first 15 characters, then trim a trailing `-`.
 
 | `branch-name`                       | `workspace`       |
 | ----------------------------------- | ----------------- |
@@ -55,6 +55,6 @@ The output starts and ends with a letter or digit. The action fails when the res
 
 ## Migrating
 
-For branch names made of letters, digits, `-` and `_`, the result equals the lowercase name prefix that consumer repos compute with the copied `awk | tr | cut | sed` pipeline. The workspace itself is now lowercase too, and other characters are replaced. Workspace names are case-sensitive, so `feature/CORE-6135` moves from workspace `CORE-6135` to `core-6135`. Migrate deploy and cleanup together, and only when no open feature environment's workspace would change name; otherwise cleanup can't find the old workspace and its resources are orphaned.
+Workspace names are case-sensitive, and this rule differs from the copied `awk | tr | cut | sed` pipeline: `feature/CORE-6135` moves from workspace `CORE-6135` to `core-6135`. Migrate deploy and cleanup together. Before migrating, compare each open feature environment's workspace with this action's output; if any differ, close those environments first, or cleanup can't find the old workspace and its resources are orphaned.
 
 This action does not require additional GitHub token permissions.

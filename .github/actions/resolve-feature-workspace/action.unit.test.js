@@ -6,7 +6,7 @@ const { spawnSync } = require('node:child_process');
 const actionPath = path.join(__dirname, 'action.yml');
 
 // The name prefix computed by the pipeline copied into consumer workflows. It matches the
-// action for branch segments made of letters, digits, `-` and `_` that don't start with `-`.
+// action for branch segments of letters and digits joined by single `-` or `_`.
 const legacyPipeline = `
 workspace=$(echo "$BRANCH_NAME" | awk -F'/' '{print $NF}' | tr '_' '-' | cut -c 1-15 | sed 's/-*$//')
 echo "$workspace" | tr '[:upper:]' '[:lower:]'
@@ -97,13 +97,15 @@ describe('resolve-feature-workspace', () => {
     ['feature/my_fix', 'my-fix'],
     ['feature/CORE-6135_add_widget_flow', 'core-6135-add-w'],
     ['feature/CORE-6135-abcd-xyz', 'core-6135-abcd'],
-    ['feature/ab_____________xyz', 'ab'],
+    ['feature/ab_____________xyz', 'ab-xyz'],
+    ['feature/CORE-6135--fix', 'core-6135-fix'],
+    ['feature/xn--demo', 'xn-demo'],
     ['feature/-leading', 'leading'],
     ['feature/a+b', 'a-b'],
     ['release/2026.10.21', '2026-10-21'],
     ['dependabot/npm_and_yarn/lodash-4.17.21', 'lodash-4-17-21'],
     ['feature/renovate[bot]', 'renovate-bot'],
-    ['feature/naïve-branch', 'na--ve-branch'],
+    ['feature/naïve-branch', 'na-ve-branch'],
   ])('resolves %s to %s', (branchName, workspace) => {
     const result = runAction(branchName);
 
@@ -151,7 +153,7 @@ describe('resolve-feature-workspace', () => {
     const result = runAction('feature/$(touch marker)`touch marker`');
 
     expect(result.status).toBe(0);
-    expect(result.outputs.workspace).toBe('touch-marker--t');
+    expect(result.outputs.workspace).toBe('touch-marker-to');
     expect(result.shellMarkerCreated).toBe(false);
   });
 
@@ -161,10 +163,13 @@ describe('resolve-feature-workspace', () => {
     'feature/emoji-🚀-launch',
     'feature/a@b#c$d%e^f&g*h(i)j',
     'feature/x.y.z',
-  ])('produces a name usable in an S3 bucket name for %s', branchName => {
+    'feature/xn--demo',
+    'feature/--a--b--',
+  ])('produces only a-z, 0-9 and single inner hyphens for %s', branchName => {
     const result = runAction(branchName);
 
     expect(result.status).toBe(0);
     expect(result.outputs.workspace).toMatch(/^[a-z0-9]([a-z0-9-]{0,13}[a-z0-9])?$/);
+    expect(result.outputs.workspace).not.toContain('--');
   });
 });
