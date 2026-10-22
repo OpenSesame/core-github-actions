@@ -31,7 +31,8 @@
     "prepare": "husky install",
     "test": "jest",
     "watch": "jest --watch",
-    "audit": "npm audit --audit-level=high",
+    "audit": "npm-run-all --continue-on-error audit:*",
+    "audit:npm": "npm audit --audit-level=high",
     "lint": "npm-run-all --continue-on-error lint:*",
     "lint:js": "eslint *.js --ext .js,.json",
     "lint:gha": "mise run lint:gha",
@@ -44,6 +45,6 @@
     "scan": "npm-run-all --continue-on-error scan:*",
     "scan:semgrep": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
     "scan:gha": "mise run scan:gha",
-    "ci": "npm-run-all --continue-on-error audit test lint format scan"
+    "check": "npm-run-all --continue-on-error audit lint format test scan"
   }
 }

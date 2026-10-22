@@ -56,7 +56,7 @@ jobs:
 
       - name: Audit dependencies
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run audit
+        run: npm run audit:npm
 
       - name: Test
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
@@ -100,26 +100,17 @@ jobs:
     needs: [ci-context, app-ci, infra-ci, semgrep]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-26.04
-    permissions: {}
+    permissions:
+      contents: read # Required to check out the local check-ci-result action.
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Check CI job results
-        env:
-          NEEDS: ${{ toJSON(needs) }}
-        run: |
-          set -Eeuo pipefail
-
-          {
-            echo "## CI Result"
-            echo ""
-            echo "| Job | Result |"
-            echo "| --- | --- |"
-            jq -r 'to_entries[] | "| `\(.key)` | \(.value.result) |"' <<<"$NEEDS"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          failed=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key) (\(.value.result))"] | join(", ")' <<<"$NEEDS")
-          if [[ -n "$failed" ]]; then
-            echo "::error title=CI Result::Jobs did not succeed: $failed"
-            exit 1
-          fi
-          echo "All CI jobs succeeded or were intentionally skipped"
+        uses: ./.github/actions/check-ci-result
+        with:
+          needs-json: ${{ toJSON(needs) }}

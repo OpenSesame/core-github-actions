@@ -10,7 +10,7 @@ the repository map, consumer guidance, and migration context.
 - Install the pinned npm version: `npm install --global npm@12.1.0`
 - Install dependencies: `npm ci`
 - Install the GitHub Actions lint and scan tools (needs [mise](https://mise.jdx.dev/)): `mise install`
-- Run all non-mutating checks: `npm run ci`
+- Run all non-mutating checks: `npm run check` (not `npm ci`, which reinstalls dependencies)
 - Run tests in watch mode: `npm run watch`
 - Fix lint issues: `npm run lint-fix`
 - Fix formatting issues: `npm run format-fix`
@@ -23,7 +23,7 @@ the repository map, consumer guidance, and migration context.
 - Add the appropriate version label and update component changelogs when required by
   [VERSIONING.md](VERSIONING.md). Use `v:untracked` only for changes outside versioned
   component behavior.
-- Run `npm run ci` before handing off changes.
+- Run `npm run check` before handing off changes.
 
 ## Safety
 

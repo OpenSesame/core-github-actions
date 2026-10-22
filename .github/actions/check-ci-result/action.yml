@@ -1,0 +1,57 @@
+name: Check CI result
+description: Summarizes the results of the jobs a CI result job needs and fails if any failed or were cancelled
+
+inputs:
+  needs-json:
+    description: The calling job's needs context as JSON, passed as toJSON(needs)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check job results
+      shell: bash
+      env:
+        NEEDS_JSON: ${{ inputs.needs-json }}
+      run: |
+        set -Eeuo pipefail
+
+        if [[ -z "${NEEDS_JSON//[[:space:]]/}" ]]; then
+          echo "::error title=Invalid needs-json::needs-json is empty. Pass toJSON(needs) from the calling job."
+          exit 1
+        fi
+
+        if ! jq -e -s 'length == 1' <<<"$NEEDS_JSON" >/dev/null 2>&1; then
+          echo "::error title=Invalid needs-json::needs-json is not a single valid JSON value. Pass toJSON(needs) from the calling job."
+          exit 1
+        fi
+
+        if ! jq -e 'type == "object" and length > 0' <<<"$NEEDS_JSON" >/dev/null; then
+          echo "::error title=Invalid needs-json::needs-json must be a JSON object with at least one job. Check that the calling job lists its needs."
+          exit 1
+        fi
+
+        if ! jq -e '
+          all(to_entries[];
+            (.key | test("\\A[A-Za-z_][A-Za-z0-9_-]*\\z"))
+            and (.value | type == "object")
+            and (.value.result | IN("success", "failure", "cancelled", "skipped")))
+        ' <<<"$NEEDS_JSON" >/dev/null; then
+          echo "::error title=Invalid needs-json::Each needs-json entry must be keyed by a job ID and have a result of success, failure, cancelled or skipped."
+          exit 1
+        fi
+
+        {
+          echo "## CI Result"
+          echo ""
+          echo "| Job | Result |"
+          echo "| --- | --- |"
+          jq -r 'to_entries[] | "| `\(.key)` | \(.value.result) |"' <<<"$NEEDS_JSON"
+        } >> "$GITHUB_STEP_SUMMARY"
+
+        failed=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key) (\(.value.result))"] | join(", ")' <<<"$NEEDS_JSON")
+        if [[ -n "$failed" ]]; then
+          echo "::error title=CI Result::Jobs did not succeed: $failed"
+          exit 1
+        fi
+        echo "All CI jobs succeeded or were intentionally skipped"
