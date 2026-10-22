@@ -1,7 +1,7 @@
 # Trigger a Workflow and Wait
 
-This reusable workflow dispatches a `workflow_dispatch` workflow in another repository, discovers
-the resulting run, waits for completion, and exposes the downstream run details to later jobs.
+This reusable workflow dispatches a `workflow_dispatch` workflow in another repository, waits for
+the run that dispatch created to complete, and exposes the downstream run details to later jobs.
 
 > **Warning:** The target workflow may perform deployments, cleanup, or other live-system changes.
 > This workflow forwards the supplied JSON inputs without interpreting their meaning. Review the
@@ -9,66 +9,59 @@ the resulting run, waits for completion, and exposes the downstream run details 
 
 ## Prerequisites
 
-- The target workflow supports `workflow_dispatch` and accepts the keys in `client_payload`.
-- The supplied token can read Actions runs and dispatch the target workflow in the target
-  repository.
-- The target repository and workflow are reachable through the GitHub API.
+- The target workflow supports `workflow_dispatch` and accepts the keys in `client-payload`.
+- `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` can dispatch the target workflow: **Actions: write** on the
+  target repository for a fine-grained token or GitHub App, or the `repo` scope for a classic token.
 
 ## Usage
 
 ```yaml
 jobs:
   downstream:
-    uses: OpenSesame/core-github-actions/.github/workflows/trigger_workflow_and_wait.yml@workflows/trigger_workflow_and_wait/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/trigger_workflow_and_wait.yml@workflows/trigger_workflow_and_wait/1.0.0
     with:
       owner: OpenSesame
       repo: example-service
-      workflow_file: on_dispatch_smoke_env.yml
+      workflow-file: on_dispatch_smoke_env.yml
       commit-identifier: main
-      client_payload: '{"environment":"dev"}'
+      client-payload: '{"environment":"dev"}'
     secrets:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 ```
 
+The workflow declares `permissions: {}`, so the caller job does not need to grant any.
+
 ## Inputs
 
-| Input               | Type   | Required | Default | Description                                                                  |
-| ------------------- | ------ | -------- | ------- | ---------------------------------------------------------------------------- |
-| `owner`             | string | Yes      | —       | Owner of the target repository.                                              |
-| `repo`              | string | Yes      | —       | Target repository name.                                                      |
-| `workflow_file`     | string | Yes      | —       | Filename of the target `workflow_dispatch` workflow.                         |
-| `commit-identifier` | string | No       | `main`  | Branch, tag, or commit SHA passed as the dispatch ref.                       |
-| `wait_interval`     | number | No       | `20`    | Seconds between downstream run discovery and status polling attempts.        |
-| `client_payload`    | string | Yes      | —       | JSON object serialized as a string and sent as the target workflow's inputs. |
-
-## Secrets
-
-| Secret                                | Required | Description                                                                                                                                                     |
-| ------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | GitHub token used to list and dispatch Actions runs in the target repository. Despite its name, the token must have permission to dispatch the target workflow. |
+| Input               | Type   | Required | Default | Description                                                     |
+| ------------------- | ------ | -------- | ------- | --------------------------------------------------------------- |
+| `owner`             | string | Yes      | —       | Owner of the target repository.                                 |
+| `repo`              | string | Yes      | —       | Target repository name.                                         |
+| `workflow-file`     | string | Yes      | —       | Filename of the target `workflow_dispatch` workflow.            |
+| `commit-identifier` | string | No       | `main`  | Branch or tag passed as the dispatch ref.                       |
+| `wait-interval`     | number | No       | `20`    | Seconds between downstream run status polls.                    |
+| `client-payload`    | string | Yes      | —       | JSON object, as a string, sent as the target workflow's inputs. |
 
 ## Outputs
 
 | Output                | Description                                                                |
 | --------------------- | -------------------------------------------------------------------------- |
-| `downstream_run_id`   | Numeric ID of the discovered downstream workflow run.                      |
-| `downstream_html_url` | GitHub URL for the downstream workflow run.                                |
+| `downstream-run-id`   | ID of the downstream run created by the dispatch.                          |
+| `downstream-html-url` | GitHub URL of the downstream run.                                          |
 | `conclusion`          | Final downstream conclusion, such as `success`, `failure`, or `cancelled`. |
 
 ## Behavior
 
-1. Installs `jq` with `apt-get` when it is not already available on the runner.
-2. Validates that `client_payload` is JSON.
-3. Records recent matching workflow-dispatch runs from the previous two minutes.
-4. Dispatches `workflow_file` at `commit-identifier` with the supplied inputs.
-5. Polls up to 60 times for a new matching run, waiting `wait_interval` seconds each time.
-6. Polls the discovered run until it completes.
-7. Fails when no run is discovered or when the downstream conclusion is not `success`.
+- Dispatches with `return_run_details: true` and waits on the run ID in the response, so concurrent
+  dispatches of the same workflow by other callers are never picked up. Fails if the response has
+  no run ID.
+- Polls until the run completes, with no maximum duration, and fails unless it concludes `success`.
 
-Run discovery selects the newest run ID that appears after dispatch. The completion polling loop has
-no independent maximum duration; it waits as long as the downstream run remains incomplete. The
-workflow requests `id-token: write` and `contents: read` permissions in the caller repository.
-The workflow job runs on Ubuntu 26.04.
+## Migrating from 0.x
+
+Rename inputs `workflow_file`, `wait_interval`, `client_payload` and outputs `downstream_run_id`,
+`downstream_html_url` to their kebab-case forms above. Caller-side `id-token: write` and
+`contents: read` grants made only for this workflow can be removed.
 
 ## Contribution
 
