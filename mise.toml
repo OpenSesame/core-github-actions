@@ -1,7 +1,7 @@
 [tools]
 "aqua:rhysd/actionlint" = "1.7.12"
 "aqua:koalaman/shellcheck" = "0.11.0"
-"aqua:zizmorcore/zizmor" = "1.29.0"
+"aqua:zizmorcore/zizmor" = "1.31.1"
 
 [tasks."lint:gha"]
 description = "Lint GitHub Actions workflows"
