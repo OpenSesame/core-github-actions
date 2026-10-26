@@ -1,0 +1,258 @@
+name: npm Publish
+
+on:
+  workflow_call:
+    inputs:
+      prerelease:
+        description: Publish a beta with the experimental dist-tag and a beta tag, instead of latest with a GitHub release
+        type: boolean
+        required: false
+        default: false
+      initial-version:
+        description: Version to bump from when the repository has no x.y.z release tag yet
+        type: string
+        required: false
+        default: 1.0.0
+      build-command:
+        description: Bash commands that build and check the package after its version is set; a failure stops the publish
+        type: string
+        required: false
+        default: ''
+      publish-directory:
+        description: Directory to publish, relative to the repository root; its package.json must carry the new version
+        type: string
+        required: false
+        default: .
+      node-version-file:
+        description: File that sets the Node.js version, relative to the repository root
+        type: string
+        required: false
+        default: .nvmrc
+    outputs:
+      version:
+        description: Version this run published or found already published from this commit; empty when nothing was published
+        value: ${{ jobs.publish.outputs.version }}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  version:
+    name: Version
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the code and fetch its tags.
+    outputs:
+      version: ${{ steps.version.outputs.new_tag }}
+      should-publish: ${{ steps.eligibility.outputs.should-publish }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: '0'
+          persist-credentials: true # Required for the `git fetch --tags` that github-tag-action runs.
+
+      # Dry run only: the tag is created after the package is published, so a failed publish leaves
+      # no tag behind and a rerun works out the same version again.
+      - name: Determine version
+        id: version
+        uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
+        env:
+          DEFAULT_BUMP: none
+          TAG_CONTEXT: repo
+          RELEASE_BRANCHES: main
+          PRERELEASE: ${{ inputs.prerelease }}
+          PRERELEASE_SUFFIX: beta
+          INITIAL_VERSION: ${{ inputs.initial-version }}
+          VERBOSE: false
+          DRY_RUN: true
+
+      # With PRERELEASE the action reports the bump as pre-major, pre-minor or pre-patch.
+      - name: Determine publish eligibility
+        id: eligibility
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+          VERSION_PART: ${{ steps.version.outputs.part }}
+        run: |
+          case "$PRERELEASE:$VERSION_PART" in
+            false:major | false:minor | false:patch | true:pre-major | true:pre-minor | true:pre-patch)
+              echo "should-publish=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "should-publish=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+  # Holds the write permissions, so its checkout keeps no credentials. The token reaches only the
+  # steps that name it: npm ci, npm publish and gh.
+  publish:
+    name: Publish
+    needs: version
+    if: ${{ needs.version.outputs.should-publish == 'true' }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write # Required to create the version tag, and the GitHub release for latest.
+      packages: write # Required to publish the package to GitHub Packages.
+    outputs:
+      version: ${{ steps.publish.outcome == 'success' && steps.publish.outputs.superseded != 'true' && needs.version.outputs.version || '' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: ${{ inputs.node-version-file }}
+          registry-url: 'https://npm.pkg.github.com'
+          package-manager-cache: false
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm ci --ignore-scripts
+
+      - name: Set package version
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Build and check
+        if: ${{ inputs.build-command != '' }}
+        env:
+          BUILD_COMMAND: ${{ inputs.build-command }}
+        run: bash --noprofile --norc -eo pipefail -c "$BUILD_COMMAND"
+
+      # tag-commit is the commit to tag: this one, or the one that already published this version
+      # (superseded), whose missing tag the next steps create before the run fails.
+      - name: Publish package
+        id: publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ inputs.prerelease }}
+          PUBLISH_DIRECTORY: ${{ inputs.publish-directory }}
+          VERSION: ${{ needs.version.outputs.version }}
+          COMMIT_SHA: ${{ github.sha }}
+        # GitHub Packages does not support npm trusted publishing.
+        run: | # zizmor: ignore[use-trusted-publishing]
+          set -Euo pipefail
+
+          dist_tag=latest
+          if [[ "$PRERELEASE" == "true" ]]; then
+            dist_tag=experimental
+          fi
+
+          read_package() {
+            node -p "const p = require(require('node:path').resolve(process.argv[1], 'package.json')); p.$1" "$PUBLISH_DIRECTORY"
+          }
+          package_name=$(read_package name)
+          echo "package=$package_name" >> "$GITHUB_OUTPUT"
+          package_version=$(read_package version)
+          if [[ "$package_version" != "$VERSION" ]]; then
+            echo "::error title=Publish::$PUBLISH_DIRECTORY/package.json has version $package_version, not $VERSION. Copy package.json into $PUBLISH_DIRECTORY in build-command, after the version is set."
+            exit 1
+          fi
+
+          # Only a 404 means the version is not published; any other lookup failure stops here.
+          lookup_error=$(mktemp)
+          if ! npm view "$package_name@$VERSION" version >/dev/null 2>"$lookup_error"; then
+            if ! grep -q 'code E404' "$lookup_error"; then
+              echo "::error title=Publish::Could not check whether $package_name@$VERSION is published:"
+              cat "$lookup_error"
+              exit 1
+            fi
+            npm publish "$PUBLISH_DIRECTORY" --tag "$dist_tag" --ignore-scripts
+            echo "tag-commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          published_head=$(npm view "$package_name@$VERSION" gitHead)
+          if [[ "$published_head" == "$COMMIT_SHA" ]]; then
+            echo "::notice title=Publish::$package_name@$VERSION is already published from $COMMIT_SHA; skipping npm publish."
+            echo "tag-commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$published_head" ]]; then
+            echo "::warning title=Publish::$package_name@$VERSION is already published from $published_head; tagging that commit instead of publishing."
+            echo "tag-commit=$published_head" >> "$GITHUB_OUTPUT"
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error title=Publish::$package_name@$VERSION is already published, but the registry records no commit for it. Create the $VERSION tag on the commit that published it, then rerun this workflow."
+            exit 1
+          fi
+
+      # Succeeds when the release already exists on the same commit, as after a concurrent run.
+      - name: Create GitHub release
+        id: release
+        if: ${{ steps.publish.outcome == 'success' && !inputs.prerelease }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          tag_commit() {
+            gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true
+          }
+          # gh release create ignores --target when the tag exists, so check where it points first.
+          existing_commit=$(tag_commit)
+          if [[ -z "$existing_commit" || "$existing_commit" == "$TAG_COMMIT" ]]; then
+            if gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$TAG_COMMIT" --title "$VERSION" --notes ""; then
+              exit 0
+            fi
+            existing_commit=$(tag_commit)
+            if [[ "$existing_commit" == "$TAG_COMMIT" ]] && gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null; then
+              echo "::notice title=Release::The $VERSION release already exists on $TAG_COMMIT."
+              exit 0
+            fi
+          fi
+          echo "::error title=Release::Could not create the $VERSION release on $TAG_COMMIT; the tag points to ${existing_commit:-nothing}."
+          exit 1
+
+      # The next beta number comes from the highest existing beta tag, so betas still need a tag.
+      # Succeeds when the tag already exists on the same commit, as after a concurrent run.
+      - name: Create beta tag
+        id: beta-tag
+        if: ${{ steps.publish.outcome == 'success' && inputs.prerelease }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$TAG_COMMIT" --silent; then
+            exit 0
+          fi
+          existing_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true)
+          if [[ "$existing_commit" == "$TAG_COMMIT" ]]; then
+            echo "::notice title=Beta tag::The $VERSION tag already exists on $TAG_COMMIT."
+            exit 0
+          fi
+          echo "::error title=Beta tag::Could not create the $VERSION tag on $TAG_COMMIT; the tag points to ${existing_commit:-nothing}."
+          exit 1
+
+      - name: Fail superseded run
+        if: ${{ steps.publish.outputs.superseded == 'true' }}
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          echo "::error title=Publish::$VERSION was already published from $TAG_COMMIT by another run, and its tag is now in place. Rerun this workflow to publish this commit as the next version."
+          exit 1
+
+      # Runs only when everything succeeded, including a rerun that only had the tag left to create.
+      - name: Write job summary
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+          PACKAGE: ${{ steps.publish.outputs.package }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          if [[ "$PRERELEASE" == "true" ]]; then
+            echo "\`$PACKAGE@$VERSION\` is published with the \`experimental\` dist-tag." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "\`$PACKAGE@$VERSION\` is published with the \`latest\` dist-tag and [release $VERSION]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
+          fi
