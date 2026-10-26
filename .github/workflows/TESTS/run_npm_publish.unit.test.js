@@ -182,7 +182,10 @@ describe('run_npm_publish Publish package', () => {
     const result = runStep('Publish package', { env: publishEnv, files });
 
     expect(result.status).toBe(0);
-    expect(result.calls).toEqual([lookupVersion, '[npm][publish][.][--tag][latest]']);
+    expect(result.calls).toEqual([
+      lookupVersion,
+      '[npm][publish][.][--tag][latest][--ignore-scripts]',
+    ]);
     expect(result.outputs).toEqual({ package: '@opensesame/example', 'tag-commit': commitSha });
   });
 
@@ -203,7 +206,7 @@ describe('run_npm_publish Publish package', () => {
     expect(result.status).toBe(0);
     expect(result.calls).toEqual([
       '[npm][view][@opensesame/example@1.2.3-beta.0][version]',
-      '[npm][publish][./dist][--tag][experimental]',
+      '[npm][publish][./dist][--tag][experimental][--ignore-scripts]',
     ]);
   });
 

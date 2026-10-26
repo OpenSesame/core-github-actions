@@ -169,7 +169,7 @@ jobs:
               cat "$lookup_error"
               exit 1
             fi
-            npm publish "$PUBLISH_DIRECTORY" --tag "$dist_tag"
+            npm publish "$PUBLISH_DIRECTORY" --tag "$dist_tag" --ignore-scripts
             echo "tag-commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
             exit 0
           fi

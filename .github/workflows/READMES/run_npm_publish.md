@@ -63,8 +63,9 @@ Output `version` is the published version, empty when nothing was published.
 ## Permissions
 
 The caller grants `contents: write` and `packages: write`. The `Version` job only reads. The
-`Publish` job's checkout keeps no credentials; only `npm ci`, `npm publish` and the `gh` calls get
-the token.
+`Publish` job's checkout keeps no credentials, and only `npm ci`, `npm publish` and the `gh` calls
+get the token. Both npm commands run with `--ignore-scripts`, so package scripts such as
+`prepublishOnly` don't run; put the build in `build-command`.
 
 ## Contribution
 
