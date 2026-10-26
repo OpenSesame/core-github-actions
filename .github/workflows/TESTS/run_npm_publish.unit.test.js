@@ -281,12 +281,32 @@ describe('run_npm_publish Create GitHub release', () => {
   const releaseEnv = { VERSION: '1.2.3', TAG_COMMIT: commitSha };
   const create = `[gh][release][create][1.2.3][--repo][OpenSesame/example][--target][${commitSha}][--title][1.2.3][--notes][]`;
   const lookupTag = '[gh][api][repos/OpenSesame/example/git/ref/tags/1.2.3][--jq][.object.sha]';
+  const viewRelease = '[gh][release][view][1.2.3][--repo][OpenSesame/example]';
 
   test('creates the release and its tag on the tag commit', () => {
     const result = runStep('Create GitHub release', { env: releaseEnv });
 
     expect(result.status).toBe(0);
-    expect(result.calls).toEqual([create]);
+    expect(result.calls).toEqual([lookupTag, create]);
+  });
+
+  test('creates the release for a tag that already points to the tag commit', () => {
+    const result = runStep('Create GitHub release', {
+      env: { ...releaseEnv, STUB_EXISTING_COMMIT: commitSha },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.calls).toEqual([lookupTag, create]);
+  });
+
+  test('fails without creating a release when the tag points to another commit', () => {
+    const result = runStep('Create GitHub release', {
+      env: { ...releaseEnv, STUB_EXISTING_COMMIT: otherSha },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(`the tag points to ${otherSha}`);
+    expect(result.calls).toEqual([lookupTag]);
   });
 
   test('accepts a release that already exists on the same commit', () => {
@@ -296,15 +316,10 @@ describe('run_npm_publish Create GitHub release', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(`The 1.2.3 release already exists on ${commitSha}`);
-    expect(result.calls).toEqual([
-      create,
-      lookupTag,
-      '[gh][release][view][1.2.3][--repo][OpenSesame/example]',
-    ]);
+    expect(result.calls).toEqual([lookupTag, create, lookupTag, viewRelease]);
   });
 
   test.each([
-    ['the tag points to another commit', { STUB_EXISTING_COMMIT: otherSha }, otherSha],
     ['there is no tag', {}, 'nothing'],
     [
       'the tag has no release',

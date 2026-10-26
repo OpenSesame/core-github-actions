@@ -196,13 +196,20 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
           TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
         run: |
-          if gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$TAG_COMMIT" --title "$VERSION" --notes ""; then
-            exit 0
-          fi
-          existing_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true)
-          if [[ "$existing_commit" == "$TAG_COMMIT" ]] && gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null; then
-            echo "::notice title=Release::The $VERSION release already exists on $TAG_COMMIT."
-            exit 0
+          tag_commit() {
+            gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true
+          }
+          # gh release create ignores --target when the tag exists, so check where it points first.
+          existing_commit=$(tag_commit)
+          if [[ -z "$existing_commit" || "$existing_commit" == "$TAG_COMMIT" ]]; then
+            if gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$TAG_COMMIT" --title "$VERSION" --notes ""; then
+              exit 0
+            fi
+            existing_commit=$(tag_commit)
+            if [[ "$existing_commit" == "$TAG_COMMIT" ]] && gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null; then
+              echo "::notice title=Release::The $VERSION release already exists on $TAG_COMMIT."
+              exit 0
+            fi
           fi
           echo "::error title=Release::Could not create the $VERSION release on $TAG_COMMIT; the tag points to ${existing_commit:-nothing}."
           exit 1
