@@ -21,7 +21,13 @@ The job:
 Because the tag comes last, a failed publish leaves no tag behind, and rerunning the workflow works
 out the same version and publishes it. A rerun after a failed tag or release step finds the version
 already published from the same commit, through the `gitHead` npm records, skips `npm publish` and
-creates the tag.
+creates the tag. Creating a tag or release that already exists on the same commit succeeds.
+
+If the version was already published from another commit, by a run whose tag step failed or by a run
+on another branch that picked the same beta version, the job creates that version's tag on the
+commit that published it, if it is missing, and fails with a message to rerun. The rerun picks the
+next version. Only a 404 from the registry counts as "not published"; any other lookup error fails the
+job before it publishes.
 
 Betas still get a tag because github-tag-action numbers the next beta from the highest existing
 beta tag, for example `1.4.0-beta.2` after `1.4.0-beta.1`.
@@ -100,7 +106,8 @@ The checks are reported as `Publish Latest / Publish` and `Publish Beta / Publis
 Keep one concurrency group for `latest` so releases from `main` run one at a time. Keep the beta
 group per branch: GitHub keeps only one pending run per group, so a shared group would let a push on
 one branch cancel another branch's queued beta. When two branches pick the same beta version, the
-second publish fails with a message to rerun, and the rerun picks the next version.
+second run tags the first one's commit and fails with a message to rerun, and the rerun picks the
+next version.
 
 For a package published from a build directory:
 
@@ -134,9 +141,13 @@ The job fails when any of these is true:
 
 - `npm ci`, `npm version` or `build-command` fails.
 - `<publish-directory>/package.json` does not carry the new version.
-- The version is already published from another commit. Rerun the workflow to pick the next version.
-- `npm publish`, `gh release create` or the beta tag request fails. Rerun the workflow; it skips the
-  publish if it already succeeded.
+- The registry lookup fails with anything other than a 404.
+- The version is already published from another commit. The job tags that commit first; rerun the
+  workflow to publish this commit as the next version.
+- The version is already published but the registry records no commit for it. Create the version's
+  tag on the commit that published it, then rerun.
+- `npm publish`, `gh release create` or the beta tag request fails, or the tag already points to
+  another commit. Rerun the workflow; it skips the publish if it already succeeded.
 
 ## Permissions
 

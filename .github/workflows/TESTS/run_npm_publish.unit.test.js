@@ -37,16 +37,30 @@ function extractRunScript(stepName) {
 }
 
 // npm and gh stubs log each call as [arg][arg]... so empty arguments stay visible.
+// STUB_REGISTRY is absent (E404), error (E401) or present; STUB_GIT_HEAD is the published gitHead.
 const npmStub = `#!/bin/bash
 printf '[%s]' npm "$@" >> "$STUB_LOG"; echo >> "$STUB_LOG"
 if [[ "$1" == view ]]; then
-  if [[ -n "$STUB_GIT_HEAD" ]]; then echo "$STUB_GIT_HEAD"; exit 0; fi
-  echo 'npm error code E404' >&2
-  exit 1
+  case "$STUB_REGISTRY" in
+    absent) echo 'npm error code E404' >&2; exit 1 ;;
+    error) echo 'npm error code E401' >&2; exit 1 ;;
+  esac
+  if [[ "$3" == version ]]; then echo "\${2##*@}"; else echo "$STUB_GIT_HEAD"; fi
 fi
 `;
+// STUB_GH_CREATE_EXIT fails release or ref creation; STUB_EXISTING_COMMIT is the existing tag's commit.
 const ghStub = `#!/bin/bash
 printf '[%s]' gh "$@" >> "$STUB_LOG"; echo >> "$STUB_LOG"
+case "$1 $2" in
+  'release create') exit "$STUB_GH_CREATE_EXIT" ;;
+  'release view') exit "$STUB_GH_RELEASE_VIEW_EXIT" ;;
+esac
+if [[ "$1" == api && "$2" == */git/refs ]]; then exit "$STUB_GH_CREATE_EXIT"; fi
+if [[ "$1" == api && "$2" == */git/ref/tags/* ]]; then
+  if [[ -n "$STUB_EXISTING_COMMIT" ]]; then echo "$STUB_EXISTING_COMMIT"; exit 0; fi
+  echo 'HTTP 404: Not Found' >&2
+  exit 1
+fi
 `;
 
 function runStep(stepName, { env = {}, files = {} } = {}) {
@@ -82,7 +96,11 @@ function runStep(stepName, { env = {}, files = {} } = {}) {
           GITHUB_STEP_SUMMARY: summaryPath,
           GITHUB_REPOSITORY: 'OpenSesame/example',
           STUB_LOG: logPath,
+          STUB_REGISTRY: 'absent',
           STUB_GIT_HEAD: '',
+          STUB_GH_CREATE_EXIT: '0',
+          STUB_GH_RELEASE_VIEW_EXIT: '0',
+          STUB_EXISTING_COMMIT: '',
           ...env,
         },
       }
@@ -134,19 +152,16 @@ describe('run_npm_publish Publish package', () => {
     VERSION: '1.2.3',
     COMMIT_SHA: commitSha,
   };
+  const files = { 'package.json': packageJson('1.2.3') };
+  const lookupVersion = '[npm][view][@opensesame/example@1.2.3][version]';
+  const lookupGitHead = '[npm][view][@opensesame/example@1.2.3][gitHead]';
 
-  test('publishes latest when the version is not in the registry', () => {
-    const result = runStep('Publish package', {
-      env: publishEnv,
-      files: { 'package.json': packageJson('1.2.3') },
-    });
+  test('publishes latest when the registry reports the version missing', () => {
+    const result = runStep('Publish package', { env: publishEnv, files });
 
-    expect(result.stderr).toBe('');
     expect(result.status).toBe(0);
-    expect(result.calls).toEqual([
-      '[npm][view][@opensesame/example@1.2.3][gitHead]',
-      '[npm][publish][.][--tag][latest]',
-    ]);
+    expect(result.calls).toEqual([lookupVersion, '[npm][publish][.][--tag][latest]']);
+    expect(result.outputs).toEqual({ 'tag-commit': commitSha });
   });
 
   test('publishes a beta from the publish directory with the experimental dist-tag', () => {
@@ -165,32 +180,60 @@ describe('run_npm_publish Publish package', () => {
 
     expect(result.status).toBe(0);
     expect(result.calls).toEqual([
-      '[npm][view][@opensesame/example@1.2.3-beta.0][gitHead]',
+      '[npm][view][@opensesame/example@1.2.3-beta.0][version]',
       '[npm][publish][./dist][--tag][experimental]',
     ]);
   });
 
-  test('skips npm publish when this commit already published the version', () => {
+  test('stops with the lookup error when the registry query fails for another reason', () => {
     const result = runStep('Publish package', {
-      env: { ...publishEnv, STUB_GIT_HEAD: commitSha },
-      files: { 'package.json': packageJson('1.2.3') },
-    });
-
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('already published from');
-    expect(result.calls).toEqual(['[npm][view][@opensesame/example@1.2.3][gitHead]']);
-  });
-
-  test('fails without publishing when another commit published the version', () => {
-    const result = runStep('Publish package', {
-      env: { ...publishEnv, STUB_GIT_HEAD: otherSha },
-      files: { 'package.json': packageJson('1.2.3') },
+      env: { ...publishEnv, STUB_REGISTRY: 'error' },
+      files,
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain(`already published from ${otherSha} by another run`);
-    expect(result.stdout).toContain('Rerun this workflow to pick the next version.');
-    expect(result.calls).toEqual(['[npm][view][@opensesame/example@1.2.3][gitHead]']);
+    expect(result.stdout).toContain(
+      'Could not check whether @opensesame/example@1.2.3 is published'
+    );
+    expect(result.stdout).toContain('npm error code E401');
+    expect(result.calls).toEqual([lookupVersion]);
+    expect(result.outputs).toEqual({});
+  });
+
+  test('skips npm publish and tags this commit when it already published the version', () => {
+    const result = runStep('Publish package', {
+      env: { ...publishEnv, STUB_REGISTRY: 'present', STUB_GIT_HEAD: commitSha },
+      files,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`already published from ${commitSha}; skipping npm publish`);
+    expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
+    expect(result.outputs).toEqual({ 'tag-commit': commitSha });
+  });
+
+  test('tags the publishing commit and marks the run superseded when another commit published', () => {
+    const result = runStep('Publish package', {
+      env: { ...publishEnv, STUB_REGISTRY: 'present', STUB_GIT_HEAD: otherSha },
+      files,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`already published from ${otherSha}; tagging that commit`);
+    expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
+    expect(result.outputs).toEqual({ 'tag-commit': otherSha, superseded: 'true' });
+  });
+
+  test('fails when the published version records no commit', () => {
+    const result = runStep('Publish package', {
+      env: { ...publishEnv, STUB_REGISTRY: 'present', STUB_GIT_HEAD: '' },
+      files,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('the registry records no commit for it');
+    expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
+    expect(result.outputs).toEqual({});
   });
 
   test('fails before contacting the registry when the publish directory has another version', () => {
@@ -205,27 +248,91 @@ describe('run_npm_publish Publish package', () => {
   });
 });
 
-describe('run_npm_publish tag steps', () => {
-  test('creates the GitHub release and its tag at the published commit', () => {
+describe('run_npm_publish Create GitHub release', () => {
+  const releaseEnv = { VERSION: '1.2.3', TAG_COMMIT: commitSha };
+  const create = `[gh][release][create][1.2.3][--repo][OpenSesame/example][--target][${commitSha}][--title][1.2.3][--notes][]`;
+  const lookupTag = '[gh][api][repos/OpenSesame/example/git/ref/tags/1.2.3][--jq][.object.sha]';
+
+  test('creates the release and its tag on the tag commit', () => {
+    const result = runStep('Create GitHub release', { env: releaseEnv });
+
+    expect(result.status).toBe(0);
+    expect(result.calls).toEqual([create]);
+  });
+
+  test('accepts a release that already exists on the same commit', () => {
     const result = runStep('Create GitHub release', {
-      env: { VERSION: '1.2.3', COMMIT_SHA: commitSha },
+      env: { ...releaseEnv, STUB_GH_CREATE_EXIT: '1', STUB_EXISTING_COMMIT: commitSha },
     });
 
     expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`The 1.2.3 release already exists on ${commitSha}`);
     expect(result.calls).toEqual([
-      `[gh][release][create][1.2.3][--repo][OpenSesame/example][--target][${commitSha}][--title][1.2.3][--notes][]`,
+      create,
+      lookupTag,
+      '[gh][release][view][1.2.3][--repo][OpenSesame/example]',
     ]);
   });
 
-  test('creates the beta tag at the published commit', () => {
+  test.each([
+    ['the tag points to another commit', { STUB_EXISTING_COMMIT: otherSha }, otherSha],
+    ['there is no tag', {}, 'nothing'],
+    [
+      'the tag has no release',
+      { STUB_EXISTING_COMMIT: commitSha, STUB_GH_RELEASE_VIEW_EXIT: '1' },
+      commitSha,
+    ],
+  ])('fails when creation fails and %s', (_case, env, pointsTo) => {
+    const result = runStep('Create GitHub release', {
+      env: { ...releaseEnv, STUB_GH_CREATE_EXIT: '1', ...env },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(`the tag points to ${pointsTo}`);
+  });
+});
+
+describe('run_npm_publish Create beta tag', () => {
+  const tagEnv = { VERSION: '1.2.3-beta.0', TAG_COMMIT: commitSha };
+  const create = `[gh][api][repos/OpenSesame/example/git/refs][-f][ref=refs/tags/1.2.3-beta.0][-f][sha=${commitSha}][--silent]`;
+
+  test('creates the beta tag on the tag commit', () => {
+    const result = runStep('Create beta tag', { env: tagEnv });
+
+    expect(result.status).toBe(0);
+    expect(result.calls).toEqual([create]);
+  });
+
+  test('accepts a tag that already exists on the same commit', () => {
     const result = runStep('Create beta tag', {
-      env: { VERSION: '1.2.3-beta.0', COMMIT_SHA: commitSha },
+      env: { ...tagEnv, STUB_GH_CREATE_EXIT: '1', STUB_EXISTING_COMMIT: commitSha },
     });
 
     expect(result.status).toBe(0);
-    expect(result.calls).toEqual([
-      `[gh][api][repos/OpenSesame/example/git/refs][-f][ref=refs/tags/1.2.3-beta.0][-f][sha=${commitSha}][--silent]`,
-    ]);
+    expect(result.stdout).toContain(`The 1.2.3-beta.0 tag already exists on ${commitSha}`);
+  });
+
+  test('fails when the existing tag points to another commit', () => {
+    const result = runStep('Create beta tag', {
+      env: { ...tagEnv, STUB_GH_CREATE_EXIT: '1', STUB_EXISTING_COMMIT: otherSha },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(`the tag points to ${otherSha}`);
+  });
+});
+
+describe('run_npm_publish Fail superseded run', () => {
+  test('fails with a message to rerun for the next version', () => {
+    const result = runStep('Fail superseded run', {
+      env: { VERSION: '1.2.3', TAG_COMMIT: otherSha },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(`1.2.3 was already published from ${otherSha} by another run`);
+    expect(result.stdout).toContain(
+      'Rerun this workflow to publish this commit as the next version.'
+    );
   });
 });
 
@@ -274,5 +381,27 @@ describe('run_npm_publish job summary', () => {
     expect(result.summary).toContain('- Version: not published');
     expect(result.summary).toContain('- npm dist-tag: `experimental`');
     expect(result.summary).toContain('- Beta tag step: skipped');
+  });
+
+  test('reports a superseded run without claiming its version', () => {
+    const result = runStep('Write job summary', {
+      env: {
+        ...summaryEnv,
+        JOB_STATUS: 'failure',
+        PRERELEASE: 'false',
+        VERSION_PART: 'patch',
+        VERSION: '1.2.3',
+        SHOULD_PUBLISH: 'true',
+        SUPERSEDED: 'true',
+        TAG_COMMIT: otherSha,
+        PUBLISH_OUTCOME: 'success',
+        TAG_OUTCOME: 'success',
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.summary).toContain(
+      `- Version: not published; 1.2.3 was already published from \`${otherSha}\``
+    );
   });
 });

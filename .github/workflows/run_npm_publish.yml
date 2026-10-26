@@ -47,7 +47,7 @@ jobs:
       contents: write # Required to create the version tag, and the GitHub release for latest.
       packages: write # Required to publish the package to GitHub Packages.
     outputs:
-      version: ${{ steps.publish.outcome == 'success' && steps.version.outputs.new_tag || '' }}
+      version: ${{ steps.publish.outcome == 'success' && steps.publish.outputs.superseded != 'true' && steps.version.outputs.new_tag || '' }}
 
     steps:
       - name: Check out code
@@ -115,8 +115,10 @@ jobs:
           BUILD_COMMAND: ${{ inputs.build-command }}
         run: bash --noprofile --norc -eo pipefail -c "$BUILD_COMMAND"
 
-      # A rerun after a failed tag or release step finds this commit's version already published and
-      # goes straight to the tag.
+      # Sets tag-commit to the commit the version's tag belongs to. A rerun after a failed tag or
+      # release step finds this commit's version already published and goes straight to the tag. A
+      # version another commit published sets superseded, so the tag steps create that commit's
+      # missing tag and the job fails with a message to rerun for the next version.
       - name: Publish package
         id: publish
         if: ${{ steps.eligibility.outputs.should-publish == 'true' }}
@@ -145,34 +147,81 @@ jobs:
             exit 1
           fi
 
-          published_head=$(npm view "$package_name@$VERSION" gitHead 2>/dev/null || true)
-          if [[ "$published_head" == "$COMMIT_SHA" ]]; then
-            echo "::notice title=Publish::$package_name@$VERSION is already published from $COMMIT_SHA; skipping npm publish."
-          elif [[ -n "$published_head" ]]; then
-            echo "::error title=Publish::$package_name@$VERSION is already published from $published_head by another run. Rerun this workflow to pick the next version."
-            exit 1
-          else
+          # Only a 404 means the version is not published; any other lookup failure stops here.
+          lookup_error=$(mktemp)
+          if ! npm view "$package_name@$VERSION" version >/dev/null 2>"$lookup_error"; then
+            if ! grep -q 'code E404' "$lookup_error"; then
+              echo "::error title=Publish::Could not check whether $package_name@$VERSION is published:"
+              cat "$lookup_error"
+              exit 1
+            fi
             npm publish "$PUBLISH_DIRECTORY" --tag "$dist_tag"
+            echo "tag-commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
 
+          published_head=$(npm view "$package_name@$VERSION" gitHead)
+          if [[ "$published_head" == "$COMMIT_SHA" ]]; then
+            echo "::notice title=Publish::$package_name@$VERSION is already published from $COMMIT_SHA; skipping npm publish."
+            echo "tag-commit=$COMMIT_SHA" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$published_head" ]]; then
+            echo "::warning title=Publish::$package_name@$VERSION is already published from $published_head; tagging that commit instead of publishing."
+            echo "tag-commit=$published_head" >> "$GITHUB_OUTPUT"
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error title=Publish::$package_name@$VERSION is already published, but the registry records no commit for it. Create the $VERSION tag on the commit that published it, then rerun this workflow."
+            exit 1
+          fi
+
+      # Succeeds when the release already exists on the same commit, as after a concurrent run.
       - name: Create GitHub release
         id: release
         if: ${{ steps.publish.outcome == 'success' && !inputs.prerelease }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.new_tag }}
-          COMMIT_SHA: ${{ github.sha }}
-        run: gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$COMMIT_SHA" --title "$VERSION" --notes ""
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          if gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$TAG_COMMIT" --title "$VERSION" --notes ""; then
+            exit 0
+          fi
+          existing_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true)
+          if [[ "$existing_commit" == "$TAG_COMMIT" ]] && gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null; then
+            echo "::notice title=Release::The $VERSION release already exists on $TAG_COMMIT."
+            exit 0
+          fi
+          echo "::error title=Release::Could not create the $VERSION release on $TAG_COMMIT; the tag points to ${existing_commit:-nothing}."
+          exit 1
 
       # The next beta number comes from the highest existing beta tag, so betas still need a tag.
+      # Succeeds when the tag already exists on the same commit, as after a concurrent run.
       - name: Create beta tag
         id: beta-tag
         if: ${{ steps.publish.outcome == 'success' && inputs.prerelease }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.new_tag }}
-          COMMIT_SHA: ${{ github.sha }}
-        run: gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$COMMIT_SHA" --silent
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$TAG_COMMIT" --silent; then
+            exit 0
+          fi
+          existing_commit=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" --jq '.object.sha' 2>/dev/null || true)
+          if [[ "$existing_commit" == "$TAG_COMMIT" ]]; then
+            echo "::notice title=Beta tag::The $VERSION tag already exists on $TAG_COMMIT."
+            exit 0
+          fi
+          echo "::error title=Beta tag::Could not create the $VERSION tag on $TAG_COMMIT; the tag points to ${existing_commit:-nothing}."
+          exit 1
+
+      - name: Fail superseded run
+        if: ${{ steps.publish.outputs.superseded == 'true' }}
+        env:
+          VERSION: ${{ steps.version.outputs.new_tag }}
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
+        run: |
+          echo "::error title=Publish::$VERSION was already published from $TAG_COMMIT by another run, and its tag is now in place. Rerun this workflow to publish this commit as the next version."
+          exit 1
 
       - name: Write job summary
         if: ${{ always() }}
@@ -184,6 +233,8 @@ jobs:
           VERSION_PART: ${{ steps.version.outputs.part }}
           VERSION: ${{ steps.version.outputs.new_tag }}
           SHOULD_PUBLISH: ${{ steps.eligibility.outputs.should-publish }}
+          SUPERSEDED: ${{ steps.publish.outputs.superseded }}
+          TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
           TAG_OUTCOME: ${{ inputs.prerelease && steps.beta-tag.outcome || steps.release.outcome }}
         run: |
@@ -196,7 +247,9 @@ jobs:
             dist_tag=latest
             tag_step="GitHub release and tag"
           fi
-          if [[ "$SHOULD_PUBLISH" == "true" ]]; then
+          if [[ "$SUPERSEDED" == "true" ]]; then
+            version="not published; $VERSION was already published from \`$TAG_COMMIT\`"
+          elif [[ "$SHOULD_PUBLISH" == "true" ]]; then
             version="$VERSION"
           else
             version="not published"

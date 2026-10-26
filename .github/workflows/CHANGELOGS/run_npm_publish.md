@@ -18,7 +18,10 @@ All notable changes to the **run_npm_publish** reusable workflow are documented 
 - Output `version`, empty when nothing was published.
 - Reruns: a rerun after a failed publish works out the same version again, and a rerun after a failed
   tag or release step skips `npm publish` when the registry's `gitHead` for that version is this
-  commit. A version already published from another commit fails with a message to rerun.
+  commit. Creating a tag or release that already exists on the same commit succeeds.
+- A version already published from another commit gets its missing tag on that commit, and the job
+  fails with a message to rerun, which picks the next version. Only a 404 from the registry counts as
+  not published; any other lookup error fails the job.
 - Refuses to publish when `<publish-directory>/package.json` does not carry the new version.
 - Skips Node setup, install and build when nothing is to be published.
 - Job summary with the version bump, version, dist-tag and step outcomes.
