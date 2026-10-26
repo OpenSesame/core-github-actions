@@ -40,22 +40,23 @@ defaults:
     shell: bash
 
 jobs:
-  publish:
-    name: Publish
+  version:
+    name: Version
     runs-on: ubuntu-26.04
     permissions:
-      contents: write # Required to create the version tag, and the GitHub release for latest.
-      packages: write # Required to publish the package to GitHub Packages.
+      contents: read # Required to check out the code and fetch its tags.
     outputs:
-      version: ${{ steps.publish.outcome == 'success' && steps.publish.outputs.superseded != 'true' && steps.version.outputs.new_tag || '' }}
+      version: ${{ steps.version.outputs.new_tag }}
+      should-publish: ${{ steps.eligibility.outputs.should-publish }}
 
     steps:
+      # This job's token can only read, so persisting it for the tag fetch exposes nothing writable.
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
           fetch-depth: '0'
-          persist-credentials: true # Required for the `git fetch --tags` that github-tag-action runs; nothing pushes with it.
+          persist-credentials: true # Required for the `git fetch --tags` that github-tag-action runs.
 
       # Dry run only: the tag is created after the package is published, so a failed publish leaves
       # no tag behind and a rerun works out the same version again.
@@ -63,7 +64,6 @@ jobs:
         id: version
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BUMP: none
           TAG_CONTEXT: repo
           RELEASE_BRANCHES: main
@@ -89,8 +89,60 @@ jobs:
               ;;
           esac
 
+      - name: Write version summary
+        if: ${{ always() }}
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+          VERSION_PART: ${{ steps.version.outputs.part }}
+          VERSION: ${{ steps.version.outputs.new_tag }}
+          SHOULD_PUBLISH: ${{ steps.eligibility.outputs.should-publish }}
+        run: |
+          if [[ "$PRERELEASE" == "true" ]]; then
+            title="Publish Beta"
+            dist_tag=experimental
+          else
+            title="Publish Latest"
+            dist_tag=latest
+          fi
+          if [[ "$SHOULD_PUBLISH" == "true" ]]; then
+            version="$VERSION"
+          else
+            version="not published"
+          fi
+
+          {
+            echo "## $title"
+            echo ""
+            echo "- Branch: \`$BRANCH_NAME\`"
+            echo "- Commit: \`$COMMIT_SHA\`"
+            echo "- Version bump: ${VERSION_PART:-none}"
+            echo "- Version: $version"
+            echo "- npm dist-tag: \`$dist_tag\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Holds the write permissions, so its checkout keeps no credentials. The token reaches only the
+  # steps that name it: npm ci, npm publish and gh.
+  publish:
+    name: Publish
+    needs: version
+    if: ${{ needs.version.outputs.should-publish == 'true' }}
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: write # Required to create the version tag, and the GitHub release for latest.
+      packages: write # Required to publish the package to GitHub Packages.
+    outputs:
+      version: ${{ steps.publish.outcome == 'success' && steps.publish.outputs.superseded != 'true' && needs.version.outputs.version || '' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Set up Node
-        if: ${{ steps.eligibility.outputs.should-publish == 'true' }}
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: ${{ inputs.node-version-file }}
@@ -98,19 +150,17 @@ jobs:
           package-manager-cache: false
 
       - name: Install dependencies
-        if: ${{ steps.eligibility.outputs.should-publish == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm ci --ignore-scripts
 
       - name: Set package version
-        if: ${{ steps.eligibility.outputs.should-publish == 'true' }}
         env:
-          VERSION: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Build and check
-        if: ${{ steps.eligibility.outputs.should-publish == 'true' && inputs.build-command != '' }}
+        if: ${{ inputs.build-command != '' }}
         env:
           BUILD_COMMAND: ${{ inputs.build-command }}
         run: bash --noprofile --norc -eo pipefail -c "$BUILD_COMMAND"
@@ -121,12 +171,11 @@ jobs:
       # missing tag and the job fails with a message to rerun for the next version.
       - name: Publish package
         id: publish
-        if: ${{ steps.eligibility.outputs.should-publish == 'true' }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PRERELEASE: ${{ inputs.prerelease }}
           PUBLISH_DIRECTORY: ${{ inputs.publish-directory }}
-          VERSION: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ needs.version.outputs.version }}
           COMMIT_SHA: ${{ github.sha }}
         # GitHub Packages does not support npm trusted publishing.
         run: | # zizmor: ignore[use-trusted-publishing]
@@ -179,7 +228,7 @@ jobs:
         if: ${{ steps.publish.outcome == 'success' && !inputs.prerelease }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ needs.version.outputs.version }}
           TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
         run: |
           if gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --target "$TAG_COMMIT" --title "$VERSION" --notes ""; then
@@ -200,7 +249,7 @@ jobs:
         if: ${{ steps.publish.outcome == 'success' && inputs.prerelease }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ needs.version.outputs.version }}
           TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
         run: |
           if gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/$VERSION" -f sha="$TAG_COMMIT" --silent; then
@@ -217,53 +266,41 @@ jobs:
       - name: Fail superseded run
         if: ${{ steps.publish.outputs.superseded == 'true' }}
         env:
-          VERSION: ${{ steps.version.outputs.new_tag }}
+          VERSION: ${{ needs.version.outputs.version }}
           TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
         run: |
           echo "::error title=Publish::$VERSION was already published from $TAG_COMMIT by another run, and its tag is now in place. Rerun this workflow to publish this commit as the next version."
           exit 1
 
-      - name: Write job summary
+      - name: Write publish summary
         if: ${{ always() }}
         env:
           JOB_STATUS: ${{ job.status }}
           PRERELEASE: ${{ inputs.prerelease }}
-          BRANCH_NAME: ${{ github.ref_name }}
-          COMMIT_SHA: ${{ github.sha }}
-          VERSION_PART: ${{ steps.version.outputs.part }}
-          VERSION: ${{ steps.version.outputs.new_tag }}
-          SHOULD_PUBLISH: ${{ steps.eligibility.outputs.should-publish }}
+          VERSION: ${{ needs.version.outputs.version }}
           SUPERSEDED: ${{ steps.publish.outputs.superseded }}
           TAG_COMMIT: ${{ steps.publish.outputs.tag-commit }}
           PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
           TAG_OUTCOME: ${{ inputs.prerelease && steps.beta-tag.outcome || steps.release.outcome }}
         run: |
           if [[ "$PRERELEASE" == "true" ]]; then
-            title="Publish Beta"
-            dist_tag=experimental
             tag_step="Beta tag"
           else
-            title="Publish Latest"
-            dist_tag=latest
             tag_step="GitHub release and tag"
           fi
           if [[ "$SUPERSEDED" == "true" ]]; then
-            version="not published; $VERSION was already published from \`$TAG_COMMIT\`"
-          elif [[ "$SHOULD_PUBLISH" == "true" ]]; then
-            version="$VERSION"
+            result="not published; $VERSION was already published from \`$TAG_COMMIT\`"
+          elif [[ "$PUBLISH_OUTCOME" == "success" ]]; then
+            result="published $VERSION"
           else
-            version="not published"
+            result="not published"
           fi
 
           {
-            echo "## $title"
+            echo "## Publish"
             echo ""
             echo "- Status: $JOB_STATUS"
-            echo "- Branch: \`$BRANCH_NAME\`"
-            echo "- Commit: \`$COMMIT_SHA\`"
-            echo "- Version bump: ${VERSION_PART:-none}"
-            echo "- Version: $version"
-            echo "- npm dist-tag: \`$dist_tag\`"
+            echo "- Result: $result"
             echo "- Publish step: ${PUBLISH_OUTCOME:-not reached}"
             echo "- $tag_step step: ${TAG_OUTCOME:-not reached}"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -5,18 +5,18 @@ release markers in commit messages. Call it with `prerelease: false` on pushes t
 `latest` and create a GitHub release, and with `prerelease: true` on pushes to other branches to
 publish a beta with the `experimental` dist-tag.
 
-The job:
+The workflow has two jobs:
 
-1. Works out the version with [github-tag-action](https://github.com/anothrNick/github-tag-action)
-   as a dry run. It reads every commit message since the highest `x.y.z` tag and applies the largest
-   marker it finds: `#major`, then `#minor`, then `#patch`. `#none`, or no marker, publishes nothing.
-   Markers are matched as lowercase text anywhere in the message.
-2. Stops there when nothing is to be published, without setting up Node or installing dependencies.
-3. Installs dependencies with `npm ci --ignore-scripts`, sets the version in `package.json` without
-   committing it, and runs `build-command`.
-4. Publishes `publish-directory`.
-5. Creates the version tag only after the publish succeeds: with `gh release create`, which creates
-   the tag and the release together, for `latest`, or as a bare tag for a beta.
+1. `version` ("Version") works out the version with
+   [github-tag-action](https://github.com/anothrNick/github-tag-action) as a dry run. It reads every
+   commit message since the highest `x.y.z` tag and applies the largest marker it finds: `#major`,
+   then `#minor`, then `#patch`. `#none`, or no marker, publishes nothing. Markers are matched as
+   lowercase text anywhere in the message. This job can only read the repository.
+2. `publish` ("Publish") runs only when there is a version to publish. It installs dependencies with
+   `npm ci --ignore-scripts`, sets the version in `package.json` without committing it, runs
+   `build-command`, and publishes `publish-directory`. Only after the publish succeeds does it create
+   the version tag: with `gh release create`, which creates the tag and the release together, for
+   `latest`, or as a bare tag for a beta.
 
 Because the tag comes last, a failed publish leaves no tag behind, and rerunning the workflow works
 out the same version and publishes it. A rerun after a failed tag or release step finds the version
@@ -24,7 +24,7 @@ already published from the same commit, through the `gitHead` npm records, skips
 creates the tag. Creating a tag or release that already exists on the same commit succeeds.
 
 If the version was already published from another commit, by a run whose tag step failed or by a run
-on another branch that picked the same beta version, the job creates that version's tag on the
+on another branch that picked the same beta version, `publish` creates that version's tag on the
 commit that published it, if it is missing, and fails with a message to rerun. The rerun picks the
 next version. Only a 404 from the registry counts as "not published"; any other lookup error fails the
 job before it publishes.
@@ -101,7 +101,9 @@ jobs:
       build-command: npm run build
 ```
 
-The checks are reported as `Publish Latest / Publish` and `Publish Beta / Publish`.
+The checks are reported as `Publish Latest / Version` and `Publish Latest / Publish`, or
+`Publish Beta / Version` and `Publish Beta / Publish`. `Publish` shows as skipped when nothing is
+published.
 
 Keep one concurrency group for `latest` so releases from `main` run one at a time. Keep the beta
 group per branch: GitHub keeps only one pending run per group, so a shared group would let a push on
@@ -137,12 +139,12 @@ with:
 
 ## Failure conditions
 
-The job fails when any of these is true:
+`version` fails only when github-tag-action does. `publish` fails when any of these is true:
 
 - `npm ci`, `npm version` or `build-command` fails.
 - `<publish-directory>/package.json` does not carry the new version.
 - The registry lookup fails with anything other than a 404.
-- The version is already published from another commit. The job tags that commit first; rerun the
+- The version is already published from another commit. `publish` tags that commit first; rerun the
   workflow to publish this commit as the next version.
 - The version is already published but the registry records no commit for it. Create the version's
   tag on the commit that published it, then rerun.
@@ -151,18 +153,22 @@ The job fails when any of these is true:
 
 ## Permissions
 
+The caller grants:
+
 | Permission | Reason                                                                |
 | ---------- | --------------------------------------------------------------------- |
 | `contents` | `write`: create the version tag, and the GitHub release for `latest`. |
 | `packages` | `write`: publish the package to GitHub Packages.                      |
 
-The checkout keeps its credentials because github-tag-action runs `git fetch --tags`. Nothing pushes
-with them; the tag and release are created through the GitHub API after the publish.
+`version` narrows these to `contents: read`. Its checkout keeps the token because github-tag-action
+runs `git fetch --tags`, and that token can only read. `publish` has the write permissions, so its
+checkout keeps no credentials. Its token is passed only to the steps that need it: `npm ci`,
+`npm publish` and the `gh` calls. `build-command` and npm lifecycle scripts get no token.
 
 `setup-node` dependency caching is disabled, so a cache written by another workflow can't change what
 is published.
 
-The workflow job runs on Ubuntu 26.04.
+Both jobs run on Ubuntu 26.04.
 
 ## Contribution
 

@@ -7,9 +7,12 @@ All notable changes to the **run_npm_publish** reusable workflow are documented 
 ### Added
 
 - First release of the `run_npm_publish` reusable workflow.
-- One job, `publish` ("Publish"), that works out the version from the release markers in commit
-  messages with github-tag-action as a dry run, sets it in `package.json`, runs `build-command`,
-  publishes `publish-directory` to GitHub Packages, and only then creates the version tag.
+- Job `version` ("Version"), with `contents: read` only, works out the version from the release
+  markers in commit messages with github-tag-action as a dry run.
+- Job `publish` ("Publish") runs only when there is a version to publish. It sets the version in
+  `package.json`, runs `build-command`, publishes `publish-directory` to GitHub Packages, and only
+  then creates the version tag. Its checkout keeps no credentials; the token reaches only `npm ci`,
+  `npm publish` and the `gh` calls.
 - `prerelease: false` publishes with the `latest` dist-tag and creates the tag and GitHub release
   together with `gh release create`. `prerelease: true` publishes with the `experimental` dist-tag
   and creates a bare beta tag.
@@ -23,5 +26,5 @@ All notable changes to the **run_npm_publish** reusable workflow are documented 
   fails with a message to rerun, which picks the next version. Only a 404 from the registry counts as
   not published; any other lookup error fails the job.
 - Refuses to publish when `<publish-directory>/package.json` does not carry the new version.
-- Skips Node setup, install and build when nothing is to be published.
-- Job summary with the version bump, version, dist-tag and step outcomes.
+- Job summaries: the version bump, version and dist-tag from `version`, and the result and step
+  outcomes from `publish`.

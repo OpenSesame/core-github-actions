@@ -121,6 +121,28 @@ function packageJson(version) {
   return JSON.stringify({ name: '@opensesame/example', version });
 }
 
+describe('run_npm_publish credentials', () => {
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+  const versionJob = workflow.slice(
+    workflow.indexOf('\n  version:\n'),
+    workflow.indexOf('\n  publish:\n')
+  );
+  const publishJob = workflow.slice(workflow.indexOf('\n  publish:\n'));
+
+  test('keeps the persisted checkout token in a read-only job', () => {
+    expect(versionJob).toContain('persist-credentials: true');
+    expect(versionJob).toMatch(/permissions:\n\s+contents: read #/);
+    expect(versionJob).not.toMatch(/:\s*write\b/);
+    expect(versionJob).not.toContain('secrets.');
+  });
+
+  test('checks out without credentials in the job that can write', () => {
+    expect(publishJob).toMatch(/contents: write #/);
+    expect(publishJob).toContain('persist-credentials: false');
+    expect(publishJob).not.toContain('persist-credentials: true');
+  });
+});
+
 describe('run_npm_publish eligibility', () => {
   test.each([
     ['false', 'major', 'true'],
@@ -336,62 +358,86 @@ describe('run_npm_publish Fail superseded run', () => {
   });
 });
 
-describe('run_npm_publish job summary', () => {
-  const summaryEnv = {
-    JOB_STATUS: 'success',
-    BRANCH_NAME: 'main',
-    COMMIT_SHA: commitSha,
-  };
+describe('run_npm_publish Write version summary', () => {
+  const versionEnv = { BRANCH_NAME: 'main', COMMIT_SHA: commitSha };
 
-  test('reports a published latest version', () => {
-    const result = runStep('Write job summary', {
+  test('reports the version a latest run will publish', () => {
+    const result = runStep('Write version summary', {
       env: {
-        ...summaryEnv,
+        ...versionEnv,
         PRERELEASE: 'false',
         VERSION_PART: 'minor',
         VERSION: '1.3.0',
         SHOULD_PUBLISH: 'true',
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.summary).toContain('## Publish Latest');
+    expect(result.summary).toContain('- Version bump: minor');
+    expect(result.summary).toContain('- Version: 1.3.0');
+    expect(result.summary).toContain('- npm dist-tag: `latest`');
+  });
+
+  test('reports a beta push that publishes nothing', () => {
+    const result = runStep('Write version summary', {
+      env: {
+        ...versionEnv,
+        PRERELEASE: 'true',
+        VERSION_PART: '',
+        VERSION: '1.2.3',
+        SHOULD_PUBLISH: 'false',
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.summary).toContain('## Publish Beta');
+    expect(result.summary).toContain('- Version bump: none');
+    expect(result.summary).toContain('- Version: not published');
+    expect(result.summary).toContain('- npm dist-tag: `experimental`');
+  });
+});
+
+describe('run_npm_publish Write publish summary', () => {
+  test('reports a published latest version and its release', () => {
+    const result = runStep('Write publish summary', {
+      env: {
+        JOB_STATUS: 'success',
+        PRERELEASE: 'false',
+        VERSION: '1.3.0',
         PUBLISH_OUTCOME: 'success',
         TAG_OUTCOME: 'success',
       },
     });
 
     expect(result.status).toBe(0);
-    expect(result.summary).toContain('## Publish Latest');
-    expect(result.summary).toContain('- Version: 1.3.0');
-    expect(result.summary).toContain('- npm dist-tag: `latest`');
+    expect(result.summary).toContain('- Result: published 1.3.0');
     expect(result.summary).toContain('- GitHub release and tag step: success');
   });
 
-  test('reports a beta push that publishes nothing', () => {
-    const result = runStep('Write job summary', {
+  test('reports a failed beta publish', () => {
+    const result = runStep('Write publish summary', {
       env: {
-        ...summaryEnv,
+        JOB_STATUS: 'failure',
         PRERELEASE: 'true',
-        VERSION_PART: 'none',
-        VERSION: '1.2.3',
-        SHOULD_PUBLISH: 'false',
-        PUBLISH_OUTCOME: 'skipped',
+        VERSION: '1.2.3-beta.0',
+        PUBLISH_OUTCOME: 'failure',
         TAG_OUTCOME: 'skipped',
       },
     });
 
     expect(result.status).toBe(0);
-    expect(result.summary).toContain('## Publish Beta');
-    expect(result.summary).toContain('- Version: not published');
-    expect(result.summary).toContain('- npm dist-tag: `experimental`');
+    expect(result.summary).toContain('- Status: failure');
+    expect(result.summary).toContain('- Result: not published');
     expect(result.summary).toContain('- Beta tag step: skipped');
   });
 
   test('reports a superseded run without claiming its version', () => {
-    const result = runStep('Write job summary', {
+    const result = runStep('Write publish summary', {
       env: {
-        ...summaryEnv,
         JOB_STATUS: 'failure',
         PRERELEASE: 'false',
-        VERSION_PART: 'patch',
         VERSION: '1.2.3',
-        SHOULD_PUBLISH: 'true',
         SUPERSEDED: 'true',
         TAG_COMMIT: otherSha,
         PUBLISH_OUTCOME: 'success',
@@ -401,7 +447,7 @@ describe('run_npm_publish job summary', () => {
 
     expect(result.status).toBe(0);
     expect(result.summary).toContain(
-      `- Version: not published; 1.2.3 was already published from \`${otherSha}\``
+      `- Result: not published; 1.2.3 was already published from \`${otherSha}\``
     );
   });
 });
