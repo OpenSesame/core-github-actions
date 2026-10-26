@@ -366,7 +366,7 @@ describe('run_npm_publish Fail superseded run', () => {
 });
 
 describe('run_npm_publish job summary', () => {
-  test('names the published latest version and links its release', () => {
+  test('states the published latest version and links its release', () => {
     const result = runStep('Write job summary', {
       env: {
         PRERELEASE: 'false',
@@ -378,18 +378,18 @@ describe('run_npm_publish job summary', () => {
 
     expect(result.status).toBe(0);
     expect(result.summary).toBe(
-      'Published `@opensesame/example@1.3.0` with the `latest` dist-tag and [release 1.3.0](https://github.com/OpenSesame/example/releases/tag/1.3.0).\n'
+      '`@opensesame/example@1.3.0` is published with the `latest` dist-tag and [release 1.3.0](https://github.com/OpenSesame/example/releases/tag/1.3.0).\n'
     );
   });
 
-  test('names the published beta', () => {
+  test('states the published beta', () => {
     const result = runStep('Write job summary', {
       env: { PRERELEASE: 'true', PACKAGE: '@opensesame/example', VERSION: '1.3.0-beta.0' },
     });
 
     expect(result.status).toBe(0);
     expect(result.summary).toBe(
-      'Published `@opensesame/example@1.3.0-beta.0` with the `experimental` dist-tag.\n'
+      '`@opensesame/example@1.3.0-beta.0` is published with the `experimental` dist-tag.\n'
     );
   });
 });

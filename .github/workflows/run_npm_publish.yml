@@ -237,7 +237,7 @@ jobs:
           echo "::error title=Publish::$VERSION was already published from $TAG_COMMIT by another run, and its tag is now in place. Rerun this workflow to publish this commit as the next version."
           exit 1
 
-      # Runs only when everything succeeded; failures are already annotated on the run.
+      # Runs only when everything succeeded, including a rerun that only had the tag left to create.
       - name: Write job summary
         env:
           PRERELEASE: ${{ inputs.prerelease }}
@@ -245,7 +245,7 @@ jobs:
           VERSION: ${{ needs.version.outputs.version }}
         run: |
           if [[ "$PRERELEASE" == "true" ]]; then
-            echo "Published \`$PACKAGE@$VERSION\` with the \`experimental\` dist-tag." >> "$GITHUB_STEP_SUMMARY"
+            echo "\`$PACKAGE@$VERSION\` is published with the \`experimental\` dist-tag." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "Published \`$PACKAGE@$VERSION\` with the \`latest\` dist-tag and [release $VERSION]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
+            echo "\`$PACKAGE@$VERSION\` is published with the \`latest\` dist-tag and [release $VERSION]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$VERSION)." >> "$GITHUB_STEP_SUMMARY"
           fi
