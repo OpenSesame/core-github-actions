@@ -183,7 +183,7 @@ describe('run_npm_publish Publish package', () => {
 
     expect(result.status).toBe(0);
     expect(result.calls).toEqual([lookupVersion, '[npm][publish][.][--tag][latest]']);
-    expect(result.outputs).toEqual({ 'tag-commit': commitSha });
+    expect(result.outputs).toEqual({ package: '@opensesame/example', 'tag-commit': commitSha });
   });
 
   test('publishes a beta from the publish directory with the experimental dist-tag', () => {
@@ -219,7 +219,7 @@ describe('run_npm_publish Publish package', () => {
     );
     expect(result.stdout).toContain('npm error code E401');
     expect(result.calls).toEqual([lookupVersion]);
-    expect(result.outputs).toEqual({});
+    expect(result.outputs).toEqual({ package: '@opensesame/example' });
   });
 
   test('skips npm publish and tags this commit when it already published the version', () => {
@@ -231,7 +231,7 @@ describe('run_npm_publish Publish package', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(`already published from ${commitSha}; skipping npm publish`);
     expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
-    expect(result.outputs).toEqual({ 'tag-commit': commitSha });
+    expect(result.outputs).toEqual({ package: '@opensesame/example', 'tag-commit': commitSha });
   });
 
   test('tags the publishing commit and marks the run superseded when another commit published', () => {
@@ -243,7 +243,11 @@ describe('run_npm_publish Publish package', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(`already published from ${otherSha}; tagging that commit`);
     expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
-    expect(result.outputs).toEqual({ 'tag-commit': otherSha, superseded: 'true' });
+    expect(result.outputs).toEqual({
+      package: '@opensesame/example',
+      'tag-commit': otherSha,
+      superseded: 'true',
+    });
   });
 
   test('fails when the published version records no commit', () => {
@@ -255,7 +259,7 @@ describe('run_npm_publish Publish package', () => {
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('the registry records no commit for it');
     expect(result.calls).toEqual([lookupVersion, lookupGitHead]);
-    expect(result.outputs).toEqual({});
+    expect(result.outputs).toEqual({ package: '@opensesame/example' });
   });
 
   test('fails before contacting the registry when the publish directory has another version', () => {
@@ -358,96 +362,31 @@ describe('run_npm_publish Fail superseded run', () => {
   });
 });
 
-describe('run_npm_publish Write version summary', () => {
-  const versionEnv = { BRANCH_NAME: 'main', COMMIT_SHA: commitSha };
-
-  test('reports the version a latest run will publish', () => {
-    const result = runStep('Write version summary', {
+describe('run_npm_publish job summary', () => {
+  test('names the published latest version and links its release', () => {
+    const result = runStep('Write job summary', {
       env: {
-        ...versionEnv,
         PRERELEASE: 'false',
-        VERSION_PART: 'minor',
+        PACKAGE: '@opensesame/example',
         VERSION: '1.3.0',
-        SHOULD_PUBLISH: 'true',
+        GITHUB_SERVER_URL: 'https://github.com',
       },
     });
 
     expect(result.status).toBe(0);
-    expect(result.summary).toContain('## Publish Latest');
-    expect(result.summary).toContain('- Version bump: minor');
-    expect(result.summary).toContain('- Version: 1.3.0');
-    expect(result.summary).toContain('- npm dist-tag: `latest`');
+    expect(result.summary).toBe(
+      'Published `@opensesame/example@1.3.0` with the `latest` dist-tag and [release 1.3.0](https://github.com/OpenSesame/example/releases/tag/1.3.0).\n'
+    );
   });
 
-  test('reports a beta push that publishes nothing', () => {
-    const result = runStep('Write version summary', {
-      env: {
-        ...versionEnv,
-        PRERELEASE: 'true',
-        VERSION_PART: '',
-        VERSION: '1.2.3',
-        SHOULD_PUBLISH: 'false',
-      },
+  test('names the published beta', () => {
+    const result = runStep('Write job summary', {
+      env: { PRERELEASE: 'true', PACKAGE: '@opensesame/example', VERSION: '1.3.0-beta.0' },
     });
 
     expect(result.status).toBe(0);
-    expect(result.summary).toContain('## Publish Beta');
-    expect(result.summary).toContain('- Version bump: none');
-    expect(result.summary).toContain('- Version: not published');
-    expect(result.summary).toContain('- npm dist-tag: `experimental`');
-  });
-});
-
-describe('run_npm_publish Write publish summary', () => {
-  test('reports a published latest version and its release', () => {
-    const result = runStep('Write publish summary', {
-      env: {
-        JOB_STATUS: 'success',
-        PRERELEASE: 'false',
-        VERSION: '1.3.0',
-        PUBLISH_OUTCOME: 'success',
-        TAG_OUTCOME: 'success',
-      },
-    });
-
-    expect(result.status).toBe(0);
-    expect(result.summary).toContain('- Result: published 1.3.0');
-    expect(result.summary).toContain('- GitHub release and tag step: success');
-  });
-
-  test('reports a failed beta publish', () => {
-    const result = runStep('Write publish summary', {
-      env: {
-        JOB_STATUS: 'failure',
-        PRERELEASE: 'true',
-        VERSION: '1.2.3-beta.0',
-        PUBLISH_OUTCOME: 'failure',
-        TAG_OUTCOME: 'skipped',
-      },
-    });
-
-    expect(result.status).toBe(0);
-    expect(result.summary).toContain('- Status: failure');
-    expect(result.summary).toContain('- Result: not published');
-    expect(result.summary).toContain('- Beta tag step: skipped');
-  });
-
-  test('reports a superseded run without claiming its version', () => {
-    const result = runStep('Write publish summary', {
-      env: {
-        JOB_STATUS: 'failure',
-        PRERELEASE: 'false',
-        VERSION: '1.2.3',
-        SUPERSEDED: 'true',
-        TAG_COMMIT: otherSha,
-        PUBLISH_OUTCOME: 'success',
-        TAG_OUTCOME: 'success',
-      },
-    });
-
-    expect(result.status).toBe(0);
-    expect(result.summary).toContain(
-      `- Result: not published; 1.2.3 was already published from \`${otherSha}\``
+    expect(result.summary).toBe(
+      'Published `@opensesame/example@1.3.0-beta.0` with the `experimental` dist-tag.\n'
     );
   });
 });
