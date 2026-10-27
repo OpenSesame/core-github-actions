@@ -143,6 +143,21 @@ describe('run_npm_publish credentials', () => {
   });
 });
 
+describe('run_npm_publish commit', () => {
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+  test("publishes a merged pull request's merge commit, and github.sha otherwise", () => {
+    expect(workflow).toContain(
+      'COMMIT_SHA: ${{ github.event.pull_request.merged && github.event.pull_request.merge_commit_sha || github.sha }}'
+    );
+  });
+
+  test('checks out that commit in both jobs and uses github.sha nowhere else', () => {
+    expect(workflow.match(/ref: \$\{\{ env\.COMMIT_SHA \}\}/g)).toHaveLength(2);
+    expect(workflow.match(/github\.sha/g)).toHaveLength(2);
+  });
+});
+
 describe('run_npm_publish eligibility', () => {
   test.each([
     ['false', 'major', 'true'],

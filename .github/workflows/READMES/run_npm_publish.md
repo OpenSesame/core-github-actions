@@ -4,7 +4,8 @@ Publishes an npm package to GitHub Packages, versioned by release markers in com
 largest of `#major`, `#minor` and `#patch` since the highest `x.y.z` tag wins; `#none`, or no
 marker, publishes nothing.
 
-- `prerelease: false`, for pushes to `main`: publishes `latest` and creates a GitHub release.
+- `prerelease: false`, for merged pull requests or pushes to `main`: publishes `latest` and creates a
+  GitHub release. A merged pull request publishes its merge commit.
 - `prerelease: true`, for other branches: publishes a beta with the `experimental` dist-tag and
   creates a beta tag.
 
@@ -14,7 +15,9 @@ The tag is created only after the publish succeeds, so a failed run can be rerun
 
 ```yaml
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - main
 
@@ -27,7 +30,8 @@ permissions: {}
 jobs:
   publish:
     name: Publish Latest
-    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.0.0
+    if: github.event.pull_request.merged == true
+    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.1.0
     permissions:
       contents: write # Required to create the GitHub release and its version tag.
       packages: write # Required to publish the package to GitHub Packages.
