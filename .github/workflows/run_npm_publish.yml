@@ -39,6 +39,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  # On a merged pull request, github.sha is the base branch's head, not necessarily its merge commit.
+  COMMIT_SHA: ${{ github.event.pull_request.merged && github.event.pull_request.merge_commit_sha || github.sha }}
+
 jobs:
   version:
     name: Version
@@ -53,7 +57,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           fetch-depth: '0'
           persist-credentials: true # Required for the `git fetch --tags` that github-tag-action runs.
 
@@ -105,7 +109,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           persist-credentials: false
 
       - name: Set up Node
@@ -140,7 +144,6 @@ jobs:
           PRERELEASE: ${{ inputs.prerelease }}
           PUBLISH_DIRECTORY: ${{ inputs.publish-directory }}
           VERSION: ${{ needs.version.outputs.version }}
-          COMMIT_SHA: ${{ github.sha }}
         # GitHub Packages does not support npm trusted publishing.
         run: | # zizmor: ignore[use-trusted-publishing]
           set -Euo pipefail

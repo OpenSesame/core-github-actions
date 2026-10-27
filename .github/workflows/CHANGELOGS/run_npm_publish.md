@@ -2,6 +2,13 @@
 
 All notable changes to the **run_npm_publish** reusable workflow are documented in this file.
 
+## 1.1.0
+
+### Added
+
+- A caller triggered by a merged pull request publishes and tags its merge commit. On that event
+  `github.sha` is the base branch's head, which can be a later commit.
+
 ## 1.0.0
 
 ### Added
