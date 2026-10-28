@@ -50,7 +50,7 @@ jobs:
     permissions:
       contents: read # Required to check out the code and fetch its tags.
     outputs:
-      version: ${{ steps.version.outputs.new_tag }}
+      version: ${{ steps.version.outputs.new_tag || steps.initial-version.outputs.version }}
       should-publish: ${{ steps.eligibility.outputs.should-publish }}
 
     steps:
@@ -61,10 +61,22 @@ jobs:
           fetch-depth: '0'
           persist-credentials: true # Required for the `git fetch --tags` that github-tag-action runs.
 
+      # Only plain x.y.z tags are releases; v-prefixed tags are ignored.
+      - name: Find release tag
+        id: release-tag
+        run: |
+          tags=$(git tag --list)
+          if grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' <<< "$tags"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # Dry run only: the tag is created after the package is published, so a failed publish leaves
       # no tag behind and a rerun works out the same version again.
       - name: Determine version
         id: version
+        if: ${{ steps.release-tag.outputs.exists == 'true' }}
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
           DEFAULT_BUMP: none
@@ -76,12 +88,60 @@ jobs:
           VERBOSE: false
           DRY_RUN: true
 
-      # With PRERELEASE the action reports the bump as pre-major, pre-minor or pre-patch.
+      # github-tag-action reads no history without an x.y.z tag (anothrNick/github-tag-action#343),
+      # so the first version bumps initial-version by the markers in the whole history.
+      - name: Determine initial version
+        id: initial-version
+        if: ${{ steps.release-tag.outputs.exists == 'false' }}
+        env:
+          PRERELEASE: ${{ inputs.prerelease }}
+          INITIAL_VERSION: ${{ inputs.initial-version }}
+        run: |
+          number='(0|[1-9][0-9]*)'
+          if [[ ! "$INITIAL_VERSION" =~ ^$number\.$number\.$number$ ]]; then
+            echo "::error title=Version::initial-version must be x.y.z, not '$INITIAL_VERSION'."
+            exit 1
+          fi
+
+          log=$(git log --format=%B)
+          case "$log" in
+            *'#major'*) part='major' ;;
+            *'#minor'*) part='minor' ;;
+            *'#patch'*) part='patch' ;;
+            *)
+              echo "part=none" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          IFS=. read -r major minor patch <<< "$INITIAL_VERSION"
+          case "$part" in
+            major) version="$((major + 1)).0.0" ;;
+            minor) version="$major.$((minor + 1)).0" ;;
+            patch) version="$major.$minor.$((patch + 1))" ;;
+          esac
+
+          if [[ "$PRERELEASE" == "true" ]]; then
+            beta=0
+            while read -r tag; do
+              suffix=${tag#"$version-beta."}
+              if [[ "$suffix" =~ ^$number$ ]] && ((suffix >= beta)); then
+                beta=$((suffix + 1))
+              fi
+            done < <(git tag --list "$version-beta.*")
+            version="$version-beta.$beta"
+            part="pre-$part"
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "part=$part" >> "$GITHUB_OUTPUT"
+
+      # With PRERELEASE the bump is reported as pre-major, pre-minor or pre-patch.
       - name: Determine publish eligibility
         id: eligibility
         env:
           PRERELEASE: ${{ inputs.prerelease }}
-          VERSION_PART: ${{ steps.version.outputs.part }}
+          VERSION_PART: ${{ steps.version.outputs.part || steps.initial-version.outputs.part }}
         run: |
           case "$PRERELEASE:$VERSION_PART" in
             false:major | false:minor | false:patch | true:pre-major | true:pre-minor | true:pre-patch)

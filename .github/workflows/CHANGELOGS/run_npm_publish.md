@@ -2,6 +2,15 @@
 
 All notable changes to the **run_npm_publish** reusable workflow are documented in this file.
 
+## 1.1.1
+
+### Fixed
+
+- A repository with no `x.y.z` tag publishes: markers in its whole history bump `initial-version`.
+  Before, github-tag-action read no history without such a tag, so nothing was published and
+  `initial-version` never applied.
+- A run that uses `initial-version` fails unless it is `x.y.z`.
+
 ## 1.1.0
 
 ### Added
