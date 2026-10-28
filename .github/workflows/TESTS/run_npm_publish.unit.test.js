@@ -63,7 +63,38 @@ if [[ "$1" == api && "$2" == */git/ref/tags/* ]]; then
 fi
 `;
 
-function runStep(stepName, { env = {}, files = {} } = {}) {
+// Each history entry is a commit message, or { tag } to tag the commit before it.
+function createRepo(repoDirectory, history) {
+  const git = (...args) => {
+    const result = spawnSync('git', args, {
+      cwd: repoDirectory,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        GIT_CONFIG_GLOBAL: '/dev/null',
+        GIT_CONFIG_NOSYSTEM: '1',
+        GIT_AUTHOR_NAME: 'Test',
+        GIT_AUTHOR_EMAIL: 'test@example.com',
+        GIT_COMMITTER_NAME: 'Test',
+        GIT_COMMITTER_EMAIL: 'test@example.com',
+      },
+    });
+    if (result.status !== 0) {
+      throw new Error(`git ${args.join(' ')} failed: ${result.stderr}`);
+    }
+  };
+
+  git('init', '--quiet', '--initial-branch=main');
+  for (const entry of history) {
+    if (typeof entry === 'string') {
+      git('commit', '--quiet', '--allow-empty', '--message', entry);
+    } else {
+      git('tag', entry.tag);
+    }
+  }
+}
+
+function runStep(stepName, { env = {}, files = {}, history } = {}) {
   const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'run-npm-publish-'));
   const binDirectory = path.join(temporaryDirectory, 'bin');
   const repoDirectory = path.join(temporaryDirectory, 'repo');
@@ -79,6 +110,9 @@ function runStep(stepName, { env = {}, files = {} } = {}) {
     fs.writeFileSync(path.join(repoDirectory, filePath), contents);
   }
   fs.mkdirSync(repoDirectory, { recursive: true });
+  if (history) {
+    createRepo(repoDirectory, history);
+  }
   fs.writeFileSync(outputPath, '');
   fs.writeFileSync(logPath, '');
 
@@ -156,6 +190,132 @@ describe('run_npm_publish commit', () => {
     expect(workflow.match(/ref: \$\{\{ env\.COMMIT_SHA \}\}/g)).toHaveLength(2);
     expect(workflow.match(/github\.sha/g)).toHaveLength(2);
   });
+});
+
+describe('run_npm_publish version source', () => {
+  const workflow = fs.readFileSync(workflowPath, 'utf8');
+
+  test('runs github-tag-action only when a release tag exists, and the initial step otherwise', () => {
+    expect(workflow).toMatch(
+      /- name: Determine version\n\s+id: version\n\s+if: \$\{\{ steps\.release-tag\.outputs\.exists == 'true' \}\}\n\s+uses: anothrNick\/github-tag-action@/
+    );
+    expect(workflow).toMatch(
+      /- name: Determine initial version\n\s+id: initial-version\n\s+if: \$\{\{ steps\.release-tag\.outputs\.exists == 'false' \}\}\n/
+    );
+  });
+
+  test('takes the version and part from whichever step ran', () => {
+    expect(workflow).toContain(
+      'version: ${{ steps.version.outputs.new_tag || steps.initial-version.outputs.version }}'
+    );
+    expect(workflow).toContain(
+      'VERSION_PART: ${{ steps.version.outputs.part || steps.initial-version.outputs.part }}'
+    );
+  });
+});
+
+describe('run_npm_publish Find release tag', () => {
+  test.each([
+    ['no tags', [], 'false'],
+    ['only v-prefixed tags', [{ tag: 'v3.0.0' }, '#patch', { tag: 'v3.0.1' }], 'false'],
+    ['only beta tags', [{ tag: '1.1.0-beta.0' }], 'false'],
+    ['x.y.z tags', [{ tag: '1.0.0' }, '#minor', { tag: '1.1.0' }], 'true'],
+    ['mixed v-prefixed and x.y.z tags', [{ tag: '1.0.2' }, '#major', { tag: 'v4.0.2' }], 'true'],
+  ])('with %s sets exists=%s', (_case, tags, expected) => {
+    const result = runStep('Find release tag', { history: ['Initial commit', ...tags] });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ exists: expected });
+  });
+});
+
+describe('run_npm_publish Determine initial version', () => {
+  const initialEnv = { PRERELEASE: 'false', INITIAL_VERSION: '1.0.0' };
+
+  test.each([
+    [
+      'a #minor in an earlier commit',
+      ['Initial commit', 'Add a feature #minor', 'Tidy up'],
+      'minor',
+      '1.1.0',
+    ],
+    [
+      'the largest marker in the history',
+      ['Initial commit #patch', 'Break it #major', 'Add #minor'],
+      'major',
+      '2.0.0',
+    ],
+    ['a #patch in the first commit', ['Initial commit #patch'], 'patch', '1.0.1'],
+  ])('bumps initial-version by %s', (_case, history, part, version) => {
+    const result = runStep('Determine initial version', { env: initialEnv, history });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version, part });
+  });
+
+  test('counts markers from the whole history when only v-prefixed tags exist', () => {
+    const result = runStep('Determine initial version', {
+      env: { ...initialEnv, INITIAL_VERSION: '3.0.1' },
+      history: ['Initial commit', { tag: 'v3.0.0' }, 'Fix it #patch', { tag: 'v3.0.1' }, 'Tidy up'],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version: '3.0.2', part: 'patch' });
+  });
+
+  test.each([
+    ['no markers', ['Initial commit', 'Tidy up']],
+    ['only #none', ['Initial commit', 'Tidy up #none']],
+  ])('reports part none, and no version, for %s', (_case, history) => {
+    const result = runStep('Determine initial version', { env: initialEnv, history });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ part: 'none' });
+  });
+
+  test('publishes the first beta of the bumped version', () => {
+    const result = runStep('Determine initial version', {
+      env: { ...initialEnv, PRERELEASE: 'true' },
+      history: ['Initial commit', 'Add a feature #minor'],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version: '1.1.0-beta.0', part: 'pre-minor' });
+  });
+
+  test('numbers the beta after the highest beta of the same version', () => {
+    const result = runStep('Determine initial version', {
+      env: { ...initialEnv, PRERELEASE: 'true' },
+      history: [
+        'Initial commit',
+        'Add a feature #minor',
+        { tag: '1.1.0-beta.0' },
+        { tag: '1.1.0-beta.9' },
+        { tag: '1.1.0-beta.10' },
+        { tag: '1.1.0-beta.x' },
+        { tag: '2.0.0-beta.20' },
+        { tag: 'v1.1.0-beta.30' },
+        'Add another feature',
+      ],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version: '1.1.0-beta.11', part: 'pre-minor' });
+  });
+
+  test.each(['v1.0.0', '1.0', '01.0.0', ''])(
+    'fails when initial-version is "%s"',
+    initialVersion => {
+      const result = runStep('Determine initial version', {
+        env: { ...initialEnv, INITIAL_VERSION: initialVersion },
+        history: ['Initial commit #minor'],
+      });
+
+      expect(result.status).toBe(1);
+      expect(result.stdout).toContain(`initial-version must be x.y.z, not '${initialVersion}'`);
+      expect(result.outputs).toEqual({});
+    }
+  );
 });
 
 describe('run_npm_publish eligibility', () => {
