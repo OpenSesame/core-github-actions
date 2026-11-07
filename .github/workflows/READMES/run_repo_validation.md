@@ -20,6 +20,9 @@ jobs:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 ```
 
+`ci-context` is the caller's [`resolve_ci_context`](resolve_ci_context.md) job, which picks the commit
+to check and skips pushes that an open pull request already covers.
+
 The check is reported as `Standard / Validate`.
 
 ## Contract
