@@ -50,7 +50,7 @@ on:
         value: ${{ jobs.plan.outputs.plan-artifact-name }}
 
 concurrency:
-  group: ${{ inputs.with-lock && format('{0}-{1}-TF-Validate-Plan', github.repository, inputs.environment) || format('{0}-{1}-TF-Validate-Plan-{2}-{3}', github.repository, inputs.environment, github.run_id, inputs.terraform-root) }}
+  group: ${{ inputs.with-lock && format('{0}-{1}-TF-Validate-Plan', github.repository, inputs.environment) || format('{0}-{1}-TF-Validate-Plan-{2}-{3}-{4}', github.repository, inputs.environment, github.run_id, inputs.terraform-root, inputs.terraform-workspace) }}
 
 permissions: {}
 
@@ -100,6 +100,7 @@ jobs:
         env:
           ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
         run: |
+          umask 077
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > ~/.ssh/id_rsa

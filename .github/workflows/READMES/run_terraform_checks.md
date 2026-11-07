@@ -38,8 +38,10 @@ The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in th
 
 - Every script step runs even when an earlier one failed, as long as `npm ci` succeeded. Validate
   needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
-- Initialize and Validate never touch a backend or cloud credentials. Plan stays in
-  [`tf_plan_env_roots`](tf_plan_env_roots.md).
+- The job has no secrets or cloud credentials, so `init:terraform` and `validate:terraform` must
+  work without them: initialize with `-backend=false`, and use module sources that download without
+  credentials, such as public registries or public git. Roots with private git, S3 or other
+  authenticated module sources fail here. Plan stays in [`tf_plan_env_roots`](tf_plan_env_roots.md).
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - The job fails if any step failed.
 
