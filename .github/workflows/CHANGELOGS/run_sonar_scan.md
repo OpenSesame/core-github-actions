@@ -2,6 +2,16 @@
 
 All notable changes to the **run_sonar_scan** callable workflow are documented in this file.
 
+## 2.1.0
+
+### Changed
+
+- Bumped `actions/download-artifact` from 7.0.0 to 8.0.2, pinned by commit SHA. A downloaded coverage
+  artifact whose digest doesn't match the one the server recorded now fails the job instead of
+  logging a warning.
+- Bumped `SonarSource/sonarqube-scan-action` from 8.3.0 to 8.4.0, pinned by commit SHA.
+- The README's upload example uses `actions/upload-artifact` 7.0.2.
+
 ## 2.0.0
 
 ### Added

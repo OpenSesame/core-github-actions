@@ -2,6 +2,13 @@
 
 All notable changes to the **tf_plan_env_roots** reusable workflow are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Composes `tf_plan_single_root` 1.0.1 from the same commit, which bumps `actions/upload-artifact`
+  to 7.0.2.
+
 ## 1.0.0
 
 ### Added

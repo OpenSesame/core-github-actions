@@ -2,6 +2,12 @@
 
 All notable changes to the **run_repo_validation** reusable workflow are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Bumped `actions/setup-node` from 7.0.0 to 7.1.0, pinned by commit SHA.
+
 ## 1.0.0
 
 ### Added

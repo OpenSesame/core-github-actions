@@ -11,7 +11,7 @@ jobs:
     name: Semgrep
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_semgrep_scan.yml@<released-sha> # workflows/run_semgrep_scan/2.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/run_semgrep_scan.yml@<released-sha> # workflows/run_semgrep_scan/2.0.1
     permissions:
       contents: read # Required to check out the code to scan.
       pull-requests: write # Required to post review comments and the summary comment on pull requests.
