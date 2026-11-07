@@ -1,7 +1,6 @@
 # Run Shell Checks
 
-Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` scripts. It's one of the Repo Checks workflows: [`run_repo_checks`](run_repo_checks.md) calls it
-when the repository has Shell files, and most repositories should call that instead.
+Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` scripts. It doesn't look for Shell files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -9,6 +8,8 @@ when the repository has Shell files, and most repositories should call that inst
 jobs:
   shell:
     name: Shell
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
     uses: OpenSesame/core-github-actions/.github/workflows/run_shell_checks.yml@<released-sha> # workflows/run_shell_checks/1.0.0
     permissions:
       contents: read # Required to check out the code to check.

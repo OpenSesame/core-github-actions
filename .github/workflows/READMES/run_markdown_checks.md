@@ -1,7 +1,6 @@
 # Run Markdown Checks
 
-Lints Markdown with the repo's `lint:markdown` script. It's one of the Repo Checks workflows: [`run_repo_checks`](run_repo_checks.md) calls it
-when the repository has Markdown files, and most repositories should call that instead.
+Lints Markdown with the repo's `lint:markdown` script. It doesn't look for Markdown files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -9,6 +8,8 @@ when the repository has Markdown files, and most repositories should call that i
 jobs:
   markdown:
     name: Markdown
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
     uses: OpenSesame/core-github-actions/.github/workflows/run_markdown_checks.yml@<released-sha> # workflows/run_markdown_checks/1.0.0
     permissions:
       contents: read # Required to check out the code to check.

@@ -1,7 +1,6 @@
 # Run GHA Checks
 
-Lints GitHub Actions workflows and composite actions with the repo's `lint:gha` script and scans them with `scan:gha`. It's one of the Repo Checks workflows: [`run_repo_checks`](run_repo_checks.md) calls it
-when the repository has GitHub Actions files, and most repositories should call that instead.
+Lints GitHub Actions workflows and composite actions with the repo's `lint:gha` script and scans them with `scan:gha`. It doesn't look for GitHub Actions files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -9,6 +8,8 @@ when the repository has GitHub Actions files, and most repositories should call 
 jobs:
   gha:
     name: GHA
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
     uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.0
     permissions:
       contents: read # Required to check out the code to check.
