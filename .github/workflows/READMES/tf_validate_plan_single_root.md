@@ -1,5 +1,9 @@
 # Terraform Validate and Plan a Single Root
 
+> **Deprecated:** use [`tf_plan_single_root`](tf_plan_single_root.md) instead. This workflow gets no further releases,
+> and there's no direct upgrade path: `tf_plan_single_root` drops `terraform validate` (it runs in Repo
+> Checks) and `init -upgrade`, and renames the checks to `… / Plan`.
+
 Runs `terraform init`, `validate`, and `plan` for one root in a GitHub environment and writes the plan
 to the job summary. It never applies, but providers and data sources may contact live systems.
 

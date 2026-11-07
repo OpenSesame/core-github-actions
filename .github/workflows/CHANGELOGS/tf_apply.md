@@ -2,6 +2,16 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.3.0
+
+### Changed
+
+- **Breaking:** `terraform init` no longer passes `-upgrade`, so the apply
+  installs the provider versions recorded in each root's committed `.terraform.lock.hcl` instead
+  of the newest versions the constraints allow. A lock file that no longer satisfies the version
+  constraints now fails init: run `terraform init -upgrade` locally and commit the lock file.
+  Roots without a lock file are unaffected.
+
 ## 0.2.1
 
 ### Fixed

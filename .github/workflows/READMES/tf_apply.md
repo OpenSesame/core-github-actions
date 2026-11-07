@@ -19,7 +19,7 @@ GitHub environment and Terraform workspace.
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.0
     with:
       environment: dev
       oidc-domain: core
@@ -58,7 +58,8 @@ jobs:
 2. Resolves an AWS role and configures temporary credentials for `environment`.
 3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies.
 4. Installs the requested Terraform version.
-5. Runs `terraform init -upgrade`.
+5. Runs `terraform init`, which installs the provider versions in the root's committed
+   `.terraform.lock.hcl`.
 6. Selects or creates `terraform-workspace`.
 7. Runs `terraform apply -auto-approve -input=false`.
 

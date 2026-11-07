@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.4.0
+
+### Changed
+
+- **Breaking:** composes `tf_apply` 0.3.0, whose `terraform init` no longer passes `-upgrade`
+  and so installs the provider versions in each root's committed `.terraform.lock.hcl`.
+
 ## 0.3.1
 
 ### Fixed

@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.4.0
+
+### Changed
+
+- **Breaking:** composes `deploy_environment` 0.4.0, whose `terraform init` no longer passes
+  `-upgrade` and so installs the provider versions in each root's committed `.terraform.lock.hcl`.
+
 ## 0.3.1
 
 ### Fixed

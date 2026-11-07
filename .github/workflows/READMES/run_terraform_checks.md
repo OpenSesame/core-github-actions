@@ -39,7 +39,7 @@ The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in th
 - Every script step runs even when an earlier one failed, as long as `npm ci` succeeded. Validate
   needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
 - Initialize and Validate never touch a backend or cloud credentials. Plan stays in
-  [`tf_validate_plan_env_roots`](tf_validate_plan_env_roots.md).
+  [`tf_plan_env_roots`](tf_plan_env_roots.md).
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - The job fails if any step failed.
 

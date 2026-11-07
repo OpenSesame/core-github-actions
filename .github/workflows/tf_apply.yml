@@ -125,7 +125,7 @@ jobs:
           terraform_wrapper: false # required to access terraform outputs after apply
 
       - name: Init Terraform
-        run: terraform init -upgrade
+        run: terraform init
 
       - name: Select Workspace
         env:

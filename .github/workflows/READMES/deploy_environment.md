@@ -2,8 +2,8 @@
 
 This reusable workflow applies one Terraform root to a selected environment by calling the
 `tf_apply` reusable workflow. `terraform apply` validates and plans as part of the apply, so the
-workflow has no separate plan job. Callers should validate and plan in CI before merge, for example
-with `tf_validate_plan_single_root`.
+workflow has no separate plan job. Callers should validate in Repo Checks and plan in CI before merge,
+for example with `tf_plan_single_root`.
 
 > **Warning:** This workflow mutates live infrastructure. The apply phase runs Terraform with
 > automatic approval. Confirm the target ref, environment, Terraform root, workspace, and GitHub
@@ -21,7 +21,7 @@ with `tf_validate_plan_single_root`.
 ```yaml
 jobs:
   deploy-dev:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.3.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.4.0
     with:
       environment: dev
       commit-identifier: ${{ github.sha }}
@@ -49,10 +49,10 @@ jobs:
 
 ## Secrets
 
-| Secret                                | Required | Description                                                                                          |
-| ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key forwarded to the apply workflow for AWS role resolution and private GitHub access.           |
-| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token forwarded to the apply workflow.                                                       |
+| Secret                                | Required | Description                                                                                |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
+| `ORG_READ_ONLY_SSH_KEY`               | Yes      | SSH key forwarded to the apply workflow for AWS role resolution and private GitHub access. |
+| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | Yes      | Package token forwarded to the apply workflow.                                             |
 
 ## Behavior
 
@@ -70,5 +70,5 @@ The composed apply job runs on Ubuntu 26.04.
 
 ## References
 
-- [Single-root Terraform plan workflow](tf_validate_plan_single_root.md) for CI plans before merge
+- [Single-root Terraform plan workflow](tf_plan_single_root.md) for CI plans before merge
 - [Terraform apply workflow](tf_apply.md)
