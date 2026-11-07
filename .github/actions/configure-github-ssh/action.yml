@@ -1,0 +1,71 @@
+name: Configure GitHub SSH
+description: Installs an SSH private key and GitHub's pinned host keys so git and Terraform can fetch private github.com repositories over SSH
+
+inputs:
+  ssh-private-key:
+    description: Private SSH key with read access to the repositories the job fetches, such as secrets.ORG_READ_ONLY_SSH_KEY
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure GitHub SSH
+      shell: bash
+      env:
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        GITHUB_KNOWN_HOSTS: |
+          github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+          github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+          github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+      run: |
+        set -Eeuo pipefail
+
+        if [[ -z "${SSH_PRIVATE_KEY//[[:space:]]/}" ]]; then
+          echo "::error title=Missing SSH key::ssh-private-key is empty. Pass a read-only SSH key secret, such as secrets.ORG_READ_ONLY_SSH_KEY."
+          exit 1
+        fi
+
+        umask 077
+        secret_dir="${RUNNER_TEMP:?RUNNER_TEMP is not set}/configure-github-ssh"
+        key_file="$secret_dir/github_read_only_key"
+        known_hosts_file="$secret_dir/github_known_hosts"
+        ssh_dir="$HOME/.ssh"
+        config_file="$ssh_dir/config"
+        github_config=$(printf '%s\n' \
+          'Host github.com' \
+          "  IdentityFile $key_file" \
+          '  IdentitiesOnly yes' \
+          '  StrictHostKeyChecking yes' \
+          "  UserKnownHostsFile $known_hosts_file" \
+          '  GlobalKnownHostsFile /dev/null')
+
+        config_existed=false
+        if [[ -e "$config_file" ]]; then
+          if [[ "$(cat "$config_file")" != "$github_config" ]]; then
+            echo "::error title=Existing SSH config::$config_file already exists. This action writes its own SSH config so only the supplied key and GitHub's pinned host keys apply to github.com, and won't merge with another one. Run it before any other SSH setup, on a runner without an SSH config."
+            exit 1
+          fi
+          config_existed=true
+        fi
+
+        config_tmp=""
+        cleanup() {
+          rm -f "$key_file" "$known_hosts_file" "$config_tmp"
+          if [[ "$config_existed" == false ]]; then
+            rm -f "$config_file"
+          fi
+        }
+        trap cleanup ERR
+
+        mkdir -p "$secret_dir" "$ssh_dir"
+        chmod 700 "$secret_dir" "$ssh_dir"
+        rm -f "$key_file" "$known_hosts_file"
+        printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_file"
+        printf '%s' "$GITHUB_KNOWN_HOSTS" > "$known_hosts_file"
+        config_tmp=$(mktemp "$ssh_dir/config.XXXXXX")
+        printf '%s\n' "$github_config" > "$config_tmp"
+        mv -f "$config_tmp" "$config_file"
+        chmod 600 "$key_file" "$known_hosts_file" "$config_file"
+        trap - ERR
+
+        echo "Configured SSH for github.com with the pinned host keys. The key is in RUNNER_TEMP, which the runner empties after the job."
