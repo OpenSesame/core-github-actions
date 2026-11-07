@@ -15,6 +15,8 @@ jobs:
       contents: read # Required to check out the code to check.
     with:
       commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 ```
 
 `ci-context` is the caller's [`resolve_ci_context`](resolve_ci_context.md) job, which picks the commit
@@ -34,6 +36,8 @@ devDependencies), then runs each script with `npm run`:
 
 - Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
+- `npm ci` reads `@opensesame` packages from GitHub Packages with `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN`.
+  The secret is optional; without it, repositories that depend on private packages fail to install.
 - The job fails if any step failed.
 
 ## Inputs
@@ -41,6 +45,12 @@ devDependencies), then runs each script with `npm run`:
 | Input               | Default               | Description                         |
 | ------------------- | --------------------- | ----------------------------------- |
 | `commit-identifier` | Triggering ref or SHA | Commit SHA, tag, or branch to check |
+
+## Secrets
+
+| Secret                                | Required | Description                                                                                    |
+| ------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
+| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | No       | Read-only token for the org's GitHub Packages npm registry, for private `@opensesame` packages |
 
 ## Outputs
 

@@ -22,6 +22,7 @@ jobs:
       commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 ```
 
 Add `repo-checks` to `ci-result`'s needs. Replace `<released-sha>` with the full commit SHA of the
@@ -63,7 +64,8 @@ Detect looks only at tracked files (`git ls-files`), and ignores anything under 
 The GHA, Terraform and Shell jobs set up mise and run mise tasks; they don't need Node or `npm ci`.
 Commit `mise.toml` and its lock file for Macs and runners
 (`mise lock --platform linux-x64,macos-arm64`). The Markdown and JS jobs use Node from `.nvmrc` and
-run `npm ci --ignore-scripts`, so commit `.nvmrc` and `package-lock.json`.
+run `npm ci --ignore-scripts`, so commit `.nvmrc` and `package-lock.json`. Pass
+`ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` if the repository depends on private `@opensesame` packages.
 
 | Technology     | CI runs                                                                                                   |
 | -------------- | --------------------------------------------------------------------------------------------------------- |
@@ -98,9 +100,10 @@ Terraform. A baselined issue is an inline ignore comment
 
 ## Secrets
 
-| Secret                  | Required | Description                                                         |
-| ----------------------- | -------- | ------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY` | No       | Read-only SSH key that can read OpenSesame/core-services-ai-tooling |
+| Secret                                | Required | Description                                                                                                                         |
+| ------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `ORG_READ_ONLY_SSH_KEY`               | No       | Read-only SSH key that can read OpenSesame/core-services-ai-tooling                                                                 |
+| `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | No       | Read-only token for the org's GitHub Packages npm registry, passed to the Markdown and JS checks for private `@opensesame` packages |
 
 ## Contribution
 

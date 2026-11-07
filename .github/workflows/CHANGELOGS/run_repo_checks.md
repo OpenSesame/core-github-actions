@@ -7,8 +7,9 @@ All notable changes to the **run_repo_checks** reusable workflow are documented 
 ### Added
 
 - First release, extracted from the Repo Checks trial in identity-infrastructure-template
-  (`on_call_repo_checks.yml`), with an optional `commit-identifier` input and an optional
-  `ORG_READ_ONLY_SSH_KEY` secret.
+  (`on_call_repo_checks.yml`), with an optional `commit-identifier` input, an optional
+  `ORG_READ_ONLY_SSH_KEY` secret for Standard, and an optional `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN`
+  secret for the Markdown and JS checks.
 - `detect` ("Detect") counts GitHub Actions, Terraform, Markdown, Shell and JavaScript/TypeScript
   files among tracked files, ignoring `.core-services/` and generated or vendored directories, and
   counting `sh`, `bash` and `zsh` shebangs as shell.

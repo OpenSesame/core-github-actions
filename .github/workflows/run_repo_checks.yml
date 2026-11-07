@@ -12,6 +12,9 @@ on:
       ORG_READ_ONLY_SSH_KEY:
         description: Read-only SSH key for OpenSesame/core-services-ai-tooling, passed to run_repo_validation for the latest validator release lookup
         required: false
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        description: Read-only token for the org's GitHub Packages npm registry, passed to the Markdown and JS checks for private @opensesame packages
+        required: false
 
 permissions: {}
 
@@ -127,6 +130,8 @@ jobs:
       contents: read # Required by run_markdown_checks to check out the Markdown to lint.
     with:
       commit-identifier: ${{ inputs.commit-identifier }}
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 
   shell:
     name: Shell
@@ -147,6 +152,8 @@ jobs:
       contents: read # Required by run_js_checks to check out the code to lint.
     with:
       commit-identifier: ${{ inputs.commit-identifier }}
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
 
   standard:
     name: Standard
