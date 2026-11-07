@@ -66,9 +66,9 @@ Commit `mise.toml` and its lock file for Macs and runners
 (`mise lock --platform linux-x64,macos-arm64`). The Markdown and JS jobs use Node from `.nvmrc` and
 run `npm ci --ignore-scripts`, so commit `.nvmrc` and `package-lock.json`. Pass
 `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` if the repository depends on private `@opensesame` packages.
-GitHub doesn't pass Actions secrets to pull requests from forks, and Dependabot runs only see
-Dependabot secrets. In those runs, private packages fail to install unless the token is also stored
-as a Dependabot secret with the same name.
+Pull requests from forks don't get Actions secrets, so private packages fail to install in them.
+Dependabot runs only see Dependabot secrets, so store the token as a Dependabot secret with the same
+name for those.
 
 | Technology     | CI runs                                                                                                   |
 | -------------- | --------------------------------------------------------------------------------------------------------- |
