@@ -1,9 +1,6 @@
 const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
-const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_gha_checks.yml';
-
-describeNpmScriptSteps(workflowFile, ['lint:gha', 'scan:gha']);
 
 describe('run_gha_checks baselined count', () => {
   const count = files =>

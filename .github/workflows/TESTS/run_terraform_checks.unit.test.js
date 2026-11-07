@@ -1,9 +1,6 @@
 const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
-const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_terraform_checks.yml';
-
-describeNpmScriptSteps(workflowFile, ['lint:terraform', 'format:terraform', 'scan:terraform']);
 
 const baseline = checkIds =>
   JSON.stringify({

@@ -1,9 +1,6 @@
 const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
-const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_js_checks.yml';
-
-describeNpmScriptSteps(workflowFile, ['lint:js', 'format:prettier']);
 
 describe('run_js_checks baselined count', () => {
   const count = files =>

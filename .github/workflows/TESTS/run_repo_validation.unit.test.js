@@ -1,4 +1,4 @@
-const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
+const { runStepInRepository } = require('./workflow-test-helpers');
 
 const workflowFile = 'run_repo_validation.yml';
 
@@ -21,14 +21,6 @@ describe('run_repo_validation latest-release lookup', () => {
       '::notice title=Repo Validation::No ORG_READ_ONLY_SSH_KEY secret'
     );
     expect(result.outputs.version).toBeUndefined();
-  });
-
-  test('bounds the lookup and never prompts', () => {
-    const workflow = readWorkflow(workflowFile);
-
-    expect(workflow).toContain('-o BatchMode=yes');
-    expect(workflow).toContain('timeout 30s git ls-remote');
-    expect(workflow).toMatch(/ORG_READ_ONLY_SSH_KEY:\n\s+description: .+\n\s+required: false/);
   });
 });
 

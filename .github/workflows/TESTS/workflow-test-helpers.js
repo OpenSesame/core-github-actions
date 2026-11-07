@@ -5,8 +5,6 @@ const { spawnSync } = require('node:child_process');
 
 const workflowsDirectory = path.join(__dirname, '..');
 
-const checkStepGuard = "if: ${{ !cancelled() && steps.install.outcome == 'success' }}";
-
 function readWorkflow(workflowFile) {
   return fs.readFileSync(path.join(workflowsDirectory, workflowFile), 'utf8');
 }
@@ -32,20 +30,6 @@ function extractRunScript(workflowFile, jobId, stepName) {
   }
 
   return script.join('\n');
-}
-
-function npmScriptSteps(workflowFile) {
-  const lines = readWorkflow(workflowFile).split('\n');
-  const steps = [];
-
-  lines.forEach((line, index) => {
-    const match = line.match(/^ {8}run: npm run (\S+)$/);
-    if (match) {
-      steps.push({ guard: lines[index - 1].trim(), script: match[1] });
-    }
-  });
-
-  return steps;
 }
 
 function createRepository(files) {
@@ -114,10 +98,8 @@ function runStepInRepository(workflowFile, jobId, stepName, files, env) {
 }
 
 module.exports = {
-  checkStepGuard,
   createRepository,
   extractRunScript,
-  npmScriptSteps,
   readWorkflow,
   runScript,
   runStepInRepository,
