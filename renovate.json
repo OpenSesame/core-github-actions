@@ -65,10 +65,13 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Actions pinned in versioned workflows and actions need a version label and changelog entry that Renovate can't write, so their updates wait on the Dependency Dashboard and ship in a batched release pull request.",
+      "description": "Actions pinned in versioned workflows and actions need version labels and changelog entries that Renovate can't write. Their updates wait on the Dependency Dashboard; approving them opens one grouped pull request, to which a person adds the labels and changelogs before it merges.",
       "matchManagers": ["github-actions"],
       "dependencyDashboardApproval": true,
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "7 days",
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
+      "separateMajorMinor": false
     }
   ],
   "vulnerabilityAlerts": {

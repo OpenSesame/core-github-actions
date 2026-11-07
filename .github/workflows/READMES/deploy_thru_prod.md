@@ -10,7 +10,7 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 
 ## Pairing plan and apply
 
-This version composes `deploy_environment` 0.4.0 and `tf_apply` 0.3.0, whose `terraform init` installs the provider versions in each root's committed
+This version composes `deploy_environment` 0.4.1 and `tf_apply` 0.3.1, whose `terraform init` installs the provider versions in each root's committed
 `.terraform.lock.hcl`. Plan in CI with [`tf_plan_single_root`](tf_plan_single_root.md) or
 [`tf_plan_env_roots`](tf_plan_env_roots.md), which do the same. The deprecated `tf_validate_plan_*`
 workflows still run `terraform init -upgrade`, so with them CI can plan with newer providers than

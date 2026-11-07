@@ -1,4 +1,4 @@
-const { runStepInRepository } = require('./workflow-test-helpers');
+const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
 
 const workflowFile = 'run_repo_validation.yml';
 
@@ -71,6 +71,25 @@ describe('run_repo_validation validate step', () => {
     expect(result.status).toBe(1);
     expect(result.stdout).toContain(
       '::error title=Repo Validation::.core-services/generated/validate-repo.mjs is missing.'
+    );
+  });
+});
+
+describe('run_repo_validation SSH key lifetime', () => {
+  test('removes the SSH key after the lookup and before the repository validator runs', () => {
+    const workflow = readWorkflow(workflowFile);
+    const lookup = workflow.indexOf('      - name: Look up the latest validator release');
+    const cleanup = workflow.indexOf('      - name: Remove GitHub SSH credentials');
+    const validate = workflow.indexOf('      - name: Validate repository');
+
+    expect(lookup).toBeGreaterThan(-1);
+    expect(cleanup).toBeGreaterThan(lookup);
+    expect(validate).toBeGreaterThan(cleanup);
+    expect(workflow.slice(cleanup, validate)).toContain(
+      "if: ${{ always() && steps.ssh.outcome == 'success' }}"
+    );
+    expect(workflow.slice(cleanup, validate)).toContain(
+      'rm -rf "$RUNNER_TEMP/configure-github-ssh"'
     );
   });
 });

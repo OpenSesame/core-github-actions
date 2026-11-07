@@ -26,7 +26,7 @@ jobs:
 ```
 
 Add `repo-checks` to `ci-result`'s needs. Replace `<released-sha>` with the full commit SHA of the
-tag: `git rev-list -n1 workflows/run_repo_checks/1.0.0`.
+tag: `git rev-list -n1 workflows/run_repo_checks/1.0.1`.
 
 ## Jobs
 

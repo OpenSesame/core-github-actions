@@ -10,6 +10,8 @@ All notable changes to the **run_repo_validation** reusable workflow are documen
 - The latest-release lookup sets up SSH with `configure-github-ssh` 1.0.0, which pins GitHub's
   published host keys, instead of trusting the runner image's `known_hosts`. If that setup fails, the
   job warns and validates without `--latest-version`, as it does when the lookup fails.
+- The SSH key and config are removed after the lookup, even when it fails, so the repository's own
+  validator script never runs with the org key installed.
 
 ## 1.0.0
 

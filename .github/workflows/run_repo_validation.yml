@@ -76,6 +76,10 @@ jobs:
             echo "::warning title=Repo Validation::Could not look up the latest validator release."
           fi
 
+      - name: Remove GitHub SSH credentials
+        if: ${{ always() && steps.ssh.outcome == 'success' }}
+        run: rm -rf "$RUNNER_TEMP/configure-github-ssh" ~/.ssh/config
+
       - name: Validate repository
         id: validate
         env:
