@@ -95,17 +95,9 @@ jobs:
           persist-credentials: false
 
       - name: Configure GitHub SSH credentials
-        id: configure-credentials
-        shell: bash
-        env:
-          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
-        run: |
-          umask 077
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > ~/.ssh/id_rsa
-          timeout 30s ssh-keyscan github.com > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
+        uses: OpenSesame/core-github-actions/.github/actions/configure-github-ssh@6d23fbcf9eb4c24c5f3404ef8bd175371f7e69a9 # actions/configure-github-ssh/1.0.0
+        with:
+          ssh-private-key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
@@ -198,7 +190,7 @@ jobs:
       - name: Upload plan artifact
         id: plan-artifact
         if: ${{ inputs.write-artifact }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.set-plan-artifact-name.outputs.artifact-name }}
           path: ${{ inputs.terraform-root }}/tfplan.txt

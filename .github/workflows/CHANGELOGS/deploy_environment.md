@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.4.1
+
+### Changed
+
+- Composes `tf_apply` 0.3.1, which sets up SSH with `configure-github-ssh` 1.0.0 instead of running
+  `ssh-keyscan`.
+
 ## 0.4.0
 
 ### Changed

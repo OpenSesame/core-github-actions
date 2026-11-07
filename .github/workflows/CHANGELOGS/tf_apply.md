@@ -2,6 +2,14 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.3.1
+
+### Changed
+
+- SSH to github.com is set up by `configure-github-ssh` 1.0.0 instead of an inline step that ran
+  `ssh-keyscan`. It pins GitHub's published host keys and keeps the key in `RUNNER_TEMP`, which the
+  runner empties after the job. It fails if `~/.ssh/config` already exists with other content.
+
 ## 0.3.0
 
 ### Changed

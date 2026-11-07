@@ -2,6 +2,15 @@
 
 All notable changes to the **run_repo_checks** reusable workflow are documented in this file.
 
+## 1.0.1
+
+### Changed
+
+- Calls the 1.0.1 per-technology workflows and `run_repo_validation` 1.0.1 from the same commit,
+  which bump `jdx/mise-action` to 5.2.5 and `actions/setup-node` to 7.1.0.
+- Its `run_repo_validation` 1.0.1 sets up SSH with `configure-github-ssh` 1.0.0, which pins GitHub's host
+  keys, for the latest-release lookup.
+
 ## 1.0.0
 
 ### Added

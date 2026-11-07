@@ -2,6 +2,13 @@
 
 All notable changes to the **run_infra_ci** reusable workflow are documented in this file.
 
+## 1.0.2
+
+### Changed
+
+- Bumped `jdx/mise-action` from 5.0.0 to 5.2.5, pinned by commit SHA. The mise version it installs
+  (2026.9.17) is unchanged.
+
 ## 1.0.1
 
 ### Fixed

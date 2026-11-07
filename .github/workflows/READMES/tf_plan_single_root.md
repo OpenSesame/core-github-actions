@@ -23,7 +23,7 @@ Pair this workflow with an apply that also uses the committed lock file: `tf_app
 jobs:
   terraform:
     name: Terraform
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_single_root.yml@<released-sha> # workflows/tf_plan_single_root/1.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_single_root.yml@<released-sha> # workflows/tf_plan_single_root/1.0.1
     permissions:
       id-token: write # Required to assume the plan role.
       contents: read # Required to check out the Terraform code.

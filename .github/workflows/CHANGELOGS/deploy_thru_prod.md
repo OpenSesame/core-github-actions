@@ -2,6 +2,13 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.4.1
+
+### Changed
+
+- Composes `deploy_environment` 0.4.1, whose `tf_apply` sets up SSH with `configure-github-ssh` 1.0.0
+  instead of running `ssh-keyscan`.
+
 ## 0.4.0
 
 ### Changed

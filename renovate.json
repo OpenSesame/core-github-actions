@@ -28,6 +28,50 @@
       "addLabels": ["dependencies", "v:untracked"],
       "automerge": true,
       "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Node in .nvmrc, the npm and engines fields, and mise tools only change this repository's own CI and tests, not a released component, so they take v:untracked.",
+      "matchManagers": ["nvm", "mise", "custom.regex"],
+      "addLabels": ["dependencies", "v:untracked"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Same as above for npm itself and the engines range in package.json.",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["packageManager", "engines"],
+      "addLabels": ["dependencies", "v:untracked"],
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Update npm in package.json, CI and the setup docs in one pull request.",
+      "matchPackageNames": ["npm"],
+      "groupName": "npm",
+      "groupSlug": "npm",
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Automerge non-major tooling updates once every check passes.",
+      "matchManagers": ["nvm", "mise", "custom.regex", "npm"],
+      "matchDepTypes": ["packageManager", "engines", "tools"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Automerge non-major Node and npm updates found outside package.json.",
+      "matchManagers": ["nvm", "custom.regex"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Actions pinned in versioned workflows and actions need version labels and changelog entries that Renovate can't write. Their updates wait on the Dependency Dashboard; approving them opens one grouped pull request, to which a person adds the labels and changelogs before it merges.",
+      "matchManagers": ["github-actions"],
+      "dependencyDashboardApproval": true,
+      "minimumReleaseAge": "7 days",
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
+      "separateMajorMinor": false
     }
   ],
   "vulnerabilityAlerts": {
@@ -35,5 +79,19 @@
     "automerge": false,
     "labels": ["dependencies", "security"],
     "commitMessageSuffix": "[SECURITY]"
-  }
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The npm version that CI and the setup docs install by hand, kept in step with packageManager.",
+      "managerFilePatterns": [
+        "/^AGENTS\\.md$/",
+        "/^README\\.md$/",
+        "/^\\.github/workflows/internal_on_push_ci\\.yml$/"
+      ],
+      "matchStrings": ["npm install --global npm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "npm",
+      "datasourceTemplate": "npm"
+    }
+  ]
 }

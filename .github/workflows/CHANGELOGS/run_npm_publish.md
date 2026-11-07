@@ -2,6 +2,12 @@
 
 All notable changes to the **run_npm_publish** reusable workflow are documented in this file.
 
+## 1.1.2
+
+### Changed
+
+- Bumped `actions/setup-node` from 7.0.0 to 7.1.0, pinned by commit SHA.
+
 ## 1.1.1
 
 ### Fixed

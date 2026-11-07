@@ -11,7 +11,7 @@ jobs:
     name: Sonar
     needs: [ci-context, app-ci]
     if: ${{ !cancelled() && needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@<released-sha> # workflows/run_sonar_scan/2.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/run_sonar_scan.yml@<released-sha> # workflows/run_sonar_scan/2.1.0
     permissions:
       contents: read # Required to check out the code to scan.
     with:
@@ -28,7 +28,7 @@ The check is reported as `Sonar / Scan`.
 
    ```yaml
    - name: Upload coverage
-     uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+     uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
      with:
        name: coverage-user-management-api
        path: lambdas/user-management-api/coverage/lcov.info

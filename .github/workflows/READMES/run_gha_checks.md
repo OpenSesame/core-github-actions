@@ -13,7 +13,7 @@ jobs:
     name: GHA
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.1
     permissions:
       contents: read # Required to check out the code to check.
     with:

@@ -36,7 +36,7 @@ jobs:
   publish:
     name: Publish Latest
     if: github.event.pull_request.merged == true
-    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.1.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.1.2
     permissions:
       contents: write # Required to create the GitHub release and its version tag.
       packages: write # Required to publish the package to GitHub Packages.

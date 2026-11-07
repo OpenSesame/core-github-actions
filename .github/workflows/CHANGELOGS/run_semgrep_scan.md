@@ -2,6 +2,12 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 2.0.1
+
+### Changed
+
+- Bumped `actions/upload-artifact` from 7.0.1 to 7.0.2, pinned by commit SHA.
+
 ## 2.0.0
 
 ### Changed

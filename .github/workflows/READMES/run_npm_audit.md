@@ -27,7 +27,7 @@ binaries; an advisory in one that is installed in production is not gated by thi
 jobs:
   dependency-audit:
     name: Dependency Audit
-    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_audit.yml@<released-sha> # workflows/run_npm_audit/1.0.0
+    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_audit.yml@<released-sha> # workflows/run_npm_audit/1.0.1
     permissions:
       contents: read # Required to check out the lockfiles to audit.
     with:
