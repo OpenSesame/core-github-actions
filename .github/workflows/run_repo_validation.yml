@@ -1,0 +1,79 @@
+name: Repo Validation
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to validate; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        description: Read-only SSH key for OpenSesame/core-services-ai-tooling, used to look up the latest validator release
+        required: false
+    outputs:
+      result:
+        description: Outcome of the validation step (success, failure, cancelled or skipped)
+        value: ${{ jobs.validate.outputs.result }}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the repository to validate.
+    outputs:
+      result: ${{ steps.validate.outcome }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Look up the latest validator release
+        id: latest
+        env:
+          ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+        run: |
+          if [[ -z "$ORG_READ_ONLY_SSH_KEY" ]]; then
+            echo "::notice title=Repo Validation::No ORG_READ_ONLY_SSH_KEY secret, so the validator can't check for a newer release."
+            exit 0
+          fi
+          key_file="$RUNNER_TEMP/validator-release-key"
+          trap 'rm -f "$key_file"' EXIT
+          printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > "$key_file"
+          chmod 600 "$key_file"
+          if tags=$(GIT_SSH_COMMAND="ssh -i $key_file -o IdentitiesOnly=yes -o BatchMode=yes" timeout 30s git ls-remote --tags --refs \
+            git@github.com:OpenSesame/core-services-ai-tooling.git 'refs/tags/repository-validator/*'); then
+            version=$(sed -n 's#.*refs/tags/repository-validator/##p' <<< "$tags" \
+              | { grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n 1)
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning title=Repo Validation::Could not look up the latest validator release."
+          fi
+
+      - name: Validate repository
+        id: validate
+        env:
+          LATEST_VERSION: ${{ steps.latest.outputs.version }}
+          VALIDATOR: .core-services/generated/validate-repo.mjs
+        run: |
+          if [[ ! -f "$VALIDATOR" ]]; then
+            echo "::error title=Repo Validation::$VALIDATOR is missing. Install the repository validator kit from OpenSesame/core-services-ai-tooling."
+            exit 1
+          fi
+          node "$VALIDATOR" ${LATEST_VERSION:+--latest-version "$LATEST_VERSION"}

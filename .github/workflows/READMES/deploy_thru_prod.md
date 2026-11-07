@@ -8,19 +8,35 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 > target ref, Terraform roots, workspaces, GitHub environment protections, and production readiness
 > before invoking it.
 
+## Pairing plan and apply
+
+This version composes `deploy_environment` 0.4.0 and `tf_apply` 0.3.0, whose `terraform init` installs the provider versions in each root's committed
+`.terraform.lock.hcl`. Plan in CI with [`tf_plan_single_root`](tf_plan_single_root.md) or
+[`tf_plan_env_roots`](tf_plan_env_roots.md), which do the same. The deprecated `tf_validate_plan_*`
+workflows still run `terraform init -upgrade`, so with them CI can plan with newer providers than
+this apply uses, and the apply may not match the reviewed plan. Move plan and apply to the
+lock-file versions together.
+
+Even when paired, the apply doesn't run the CI plan. `terraform apply` makes a new plan at deploy
+time, with `TF_VAR_release_name` and `TF_VAR_IACDeploymentRef` set, which `tf_plan_*` don't set.
+State or infrastructure changes since the CI plan, or a root that uses those variables, can make the
+apply differ from what CI showed.
+
 ## Prerequisites
 
 - The caller repository contains Terraform roots for dev, stage, and prod.
 - The `dev`, `stage`, and `prod` GitHub environments exist and permit deployment.
 - The OIDC domain resolves AWS roles for all three environments.
 - The caller provides the required organization SSH key and package token.
+- Each Terraform root has a committed `.terraform.lock.hcl` with the provider versions approved for
+  deployment.
 
 ## Usage
 
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.3.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.0
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core

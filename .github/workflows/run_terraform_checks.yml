@@ -1,0 +1,107 @@
+name: Terraform Checks
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to initialize, validate, lint, format-check and scan; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+    outputs:
+      init:
+        description: Outcome of the initialize step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.init }}
+      validate:
+        description: Outcome of the validate step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.validate }}
+      lint:
+        description: Outcome of the lint step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.lint }}
+      format:
+        description: Outcome of the format-check step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.format }}
+      scan:
+        description: Outcome of the scan step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.scan }}
+      baselined:
+        description: Number of Checkov baseline findings plus inline checkov skip and tflint ignore comments
+        value: ${{ jobs.checks.outputs.baselined }}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the Terraform code.
+    outputs:
+      init: ${{ steps.init.outcome }}
+      validate: ${{ steps.validate.outcome }}
+      lint: ${{ steps.lint.outcome }}
+      format: ${{ steps.format.outcome }}
+      scan: ${{ steps.scan.outcome }}
+      baselined: ${{ steps.baseline.outputs.count }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Set up mise
+        id: mise
+        uses: jdx/mise-action@9149ea85001c7435d5a66bb127d6a1b6227cb0a5 # v5.0.0
+        with:
+          version: 2026.9.17
+          sha256: 63049bc35fb9065e8dc35ac8b25fdae53e9bd6f1885a843aedeba398e046a1ee
+
+      - name: Initialize
+        id: init
+        if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
+        run: mise run init:terraform
+
+      - name: Validate
+        id: validate
+        if: ${{ !cancelled() && steps.init.outcome == 'success' }}
+        run: mise run validate:terraform
+
+      - name: Lint
+        id: lint
+        if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
+        run: mise run lint:terraform
+
+      - name: Check formatting
+        id: format
+        if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
+        run: mise run format:terraform
+
+      - name: Scan
+        id: scan
+        if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
+        run: mise run scan:terraform
+
+      - name: Count baselined issues
+        id: baseline
+        if: ${{ !cancelled() }}
+        run: |
+          baselines=()
+          while IFS= read -r file; do
+            baselines+=("$file")
+          done < <(git ls-files -- '*.checkov.baseline' ':!.core-services')
+          if (( ${#baselines[@]} > 0 )); then
+            baselined=$(jq -s '[.[].failed_checks[]?.findings[]?.check_ids[]?] | length' "${baselines[@]}")
+            echo "Checkov baselines ${baselines[*]}: $baselined findings"
+          else
+            baselined=0
+            echo "No Checkov baseline"
+          fi
+          inline=$({ git grep -c -E 'checkov[:]skip=|tflint-ignor[e]' -- '*.tf' ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          echo "Inline checkov skips and tflint ignores: $inline"
+          echo "count=$((baselined + inline))" >> "$GITHUB_OUTPUT"

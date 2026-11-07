@@ -1,5 +1,9 @@
 # Terraform Validate and Plan Environment Roots
 
+> **Deprecated:** use [`tf_plan_env_roots`](tf_plan_env_roots.md) instead. This workflow gets no further releases,
+> and there's no direct upgrade path: `tf_plan_env_roots` drops `terraform validate` (it runs in Repo
+> Checks) and `init -upgrade`, and renames the checks to `… / Plan`.
+
 Plans `terraform/dev`, `terraform/stage`, and `terraform/prod` in parallel, without state locking,
 through [`tf_validate_plan_single_root`](tf_validate_plan_single_root.md). It never applies, but
 providers and data sources may contact live systems.
@@ -28,13 +32,13 @@ Checks are reported as `Terraform / dev / Validate Plan`, `Terraform / stage / V
 
 ## Inputs
 
-| Input                      | Required | Default          | Description                                             |
-| -------------------------- | -------- | ---------------- | ------------------------------------------------------- |
-| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                      |
-| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`             |
-| `terraform-version`        | Yes      |                  | Terraform CLI version                                   |
-| `terraform-workspace`      | No       | Environment name | Workspace for every environment                         |
-| `build-artifact-directory` | No       |                  | Newline-separated directories to create under each root |
+| Input                      | Required | Default          | Description                                                                                                                          |
+| -------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                                                                                   |
+| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                                                          |
+| `terraform-version`        | Yes      |                  | Terraform CLI version                                                                                                                |
+| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                                                                                      |
+| `build-artifact-directory` | No       |                  | Newline-separated directories to create before planning, as paths relative to each `terraform/<environment>` root; `..` may leave it |
 
 ## Contribution
 

@@ -2,6 +2,26 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.3.0
+
+### Changed
+
+- **Breaking:** `terraform init` no longer passes `-upgrade`, so the apply
+  installs the provider versions recorded in each root's committed `.terraform.lock.hcl` instead
+  of the newest versions the constraints allow. A lock file that no longer satisfies the version
+  constraints now fails init: run `terraform init -upgrade` locally and commit the lock file.
+  A committed lock file is now required for reproducible applies; without one, init selects
+  provider versions from the configured constraints and creates a transient lock file on the runner.
+- Before upgrading, refresh each root's lock file. Earlier runs used `-upgrade`, so state can record
+  newer providers than the committed lock file, and Terraform refuses to run an older provider than
+  the one that last wrote a resource ("Resource instance managed by newer provider version"). Run
+  `terraform init -upgrade` in each root. It selects the newest providers the constraints allow and
+  can also update modules, so review the lock-file diff against the versions the last apply used,
+  raise the constraints if they no longer allow those versions, and commit `.terraform.lock.hcl`.
+- To roll back after a later apply, don't plan or deploy the older commit again: its constraints and
+  lock file can select providers older than state. Make a new commit from the older code with
+  constraints and a lock file compatible with current state, plan it, and deploy that commit.
+
 ## 0.2.1
 
 ### Fixed

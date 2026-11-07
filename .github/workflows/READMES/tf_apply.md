@@ -13,13 +13,30 @@ GitHub environment and Terraform workspace.
 - The requested GitHub environment exists and permits the deployment job to run.
 - The OIDC domain and environment resolve to an AWS role through `gha-oidc-access`.
 - The requested Terraform version is available through `hashicorp/setup-terraform`.
+- The Terraform root has a committed `.terraform.lock.hcl` with the provider versions approved for
+  deployment. Without it, `terraform init` selects versions from the configured constraints and
+  creates a transient lock file on the runner, so the apply is not reproducible.
+
+## Pairing plan and apply
+
+This version's `terraform init` installs the provider versions in each root's committed
+`.terraform.lock.hcl`. Plan in CI with [`tf_plan_single_root`](tf_plan_single_root.md) or
+[`tf_plan_env_roots`](tf_plan_env_roots.md), which do the same. The deprecated `tf_validate_plan_*`
+workflows still run `terraform init -upgrade`, so with them CI can plan with newer providers than
+this apply uses, and the apply may not match the reviewed plan. Move plan and apply to the
+lock-file versions together.
+
+Even when paired, the apply doesn't run the CI plan. `terraform apply` makes a new plan at deploy
+time, with `TF_VAR_release_name` and `TF_VAR_IACDeploymentRef` set, which `tf_plan_*` don't set.
+State or infrastructure changes since the CI plan, or a root that uses those variables, can make the
+apply differ from what CI showed.
 
 ## Usage
 
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.2.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.0
     with:
       environment: dev
       oidc-domain: core
@@ -58,7 +75,8 @@ jobs:
 2. Resolves an AWS role and configures temporary credentials for `environment`.
 3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies.
 4. Installs the requested Terraform version.
-5. Runs `terraform init -upgrade`.
+5. Runs `terraform init`, which installs the provider versions in the required, committed
+   `.terraform.lock.hcl`.
 6. Selects or creates `terraform-workspace`.
 7. Runs `terraform apply -auto-approve -input=false`.
 

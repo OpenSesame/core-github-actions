@@ -41,7 +41,8 @@ The Core Services team uses reusable workflows for shared CI/CD orchestration so
 
 ## ⚠️ Versioning Warning
 
-Unless noted otherwise, Nothing in this repo is currently versioned. Changes here affect **all consumers immediately**. Make changes carefully and aim for passivity to avoid breaking existing workflows.
+Versioned components have namespaced release tags and changelogs. Unversioned workflows and legacy
+actions still affect all consumers immediately, so make changes carefully and aim for passivity.
 
 ## Testing
 
@@ -78,19 +79,30 @@ To get started:
 
 A complete policy is defined in [VERSIONING.md](VERSIONING.md). Highlights:
 
-- Versioned components use namespaced tags: actions/{component-name}/vX.Y.Z
+- Versioned actions use `actions/{component-name}/vX.Y.Z` tags
+- Versioned workflows use `workflows/{component-name}/X.Y.Z` tags
 - PRs modifying a component must include a version label
 - `v:untracked` is allowed for non-behavior changes
 - Version/changelog validation runs automatically on PRs
 - Tags are automatically created when changes merge into main
 
-### 🚧 Reusable Workflows (Work in Progress)
+### Reusable Workflows
 
-The Core Services team is moving legacy multi-phase orchestration out of composite actions and into **reusable workflows** in this repository.
+Reusable workflows cover repository checks and validation, publishing, Terraform planning and
+deployment, and other shared CI/CD orchestration. Each versioned workflow has a contract in
+`.github/workflows/READMES` and release history in `.github/workflows/CHANGELOGS`.
 
-At this stage, the reusable workflows support **Terraform-only projects**. They are still evolving and are not yet versioned. While they can be consumed by other repositories, their API is not considered stable. Their contracts remain subject to change until the versioning model expands to reusable workflows. These workflows should be referenced by the `legacy-stable` tag. This allows us to make changes to bring the workflows under versioning safely.
+Cross-repository callers should pin an immutable commit SHA, not a mutable branch or tag. Resolve the
+SHA for a workflow release with:
 
-You can check the `./github/workflows/CHANGELOGS` directory to know which workflows are under versioning and you should reference them by their namespaced version tags.
+```sh
+git rev-list -n1 workflows/<component-name>/<version>
+```
+
+For example, `run_repo_checks` detects and runs the applicable GitHub Actions, Terraform, Markdown,
+shell, and JavaScript or TypeScript checks. See its
+[workflow documentation](.github/workflows/READMES/run_repo_checks.md) for the required repository
+tasks and scripts.
 
 ### 🧩 Versioned Composite Actions
 

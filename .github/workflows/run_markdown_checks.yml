@@ -1,0 +1,71 @@
+name: Markdown Checks
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to lint; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+    secrets:
+      ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
+        description: Read-only token for the org's GitHub Packages npm registry, needed when the repository depends on private @opensesame packages
+        required: false
+    outputs:
+      lint:
+        description: Outcome of the lint step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.lint }}
+      baselined:
+        description: Number of inline markdownlint-disable comments in Markdown files
+        value: ${{ jobs.checks.outputs.baselined }}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  checks:
+    name: Checks
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the Markdown to lint.
+    outputs:
+      lint: ${{ steps.lint.outcome }}
+      baselined: ${{ steps.baseline.outputs.count }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          registry-url: https://npm.pkg.github.com
+          scope: '@opensesame'
+
+      - name: Install dependencies
+        id: install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}
+        run: npm ci --ignore-scripts
+
+      - name: Lint
+        id: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run lint:markdown
+
+      - name: Count baselined issues
+        id: baseline
+        if: ${{ !cancelled() }}
+        run: |
+          inline=$({ git grep -c 'markdownlint-disabl[e]' -- '*.md' ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          echo "Inline markdownlint disables: $inline"
+          echo "count=$inline" >> "$GITHUB_OUTPUT"

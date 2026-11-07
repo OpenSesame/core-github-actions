@@ -3,6 +3,8 @@
 All notable changes to the **tf_validate_plan_env_roots** reusable workflow are documented in this
 file.
 
+> **Deprecated:** replaced by [`tf_plan_env_roots`](tf_plan_env_roots.md). No further releases.
+
 ## 1.0.0
 
 ### Changed

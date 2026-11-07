@@ -1,5 +1,9 @@
 # Terraform Validate and Plan a Single Root
 
+> **Deprecated:** use [`tf_plan_single_root`](tf_plan_single_root.md) instead. This workflow gets no further releases,
+> and there's no direct upgrade path: `tf_plan_single_root` drops `terraform validate` (it runs in Repo
+> Checks) and `init -upgrade`, and renames the checks to `… / Plan`.
+
 Runs `terraform init`, `validate`, and `plan` for one root in a GitHub environment and writes the plan
 to the job summary. It never applies, but providers and data sources may contact live systems.
 
@@ -29,17 +33,17 @@ The check is reported as `<caller job name> / Validate Plan`.
 
 ## Inputs
 
-| Input                      | Required | Default | Description                                                          |
-| -------------------------- | -------- | ------- | -------------------------------------------------------------------- |
-| `environment`              | Yes      |         | GitHub environment and AWS account environment                       |
-| `oidc-domain`              | Yes      |         | AWS role domain, such as `core` or `reveng`                          |
-| `commit-identifier`        | Yes      |         | Commit SHA, tag, or branch to plan                                   |
-| `terraform-workspace`      | Yes      |         | Workspace to select or create                                        |
-| `terraform-root`           | Yes      |         | Terraform directory relative to the repo root                        |
-| `terraform-version`        | Yes      |         | Terraform CLI version                                                |
-| `with-lock`                | No       | `true`  | Lock state while planning; locked plans for an env run one at a time |
-| `write-artifact`           | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`           |
-| `build-artifact-directory` | No       |         | Newline-separated directories to create under the root               |
+| Input                      | Required | Default | Description                                                                                                       |
+| -------------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
+| `environment`              | Yes      |         | GitHub environment and AWS account environment                                                                    |
+| `oidc-domain`              | Yes      |         | AWS role domain, such as `core` or `reveng`                                                                       |
+| `commit-identifier`        | Yes      |         | Commit SHA, tag, or branch to plan                                                                                |
+| `terraform-workspace`      | Yes      |         | Workspace to select or create                                                                                     |
+| `terraform-root`           | Yes      |         | Terraform directory relative to the repo root                                                                     |
+| `terraform-version`        | Yes      |         | Terraform CLI version                                                                                             |
+| `with-lock`                | No       | `true`  | Lock state while planning; locked plans for an env run one at a time                                              |
+| `write-artifact`           | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`                                                        |
+| `build-artifact-directory` | No       |         | Newline-separated directories to create before planning, as paths relative to `terraform-root`; `..` may leave it |
 
 Output: `plan-artifact-name` (empty unless `write-artifact` is `true`). Terraform gets no GitHub token.
 
