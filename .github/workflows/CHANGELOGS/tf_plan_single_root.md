@@ -7,9 +7,9 @@ All notable changes to the **tf_plan_single_root** reusable workflow are documen
 ### Changed
 
 - Bumped `actions/upload-artifact` from 7.0.1 to 7.0.2, pinned by commit SHA.
-- The SSH setup writes GitHub's published host keys (from `api.github.com/meta`) to `known_hosts`
-  and requires them for github.com, instead of trusting whatever `ssh-keyscan` returns at run time.
-  If GitHub rotates a key, git over SSH fails until the pinned keys are updated.
+- SSH to github.com is set up by `configure-github-ssh` 1.0.0 instead of an inline step that ran
+  `ssh-keyscan`. It pins GitHub's published host keys and keeps the key in `RUNNER_TEMP`, which the
+  runner empties after the job. It fails if `~/.ssh/config` already exists with other content.
 
 ## 1.0.0
 

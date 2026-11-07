@@ -6,8 +6,8 @@ All notable changes to the **deploy_thru_prod** reusable workflow are documented
 
 ### Changed
 
-- Composes `deploy_environment` 0.4.1, whose `tf_apply` pins GitHub's SSH host keys instead of
-  running `ssh-keyscan`.
+- Composes `deploy_environment` 0.4.1, whose `tf_apply` sets up SSH with `configure-github-ssh` 1.0.0
+  instead of running `ssh-keyscan`.
 
 ## 0.4.0
 

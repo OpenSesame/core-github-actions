@@ -74,7 +74,8 @@ jobs:
 1. Writes the invocation context and inputs to the GitHub Actions job summary.
 2. Resolves an AWS role and configures temporary credentials for `environment`.
 3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies, with
-   GitHub's published host keys pinned for github.com.
+   GitHub's published host keys pinned for github.com, through
+   [`configure-github-ssh`](../../actions/configure-github-ssh/README.md).
 4. Installs the requested Terraform version.
 5. Runs `terraform init`, which installs the provider versions in the required, committed
    `.terraform.lock.hcl`.

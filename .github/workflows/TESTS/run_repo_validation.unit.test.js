@@ -7,18 +7,31 @@ process.exit(Number(process.env.VALIDATOR_EXIT || 0));
 `;
 
 describe('run_repo_validation latest-release lookup', () => {
-  test('skips the lookup with a notice when there is no SSH key', () => {
-    const result = runStepInRepository(
+  const lookup = sshSetup =>
+    runStepInRepository(
       workflowFile,
       'validate',
       'Look up the latest validator release',
       {},
-      { ORG_READ_ONLY_SSH_KEY: '' }
+      { SSH_SETUP: sshSetup }
     );
+
+  test('skips the lookup with a notice when there is no SSH key', () => {
+    const result = lookup('skipped');
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain(
       '::notice title=Repo Validation::No ORG_READ_ONLY_SSH_KEY secret'
+    );
+    expect(result.outputs.version).toBeUndefined();
+  });
+
+  test('warns and validates without a version when SSH setup failed', () => {
+    const result = lookup('failure');
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(
+      '::warning title=Repo Validation::Could not configure SSH to look up the latest validator release.'
     );
     expect(result.outputs.version).toBeUndefined();
   });

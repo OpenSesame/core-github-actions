@@ -7,8 +7,9 @@ All notable changes to the **run_repo_validation** reusable workflow are documen
 ### Changed
 
 - Bumped `actions/setup-node` from 7.0.0 to 7.1.0, pinned by commit SHA.
-- The latest-release lookup pins GitHub's published host keys (from `api.github.com/meta`) for its
-  `git ls-remote` over SSH, instead of trusting the runner image's `known_hosts`.
+- The latest-release lookup sets up SSH with `configure-github-ssh` 1.0.0, which pins GitHub's
+  published host keys, instead of trusting the runner image's `known_hosts`. If that setup fails, the
+  job warns and validates without `--latest-version`, as it does when the lookup fails.
 
 ## 1.0.0
 
