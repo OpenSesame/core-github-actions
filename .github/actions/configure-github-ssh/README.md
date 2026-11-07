@@ -7,11 +7,13 @@ Installs an SSH private key and GitHub's published host keys, so `git` and Terra
 It replaces the inline step that wrote the key and ran `ssh-keyscan github.com`. That step trusted whatever host answered at run time, so a spoofed github.com could serve code to a job holding the org's read-only key.
 
 - Writes the key to `~/.ssh/github_read_only_key` and GitHub's host keys to `~/.ssh/github_known_hosts`, under `umask 077`, so each file is readable only by the runner user.
-- Puts a `Host github.com` block at the top of `~/.ssh/config` that uses only that key and requires the pinned host keys (`StrictHostKeyChecking yes`, `GlobalKnownHostsFile /dev/null`). Any existing config follows it.
+- Writes `~/.ssh/config` with one `Host github.com` block that uses only that key and requires the pinned host keys (`StrictHostKeyChecking yes`, `GlobalKnownHostsFile /dev/null`).
+- Fails with an `Existing SSH config` error, before writing anything, when `~/.ssh/config` already exists with other content. Merging can't isolate github.com: an existing `IdentityFile` would still be offered to GitHub, and global settings would end up scoped to github.com. Running the action twice in a job is fine, because its own config is accepted.
 - Fails with a `Missing SSH key` error when `ssh-private-key` is empty, for example when the caller didn't pass the secret.
 
 ## Scope/Limitations
 
+- Run it before any other SSH setup in the job, on a runner without an SSH config, such as a GitHub-hosted runner.
 - Applies only to `github.com`. Other SSH hosts keep the runner's defaults.
 - The host keys are the ones GitHub publishes at `https://api.github.com/meta` (`ssh_keys`), matching the fingerprints in GitHub's documentation. If GitHub rotates a key, SSH to github.com fails until this action is updated and released.
 - Composite actions have no post step, so the key stays in `~/.ssh` for the rest of the job. GitHub-hosted runners are discarded after each job.

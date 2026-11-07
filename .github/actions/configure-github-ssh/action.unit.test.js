@@ -115,14 +115,33 @@ describe('configure-github-ssh action', () => {
     expect(settings).toContain('globalknownhostsfile /dev/null');
   });
 
-  test('puts the github.com block ahead of an existing config and keeps the rest', () => {
-    const existing = 'Host example.internal\n  User deploy\n';
+  test.each([
+    ['a global identity', 'IdentityFile ~/.ssh/broader_key\nUser deploy\n'],
+    ['another github.com block', 'Host github.com\n  IdentityFile ~/.ssh/other_key\n'],
+  ])('refuses an existing SSH config with %s and writes nothing', (_case, existing) => {
     const result = run({ existingConfig: existing });
-    const config = result.read('config');
 
-    expect(result.status).toBe(0);
-    expect(config.indexOf('Host github.com')).toBe(0);
-    expect(config).toContain(existing.trim());
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain('::error title=Existing SSH config::');
+    expect(result.read('config')).toBe(existing);
+    expect(fs.existsSync(path.join(result.ssh, 'github_read_only_key'))).toBe(false);
+    expect(fs.existsSync(path.join(result.ssh, 'github_known_hosts'))).toBe(false);
+  });
+
+  test('accepts its own config, so a job can run it more than once', () => {
+    const first = run();
+    const second = spawnSync('bash', ['--noprofile', '--norc', '-c', extractRunScript()], {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        HOME: first.home,
+        SSH_PRIVATE_KEY: 'second-key',
+        GITHUB_KNOWN_HOSTS: extractKnownHosts(),
+      },
+    });
+
+    expect(second.status).toBe(0);
+    expect(first.read('github_read_only_key')).toBe('second-key\n');
   });
 
   test.each([

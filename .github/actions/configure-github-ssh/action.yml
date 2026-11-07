@@ -30,12 +30,6 @@ runs:
         key_file="$ssh_dir/github_read_only_key"
         known_hosts_file="$ssh_dir/github_known_hosts"
         config_file="$ssh_dir/config"
-        mkdir -p "$ssh_dir"
-        chmod 700 "$ssh_dir"
-
-        printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_file"
-        printf '%s' "$GITHUB_KNOWN_HOSTS" > "$known_hosts_file"
-
         github_config=$(printf '%s\n' \
           'Host github.com' \
           "  IdentityFile $key_file" \
@@ -43,11 +37,17 @@ runs:
           '  StrictHostKeyChecking yes' \
           "  UserKnownHostsFile $known_hosts_file" \
           '  GlobalKnownHostsFile /dev/null')
-        existing_config=""
-        if [[ -f "$config_file" ]]; then
-          existing_config=$(cat "$config_file")
+
+        if [[ -e "$config_file" && "$(cat "$config_file")" != "$github_config" ]]; then
+          echo "::error title=Existing SSH config::$config_file already exists. This action writes its own SSH config so only the supplied key and GitHub's pinned host keys apply to github.com, and won't merge with another one. Run it before any other SSH setup, on a runner without an SSH config."
+          exit 1
         fi
-        printf '%s\n\n%s\n' "$github_config" "$existing_config" > "$config_file"
+
+        mkdir -p "$ssh_dir"
+        chmod 700 "$ssh_dir"
+        printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_file"
+        printf '%s' "$GITHUB_KNOWN_HOSTS" > "$known_hosts_file"
+        printf '%s\n' "$github_config" > "$config_file"
         chmod 600 "$key_file" "$known_hosts_file" "$config_file"
 
         echo "Configured SSH for github.com with the pinned host keys."
