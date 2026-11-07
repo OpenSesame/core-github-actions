@@ -53,21 +53,6 @@ jobs:
         id: install
         run: npm ci --ignore-scripts
 
-      - name: Check npm scripts
-        if: ${{ !cancelled() }}
-        env:
-          TECHNOLOGY: JavaScript or TypeScript
-          SCRIPTS: lint:js format:prettier
-        run: |
-          missing=0
-          for script in $SCRIPTS; do
-            if ! jq -e --arg script "$script" '.scripts[$script] | type == "string"' package.json > /dev/null 2>&1; then
-              echo "::error title=Missing npm script::$TECHNOLOGY files are present, but package.json has no $script script."
-              missing=1
-            fi
-          done
-          exit "$missing"
-
       - name: Lint
         id: lint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

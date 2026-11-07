@@ -28,8 +28,7 @@ devDependencies), then runs each script with `npm run`:
 | `lint:markdown` | Lint | `markdownlint-cli2` |
 
 - Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
-- A `Check npm scripts` step writes a `Missing npm script` error, naming the technology, for each
-  script `package.json` doesn't have. That script's own step then fails too.
+- A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - The job fails if any step failed.
 
 ## Inputs

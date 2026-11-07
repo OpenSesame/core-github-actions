@@ -3,7 +3,7 @@ const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_markdown_checks.yml';
 
-describeNpmScriptSteps(workflowFile, 'Markdown', ['lint:markdown']);
+describeNpmScriptSteps(workflowFile, ['lint:markdown']);
 
 describe('run_markdown_checks baselined count', () => {
   const count = files =>

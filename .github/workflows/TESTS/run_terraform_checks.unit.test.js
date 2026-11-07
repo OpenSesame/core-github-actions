@@ -3,11 +3,7 @@ const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_terraform_checks.yml';
 
-describeNpmScriptSteps(workflowFile, 'Terraform', [
-  'lint:terraform',
-  'format:terraform',
-  'scan:terraform',
-]);
+describeNpmScriptSteps(workflowFile, ['lint:terraform', 'format:terraform', 'scan:terraform']);
 
 const baseline = checkIds =>
   JSON.stringify({

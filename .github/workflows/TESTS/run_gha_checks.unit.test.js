@@ -3,7 +3,7 @@ const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_gha_checks.yml';
 
-describeNpmScriptSteps(workflowFile, 'GitHub Actions', ['lint:gha', 'scan:gha']);
+describeNpmScriptSteps(workflowFile, ['lint:gha', 'scan:gha']);
 
 describe('run_gha_checks baselined count', () => {
   const count = files =>

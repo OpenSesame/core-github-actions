@@ -3,7 +3,7 @@ const { describeNpmScriptSteps } = require('./technology-checks-contract');
 
 const workflowFile = 'run_js_checks.yml';
 
-describeNpmScriptSteps(workflowFile, 'JavaScript or TypeScript', ['lint:js', 'format:prettier']);
+describeNpmScriptSteps(workflowFile, ['lint:js', 'format:prettier']);
 
 describe('run_js_checks baselined count', () => {
   const count = files =>
