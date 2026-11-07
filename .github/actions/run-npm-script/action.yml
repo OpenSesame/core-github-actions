@@ -1,0 +1,33 @@
+name: Run npm script
+description: Runs a package.json script, failing with a clear error when the script is missing
+
+inputs:
+  script:
+    description: Name of the package.json script to run, for example lint:terraform
+    required: true
+  technology:
+    description: Technology the script checks, named in the missing-script error
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Run npm script
+      shell: bash
+      env:
+        SCRIPT: ${{ inputs.script }}
+        TECHNOLOGY: ${{ inputs.technology }}
+      run: |
+        set -Eeuo pipefail
+
+        if [[ ! -f package.json ]]; then
+          echo "::error title=Missing package.json::$TECHNOLOGY files are present, but there is no package.json to run $SCRIPT from."
+          exit 1
+        fi
+
+        if ! jq -e --arg script "$SCRIPT" '.scripts[$script] | type == "string"' package.json >/dev/null 2>&1; then
+          echo "::error title=Missing npm script::$TECHNOLOGY files are present, but package.json has no $SCRIPT script."
+          exit 1
+        fi
+
+        npm run "$SCRIPT"
