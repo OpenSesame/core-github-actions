@@ -36,13 +36,13 @@ Checks are reported as `Terraform / dev / Plan`, `Terraform / stage / Plan`, and
 
 ## Inputs
 
-| Input                      | Required | Default          | Description                                             |
-| -------------------------- | -------- | ---------------- | ------------------------------------------------------- |
-| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                      |
-| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`             |
-| `terraform-version`        | Yes      |                  | Terraform CLI version                                   |
-| `terraform-workspace`      | No       | Environment name | Workspace for every environment                         |
-| `build-artifact-directory` | No       |                  | Newline-separated directories to create under each root |
+| Input                      | Required | Default          | Description                                                        |
+| -------------------------- | -------- | ---------------- | ------------------------------------------------------------------ |
+| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                 |
+| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                        |
+| `terraform-version`        | Yes      |                  | Terraform CLI version                                              |
+| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                    |
+| `build-artifact-directory` | No       |                  | Newline-separated paths resolved from each root; `..` may leave it |
 
 ## Contribution
 
