@@ -1,6 +1,7 @@
 # Run GHA Checks
 
-Lints GitHub Actions workflows and composite actions with the repo's `lint:gha` script and scans them with `scan:gha`. It doesn't look for GitHub Actions files itself, so call it only when the repository has them.
+Lints GitHub Actions workflows and composite actions with the repo's `lint:gha` mise task and scans
+them with `scan:gha`. It doesn't look for GitHub Actions files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -24,16 +25,18 @@ The check is reported as `GHA / Checks`.
 
 ## Contract
 
-The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in the repo's
-`mise.toml`, runs `npm ci --ignore-scripts`, then runs each script with `npm run`:
+The job sets up mise 2026.9.17, which installs the tools pinned in the repo's `mise.toml`, then runs
+each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`:
 
-| Script     | Step | Typical command                          |
-| ---------- | ---- | ---------------------------------------- |
-| `lint:gha` | Lint | `mise run lint:gha` (actionlint)         |
-| `scan:gha` | Scan | `mise run scan:gha` (zizmor `--offline`) |
+| mise task  | Step | Typical command            |
+| ---------- | ---- | -------------------------- |
+| `lint:gha` | Lint | actionlint                 |
+| `scan:gha` | Scan | `zizmor --offline .github` |
 
-- Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
-- A missing script fails its own step; npm logs `Missing script: "<name>"`.
+- Every task step runs even when an earlier one failed, as long as mise set up.
+- A missing task fails its own step, and mise logs that the task doesn't exist.
+- Keep a matching `package.json` script for each task, such as `"lint:gha": "mise run lint:gha"`, so
+  `npm run check` still runs them locally. CI doesn't use those scripts.
 - The job fails if any step failed.
 
 ## Inputs

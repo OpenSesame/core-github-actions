@@ -1,6 +1,6 @@
 # Run Shell Checks
 
-Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` scripts. It doesn't look for Shell files itself, so call it only when the repository has them.
+Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` mise tasks. It doesn't look for Shell files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -24,16 +24,18 @@ The check is reported as `Shell / Checks`.
 
 ## Contract
 
-The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in the repo's
-`mise.toml`, runs `npm ci --ignore-scripts`, then runs each script with `npm run`:
+The job sets up mise 2026.9.17, which installs the tools pinned in the repo's `mise.toml`, then runs
+each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`:
 
-| Script         | Step             | Typical command                                  |
-| -------------- | ---------------- | ------------------------------------------------ |
-| `lint:shell`   | Lint             | `mise run lint:shell` (shellcheck)               |
-| `format:shell` | Check formatting | `mise run format:shell` (for example `shfmt -d`) |
+| mise task      | Step             | Typical command        |
+| -------------- | ---------------- | ---------------------- |
+| `lint:shell`   | Lint             | shellcheck             |
+| `format:shell` | Check formatting | for example `shfmt -d` |
 
-- Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
-- A missing script fails its own step; npm logs `Missing script: "<name>"`.
+- Every task step runs even when an earlier one failed, as long as mise set up.
+- A missing task fails its own step, and mise logs that the task doesn't exist.
+- Keep a matching `package.json` script for each task, such as `"lint:shell": "mise run lint:shell"`, so
+  `npm run check` still runs them locally. CI doesn't use those scripts.
 - The job fails if any step failed.
 
 ## Inputs

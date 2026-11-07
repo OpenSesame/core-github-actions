@@ -1,7 +1,7 @@
 # Run Terraform Checks
 
 Initializes, validates, lints, format-checks and scans Terraform with the repo's `init:terraform`,
-`validate:terraform`, `lint:terraform`, `format:terraform` and `scan:terraform` scripts. It doesn't look for Terraform files itself, so call it only when the repository has them.
+`validate:terraform`, `lint:terraform`, `format:terraform` and `scan:terraform` mise tasks. It doesn't look for Terraform files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -25,24 +25,26 @@ The check is reported as `Terraform / Checks`.
 
 ## Contract
 
-The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in the repo's
-`mise.toml`, runs `npm ci --ignore-scripts`, then runs each script with `npm run`:
+The job sets up mise 2026.9.17, which installs the tools pinned in the repo's `mise.toml`, then runs
+each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`:
 
-| Script               | Step             | Typical command                                                                                                         |
+| mise task            | Step             | Typical command                                                                                                         |
 | -------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `init:terraform`     | Initialize       | `terraform init -backend=false -lockfile=readonly` in each root, failing when `.terraform.lock.hcl` is missing or stale |
 | `validate:terraform` | Validate         | `terraform validate` in each root                                                                                       |
-| `lint:terraform`     | Lint             | `mise run lint:terraform` (tflint)                                                                                      |
-| `format:terraform`   | Check formatting | `mise run format:terraform` (`terraform fmt -check`)                                                                    |
-| `scan:terraform`     | Scan             | `mise run scan:terraform` (Checkov)                                                                                     |
+| `lint:terraform`     | Lint             | tflint                                                                                                                  |
+| `format:terraform`   | Check formatting | `terraform fmt -check`                                                                                                  |
+| `scan:terraform`     | Scan             | Checkov                                                                                                                 |
 
-- Every script step runs even when an earlier one failed, as long as `npm ci` succeeded. Validate
+- Every task step runs even when an earlier one failed, as long as mise set up. Validate
   needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
-- The job has no secrets or cloud credentials, so `init:terraform` and `validate:terraform` must
-  work without them: initialize with `-backend=false`, and use module sources that download without
-  credentials, such as public registries or public git. Roots with private git, S3 or other
+- A missing task fails its own step, and mise logs that the task doesn't exist.
+- Keep a matching `package.json` script for each task, such as `"lint:terraform": "mise run lint:terraform"`, so
+  `npm run check` still runs them locally. CI doesn't use those scripts.
+- The job has no secrets or cloud credentials, so the `init:terraform` and `validate:terraform` tasks
+  must work without them: initialize with `-backend=false`, and use module sources that download
+  without credentials, such as public registries or public git. Roots with private git, S3 or other
   authenticated module sources fail here. Plan stays in [`tf_plan_env_roots`](tf_plan_env_roots.md).
-- A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - The job fails if any step failed.
 
 ## Inputs
