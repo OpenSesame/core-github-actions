@@ -1,6 +1,6 @@
 # Run Markdown Checks
 
-Lints Markdown with the repo's `lint:markdown` script. It doesn't look for Markdown files itself, so call it only when the repository has them.
+Lints Markdown with the repo's `lint:markdown` script. It doesn't look for Markdown files itself, so call it only when the repository has them. [`run_repo_checks`](run_repo_checks.md) does that, and most repositories should call it instead.
 
 ## Usage
 

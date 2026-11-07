@@ -1,7 +1,9 @@
 # Run GHA Checks
 
 Lints GitHub Actions workflows and composite actions with the repo's `lint:gha` mise task and scans
-them with `scan:gha`. It doesn't look for GitHub Actions files itself, so call it only when the repository has them.
+them with `scan:gha`. It doesn't look for GitHub Actions files itself, so call it only when the
+repository has them. [`run_repo_checks`](run_repo_checks.md) does that, and most repositories should
+call it instead.
 
 ## Usage
 

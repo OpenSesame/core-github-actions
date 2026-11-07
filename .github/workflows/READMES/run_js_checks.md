@@ -1,6 +1,6 @@
 # Run JS Checks
 
-Lints and format-checks JavaScript and TypeScript with the repo's `lint:js` and `format:prettier` scripts. It doesn't look for JavaScript or TypeScript files itself, so call it only when the repository has them.
+Lints and format-checks JavaScript and TypeScript with the repo's `lint:js` and `format:prettier` scripts. It doesn't look for JavaScript or TypeScript files itself, so call it only when the repository has them. [`run_repo_checks`](run_repo_checks.md) does that, and most repositories should call it instead.
 
 ## Usage
 

@@ -1,7 +1,8 @@
 # Run Repo Validation
 
 Runs the repository validator kit committed at `.core-services/generated/validate-repo.mjs` against
-the repository standard.
+the repository standard. [`run_repo_checks`](run_repo_checks.md) calls it as its `Standard` job,
+and most repositories should call that instead.
 
 ## Usage
 

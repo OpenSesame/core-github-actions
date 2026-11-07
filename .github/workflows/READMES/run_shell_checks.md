@@ -1,6 +1,8 @@
 # Run Shell Checks
 
-Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` mise tasks. It doesn't look for Shell files itself, so call it only when the repository has them.
+Lints and format-checks shell scripts with the repo's `lint:shell` and `format:shell` mise tasks. It
+doesn't look for Shell files itself, so call it only when the repository has them.
+[`run_repo_checks`](run_repo_checks.md) does that, and most repositories should call it instead.
 
 ## Usage
 

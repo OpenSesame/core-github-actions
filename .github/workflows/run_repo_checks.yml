@@ -1,0 +1,204 @@
+name: Repo Checks
+
+on:
+  workflow_call:
+    inputs:
+      commit-identifier:
+        description: Commit SHA or ref to lint, format-check, scan and validate; defaults to the ref that triggered the workflow
+        type: string
+        required: false
+        default: ''
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        description: Read-only SSH key for OpenSesame/core-services-ai-tooling, passed to run_repo_validation for the latest validator release lookup
+        required: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  detect:
+    name: Detect
+    runs-on: ubuntu-26.04
+    permissions:
+      contents: read # Required to check out the files to detect.
+    outputs:
+      gha-files: ${{ steps.detect.outputs.gha-files }}
+      terraform-files: ${{ steps.detect.outputs.terraform-files }}
+      markdown-files: ${{ steps.detect.outputs.markdown-files }}
+      shell-files: ${{ steps.detect.outputs.shell-files }}
+      js-files: ${{ steps.detect.outputs.js-files }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit-identifier }}
+          persist-credentials: false
+
+      - name: Detect technologies
+        id: detect
+        run: |
+          excluded='(^|/)(\.core-services|node_modules|\.terraform|dist|build|coverage|vendor)/'
+          gha_pattern='^\.github/(workflows/[^/]+|actions/.+/action)\.ya?ml$'
+          terraform_pattern='\.tf$'
+          markdown_pattern='\.md$'
+          shell_pattern='\.(sh|bash|zsh)$'
+          shell_shebang='^#![[:space:]]*(/usr/bin/env[[:space:]]+)?(/usr)?(/local)?(/bin/)?(sh|bash|zsh)([[:space:]]|$)'
+          js_pattern='\.(js|mjs|cjs|jsx|ts|mts|cts|tsx)$'
+
+          gha=()
+          terraform=()
+          markdown=()
+          shell=()
+          js=()
+          while IFS= read -r -d '' file; do
+            if [[ "$file" =~ $excluded ]]; then
+              continue
+            fi
+            if [[ "$file" =~ $gha_pattern ]]; then
+              gha+=("$file")
+            fi
+            if [[ "$file" =~ $terraform_pattern ]]; then
+              terraform+=("$file")
+            fi
+            if [[ "$file" =~ $markdown_pattern ]]; then
+              markdown+=("$file")
+            fi
+            if [[ "$file" =~ $js_pattern ]]; then
+              js+=("$file")
+            fi
+            if [[ "$file" =~ $shell_pattern ]]; then
+              shell+=("$file")
+            elif [[ -f "$file" && ! -L "$file" ]]; then
+              first_line=
+              IFS= read -r first_line < "$file" || true
+              if [[ "$first_line" =~ $shell_shebang ]]; then
+                shell+=("$file")
+              fi
+            fi
+          done < <(git ls-files -z)
+
+          report() {
+            local technology=$1
+            shift
+            echo "::group::$technology: $# files"
+            if (( $# > 0 )); then
+              printf '%s\n' "$@"
+            fi
+            echo "::endgroup::"
+            echo "$technology-files=$#" >> "$GITHUB_OUTPUT"
+          }
+          report gha "${gha[@]}"
+          report terraform "${terraform[@]}"
+          report markdown "${markdown[@]}"
+          report shell "${shell[@]}"
+          report js "${js[@]}"
+
+  gha:
+    name: GHA
+    needs: detect
+    if: ${{ needs.detect.outputs.gha-files != '0' }}
+    uses: ./.github/workflows/run_gha_checks.yml
+    permissions:
+      contents: read # Required by run_gha_checks to check out the workflows to lint and scan.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  terraform:
+    name: Terraform
+    needs: detect
+    if: ${{ needs.detect.outputs.terraform-files != '0' }}
+    uses: ./.github/workflows/run_terraform_checks.yml
+    permissions:
+      contents: read # Required by run_terraform_checks to check out the Terraform code.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  markdown:
+    name: Markdown
+    needs: detect
+    if: ${{ needs.detect.outputs.markdown-files != '0' }}
+    uses: ./.github/workflows/run_markdown_checks.yml
+    permissions:
+      contents: read # Required by run_markdown_checks to check out the Markdown to lint.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  shell:
+    name: Shell
+    needs: detect
+    if: ${{ needs.detect.outputs.shell-files != '0' }}
+    uses: ./.github/workflows/run_shell_checks.yml
+    permissions:
+      contents: read # Required by run_shell_checks to check out the shell scripts to lint.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  js:
+    name: JS
+    needs: detect
+    if: ${{ needs.detect.outputs.js-files != '0' }}
+    uses: ./.github/workflows/run_js_checks.yml
+    permissions:
+      contents: read # Required by run_js_checks to check out the code to lint.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+
+  standard:
+    name: Standard
+    uses: ./.github/workflows/run_repo_validation.yml
+    permissions:
+      contents: read # Required by run_repo_validation to check out the repository to validate.
+    with:
+      commit-identifier: ${{ inputs.commit-identifier }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+
+  summary:
+    name: Summary
+    needs: [detect, gha, terraform, markdown, shell, js, standard]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-26.04
+    permissions: {}
+
+    steps:
+      - name: Write job summary
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          jq -r '
+            def badge($outcome):
+              {"success": "✅ pass", "failure": "❌ fail", "cancelled": "🚫 cancelled", "skipped": "⏭️ skipped"}[$outcome]
+              // "❔ \($outcome)";
+            def outcome($job; $key):
+              ($job.outputs[$key] // "") as $step
+              | if $step == "" then ($job.result // "unknown") else $step end;
+            def cell($job; $key; $applies):
+              if ($applies | not) then "—"
+              elif $job.result == "skipped" then "⏭️ skipped"
+              else badge(outcome($job; $key))
+              end;
+            def row($id; $label; $init; $validate; $lint; $format; $scan):
+              .[$id] as $job
+              | (.detect.outputs["\($id)-files"] // "") as $files
+              | if $files == "0" then
+                  "| \($label) | 0 | \([$init, $validate, $lint, $format, $scan] | map(if . then "⏭️ not present" else "—" end) | join(" | ")) | — |"
+                else
+                  "| \($label) | \(if $files == "" then "?" else $files end) | \(cell($job; "init"; $init)) | \(cell($job; "validate"; $validate)) | \(cell($job; "lint"; $lint)) | \(cell($job; "format"; $format)) | \(cell($job; "scan"; $scan)) | \(($job.outputs.baselined // "") | if . == "" then "?" else . end) |"
+                end;
+            "## Repo Checks",
+            "",
+            "| Technology | Files | Init | Validate | Lint | Format | Scan | Baselined |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+            row("gha"; "GitHub Actions"; false; false; true; false; true),
+            row("terraform"; "Terraform"; true; true; true; true; true),
+            row("markdown"; "Markdown"; false; false; true; false; false),
+            row("shell"; "Shell"; false; false; true; true; false),
+            row("js"; "JavaScript/TypeScript"; false; false; true; true; false),
+            "",
+            "**Standard:** \(badge(outcome(.standard; "result")))"
+          ' <<< "$NEEDS_JSON" >> "$GITHUB_STEP_SUMMARY"

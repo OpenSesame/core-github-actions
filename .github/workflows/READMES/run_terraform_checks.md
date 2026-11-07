@@ -1,7 +1,9 @@
 # Run Terraform Checks
 
 Initializes, validates, lints, format-checks and scans Terraform with the repo's `init:terraform`,
-`validate:terraform`, `lint:terraform`, `format:terraform` and `scan:terraform` mise tasks. It doesn't look for Terraform files itself, so call it only when the repository has them.
+`validate:terraform`, `lint:terraform`, `format:terraform` and `scan:terraform` mise tasks. It
+doesn't look for Terraform files itself, so call it only when the repository has them.
+[`run_repo_checks`](run_repo_checks.md) does that, and most repositories should call it instead.
 
 ## Usage
 
