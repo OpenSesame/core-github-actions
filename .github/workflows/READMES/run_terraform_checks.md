@@ -1,6 +1,7 @@
 # Run Terraform Checks
 
-Lints, format-checks and scans Terraform with the repo's `lint:terraform`, `format:terraform` and `scan:terraform` scripts. It doesn't look for Terraform files itself, so call it only when the repository has them.
+Initializes, validates, lints, format-checks and scans Terraform with the repo's `init:terraform`,
+`validate:terraform`, `lint:terraform`, `format:terraform` and `scan:terraform` scripts. It doesn't look for Terraform files itself, so call it only when the repository has them.
 
 ## Usage
 
@@ -27,13 +28,18 @@ The check is reported as `Terraform / Checks`.
 The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in the repo's
 `mise.toml`, runs `npm ci --ignore-scripts`, then runs each script with `npm run`:
 
-| Script             | Step             | Typical command                                            |
-| ------------------ | ---------------- | ---------------------------------------------------------- |
-| `lint:terraform`   | Lint             | `mise run lint:terraform` (tflint, plus a lock file check) |
-| `format:terraform` | Check formatting | `mise run format:terraform` (`terraform fmt -check`)       |
-| `scan:terraform`   | Scan             | `mise run scan:terraform` (Checkov)                        |
+| Script               | Step             | Typical command                                                                                                         |
+| -------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `init:terraform`     | Initialize       | `terraform init -backend=false -lockfile=readonly` in each root, failing when `.terraform.lock.hcl` is missing or stale |
+| `validate:terraform` | Validate         | `terraform validate` in each root                                                                                       |
+| `lint:terraform`     | Lint             | `mise run lint:terraform` (tflint)                                                                                      |
+| `format:terraform`   | Check formatting | `mise run format:terraform` (`terraform fmt -check`)                                                                    |
+| `scan:terraform`     | Scan             | `mise run scan:terraform` (Checkov)                                                                                     |
 
-- Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
+- Every script step runs even when an earlier one failed, as long as `npm ci` succeeded. Validate
+  needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
+- Initialize and Validate never touch a backend or cloud credentials. Plan stays in
+  [`tf_validate_plan_env_roots`](tf_validate_plan_env_roots.md).
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - The job fails if any step failed.
 
@@ -47,6 +53,8 @@ The job sets up Node from `.nvmrc` and mise 2026.9.17 for the tools pinned in th
 
 | Output      | Value                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`      | Outcome of the initialize step: `success`, `failure`, `cancelled` or `skipped`                                                         |
+| `validate`  | Outcome of the validate step: `success`, `failure`, `cancelled` or `skipped`                                                           |
 | `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                                               |
 | `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped`                                                       |
 | `scan`      | Outcome of the scan step: `success`, `failure`, `cancelled` or `skipped`                                                               |

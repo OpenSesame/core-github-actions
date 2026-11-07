@@ -4,11 +4,17 @@ on:
   workflow_call:
     inputs:
       commit-identifier:
-        description: Commit SHA or ref to lint, format-check and scan; defaults to the ref that triggered the workflow
+        description: Commit SHA or ref to initialize, validate, lint, format-check and scan; defaults to the ref that triggered the workflow
         type: string
         required: false
         default: ''
     outputs:
+      init:
+        description: Outcome of the initialize step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.init }}
+      validate:
+        description: Outcome of the validate step (success, failure, cancelled or skipped)
+        value: ${{ jobs.checks.outputs.validate }}
       lint:
         description: Outcome of the lint step (success, failure, cancelled or skipped)
         value: ${{ jobs.checks.outputs.lint }}
@@ -35,6 +41,8 @@ jobs:
     permissions:
       contents: read # Required to check out the Terraform code.
     outputs:
+      init: ${{ steps.init.outcome }}
+      validate: ${{ steps.validate.outcome }}
       lint: ${{ steps.lint.outcome }}
       format: ${{ steps.format.outcome }}
       scan: ${{ steps.scan.outcome }}
@@ -62,6 +70,16 @@ jobs:
       - name: Install dependencies
         id: install
         run: npm ci --ignore-scripts
+
+      - name: Initialize
+        id: init
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: npm run init:terraform
+
+      - name: Validate
+        id: validate
+        if: ${{ !cancelled() && steps.init.outcome == 'success' }}
+        run: npm run validate:terraform
 
       - name: Lint
         id: lint
