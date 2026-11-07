@@ -38,6 +38,9 @@ devDependencies), then runs each script with `npm run`:
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - `npm ci` reads `@opensesame` packages from GitHub Packages with `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN`.
   The secret is optional; without it, repositories that depend on private packages fail to install.
+  GitHub doesn't pass Actions secrets to pull requests from forks, and Dependabot runs only see
+  Dependabot secrets. In those runs, private packages fail to install unless the token is also stored
+  as a Dependabot secret with the same name.
 - The job fails if any step failed.
 
 ## Inputs

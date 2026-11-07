@@ -18,6 +18,11 @@ workflows still run `terraform init -upgrade`, so with them CI can plan with new
 this apply uses, and the apply may not match the reviewed plan. Move plan and apply to the
 lock-file versions together.
 
+Even when paired, the apply doesn't run the CI plan. `terraform apply` makes a new plan at deploy
+time, with `TF_VAR_release_name` and `TF_VAR_IACDeploymentRef` set, which `tf_plan_*` don't set.
+State or infrastructure changes since the CI plan, or a root that uses those variables, can make the
+apply differ from what CI showed.
+
 ## Prerequisites
 
 - The caller repository contains the requested Terraform root at `terraform-root`.

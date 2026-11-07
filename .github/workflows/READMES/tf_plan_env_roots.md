@@ -41,13 +41,13 @@ Checks are reported as `Terraform / dev / Plan`, `Terraform / stage / Plan`, and
 
 ## Inputs
 
-| Input                      | Required | Default          | Description                                                                                         |
-| -------------------------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------- |
-| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                                                  |
-| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                         |
-| `terraform-version`        | Yes      |                  | Terraform CLI version                                                                               |
-| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                                                     |
-| `build-artifact-directory` | No       |                  | Newline-separated directories to create before planning, as paths from each root; `..` may leave it |
+| Input                      | Required | Default          | Description                                                                                                                          |
+| -------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                                                                                   |
+| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                                                          |
+| `terraform-version`        | Yes      |                  | Terraform CLI version                                                                                                                |
+| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                                                                                      |
+| `build-artifact-directory` | No       |                  | Newline-separated directories to create before planning, as paths relative to each `terraform/<environment>` root; `..` may leave it |
 
 ## Contribution
 
