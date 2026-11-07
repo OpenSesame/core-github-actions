@@ -30,30 +30,6 @@ function extractKnownHosts() {
   return block[1].replace(/^ {10}/gm, '');
 }
 
-function runAction({ key = 'fake-private-key', existingConfig } = {}) {
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'configure-github-ssh-'));
-  if (existingConfig !== undefined) {
-    fs.mkdirSync(path.join(home, '.ssh'), { mode: 0o700 });
-    fs.writeFileSync(path.join(home, '.ssh', 'config'), existingConfig);
-  }
-
-  const result = spawnSync('bash', ['--noprofile', '--norc', '-c', extractRunScript()], {
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      HOME: home,
-      SSH_PRIVATE_KEY: key,
-      GITHUB_KNOWN_HOSTS: extractKnownHosts(),
-    },
-  });
-
-  const ssh = path.join(home, '.ssh');
-  const read = file => fs.readFileSync(path.join(ssh, file), 'utf8');
-  const mode = file => (fs.statSync(path.join(ssh, file)).mode & 0o777).toString(8);
-
-  return { ...result, home, ssh, read, mode };
-}
-
 const cleanups = [];
 afterEach(() => {
   while (cleanups.length > 0) {
@@ -61,97 +37,149 @@ afterEach(() => {
   }
 });
 
-function run(options) {
-  const result = runAction(options);
-  cleanups.push(result.home);
-  return result;
+function newRunner() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'configure-github-ssh-'));
+  cleanups.push(root);
+  const runner = {
+    home: path.join(root, 'home'),
+    temp: path.join(root, 'runner-temp'),
+  };
+  fs.mkdirSync(runner.home);
+  fs.mkdirSync(runner.temp);
+  runner.ssh = path.join(runner.home, '.ssh');
+  runner.secrets = path.join(runner.temp, 'configure-github-ssh');
+  runner.key = path.join(runner.secrets, 'github_read_only_key');
+  runner.knownHosts = path.join(runner.secrets, 'github_known_hosts');
+  runner.config = path.join(runner.ssh, 'config');
+  return runner;
 }
+
+function runAction(runner, key = 'fake-private-key', extraEnv = {}) {
+  return spawnSync('bash', ['--noprofile', '--norc', '-c', extractRunScript()], {
+    encoding: 'utf8',
+    env: {
+      ...process.env,
+      HOME: runner.home,
+      RUNNER_TEMP: runner.temp,
+      SSH_PRIVATE_KEY: key,
+      GITHUB_KNOWN_HOSTS: extractKnownHosts(),
+      ...extraEnv,
+    },
+  });
+}
+
+const mode = file => (fs.statSync(file).mode & 0o777).toString(8);
 
 describe('configure-github-ssh action', () => {
   test("pins exactly GitHub's documented host key fingerprints", () => {
-    const result = run();
-    const fingerprints = spawnSync(
-      'ssh-keygen',
-      ['-lf', path.join(result.ssh, 'github_known_hosts')],
-      {
-        encoding: 'utf8',
-      }
-    );
+    const runner = newRunner();
+    expect(runAction(runner).status).toBe(0);
+
+    const fingerprints = spawnSync('ssh-keygen', ['-lf', runner.knownHosts], { encoding: 'utf8' });
 
     expect(fingerprints.status).toBe(0);
-    const found = fingerprints.stdout.match(/SHA256:\S+/g);
-    expect(found.sort()).toEqual([...documentedFingerprints].sort());
+    expect(fingerprints.stdout.match(/SHA256:\S+/g).sort()).toEqual(
+      [...documentedFingerprints].sort()
+    );
     expect(fingerprints.stdout.match(/ github\.com /g)).toHaveLength(3);
   });
 
-  test('writes the key, host keys and config readable only by the user', () => {
-    const result = run({ key: 'line one\nline two' });
+  test('keeps the key and host keys in RUNNER_TEMP, readable only by the user', () => {
+    const runner = newRunner();
+    const result = runAction(runner, 'line one\nline two');
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('Configured SSH for github.com');
-    expect(result.read('github_read_only_key')).toBe('line one\nline two\n');
-    expect((fs.statSync(result.ssh).mode & 0o777).toString(8)).toBe('700');
-    for (const file of ['github_read_only_key', 'github_known_hosts', 'config']) {
-      expect(result.mode(file)).toBe('600');
+    expect(fs.readFileSync(runner.key, 'utf8')).toBe('line one\nline two\n');
+    expect(fs.readdirSync(runner.ssh)).toEqual(['config']);
+    expect(mode(runner.secrets)).toBe('700');
+    expect(mode(runner.ssh)).toBe('700');
+    for (const file of [runner.key, runner.knownHosts, runner.config]) {
+      expect(mode(file)).toBe('600');
     }
   });
 
   test('makes ssh require the pinned keys and use only this key for github.com', () => {
-    const result = run();
-    const resolved = spawnSync('ssh', ['-G', '-F', path.join(result.ssh, 'config'), 'github.com'], {
+    const runner = newRunner();
+    expect(runAction(runner).status).toBe(0);
+
+    const resolved = spawnSync('ssh', ['-G', '-F', runner.config, 'github.com'], {
       encoding: 'utf8',
     });
+    const settings = resolved.stdout.toLowerCase();
 
     expect(resolved.status).toBe(0);
-    const settings = resolved.stdout.toLowerCase();
     expect(settings).toContain('stricthostkeychecking true');
     expect(settings).toContain('identitiesonly yes');
-    expect(settings).toContain(
-      `identityfile ${path.join(result.ssh, 'github_read_only_key')}`.toLowerCase()
-    );
-    expect(settings).toContain(
-      `userknownhostsfile ${path.join(result.ssh, 'github_known_hosts')}`.toLowerCase()
-    );
+    expect(settings).toContain(`identityfile ${runner.key}`.toLowerCase());
+    expect(settings).toContain(`userknownhostsfile ${runner.knownHosts}`.toLowerCase());
     expect(settings).toContain('globalknownhostsfile /dev/null');
+  });
+
+  test('replaces a world-readable key left by an earlier job with a 0600 one', () => {
+    const runner = newRunner();
+    fs.mkdirSync(runner.secrets, { recursive: true });
+    fs.writeFileSync(runner.key, 'old-key\n', { mode: 0o644 });
+    fs.chmodSync(runner.key, 0o644);
+
+    const result = runAction(runner, 'new-key');
+
+    expect(result.status).toBe(0);
+    expect(fs.readFileSync(runner.key, 'utf8')).toBe('new-key\n');
+    expect(mode(runner.key)).toBe('600');
+  });
+
+  test('removes the key and host keys it wrote when a later step fails', () => {
+    const runner = newRunner();
+    const failingBin = path.join(runner.temp, '..', 'failing-bin');
+    fs.mkdirSync(failingBin);
+    fs.writeFileSync(path.join(failingBin, 'mktemp'), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+
+    const result = runAction(runner, 'secret-key', {
+      PATH: `${failingBin}:${process.env.PATH}`,
+    });
+
+    expect(result.status).not.toBe(0);
+    expect(fs.existsSync(runner.key)).toBe(false);
+    expect(fs.existsSync(runner.knownHosts)).toBe(false);
+    expect(fs.existsSync(runner.config)).toBe(false);
   });
 
   test.each([
     ['a global identity', 'IdentityFile ~/.ssh/broader_key\nUser deploy\n'],
     ['another github.com block', 'Host github.com\n  IdentityFile ~/.ssh/other_key\n'],
   ])('refuses an existing SSH config with %s and writes nothing', (_case, existing) => {
-    const result = run({ existingConfig: existing });
+    const runner = newRunner();
+    fs.mkdirSync(runner.ssh, { mode: 0o700 });
+    fs.writeFileSync(runner.config, existing);
+
+    const result = runAction(runner);
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('::error title=Existing SSH config::');
-    expect(result.read('config')).toBe(existing);
-    expect(fs.existsSync(path.join(result.ssh, 'github_read_only_key'))).toBe(false);
-    expect(fs.existsSync(path.join(result.ssh, 'github_known_hosts'))).toBe(false);
+    expect(fs.readFileSync(runner.config, 'utf8')).toBe(existing);
+    expect(fs.existsSync(runner.secrets)).toBe(false);
   });
 
   test('accepts its own config, so a job can run it more than once', () => {
-    const first = run();
-    const second = spawnSync('bash', ['--noprofile', '--norc', '-c', extractRunScript()], {
-      encoding: 'utf8',
-      env: {
-        ...process.env,
-        HOME: first.home,
-        SSH_PRIVATE_KEY: 'second-key',
-        GITHUB_KNOWN_HOSTS: extractKnownHosts(),
-      },
-    });
+    const runner = newRunner();
+    expect(runAction(runner, 'first-key').status).toBe(0);
+
+    const second = runAction(runner, 'second-key');
 
     expect(second.status).toBe(0);
-    expect(first.read('github_read_only_key')).toBe('second-key\n');
+    expect(fs.readFileSync(runner.key, 'utf8')).toBe('second-key\n');
   });
 
   test.each([
     ['empty', ''],
     ['whitespace-only', ' \n\t'],
-  ])('fails with a clear error for an %s key', (_case, key) => {
-    const result = run({ key });
+  ])('fails with a clear error for an %s key and writes nothing', (_case, key) => {
+    const runner = newRunner();
+    const result = runAction(runner, key);
 
     expect(result.status).toBe(1);
     expect(result.stdout).toContain('::error title=Missing SSH key::ssh-private-key is empty.');
-    expect(fs.existsSync(path.join(result.ssh, 'github_read_only_key'))).toBe(false);
+    expect(fs.existsSync(runner.secrets)).toBe(false);
+    expect(fs.existsSync(runner.ssh)).toBe(false);
   });
 });

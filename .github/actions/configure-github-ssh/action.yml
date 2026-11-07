@@ -26,9 +26,10 @@ runs:
         fi
 
         umask 077
+        secret_dir="${RUNNER_TEMP:?RUNNER_TEMP is not set}/configure-github-ssh"
+        key_file="$secret_dir/github_read_only_key"
+        known_hosts_file="$secret_dir/github_known_hosts"
         ssh_dir="$HOME/.ssh"
-        key_file="$ssh_dir/github_read_only_key"
-        known_hosts_file="$ssh_dir/github_known_hosts"
         config_file="$ssh_dir/config"
         github_config=$(printf '%s\n' \
           'Host github.com' \
@@ -38,16 +39,33 @@ runs:
           "  UserKnownHostsFile $known_hosts_file" \
           '  GlobalKnownHostsFile /dev/null')
 
-        if [[ -e "$config_file" && "$(cat "$config_file")" != "$github_config" ]]; then
-          echo "::error title=Existing SSH config::$config_file already exists. This action writes its own SSH config so only the supplied key and GitHub's pinned host keys apply to github.com, and won't merge with another one. Run it before any other SSH setup, on a runner without an SSH config."
-          exit 1
+        config_existed=false
+        if [[ -e "$config_file" ]]; then
+          if [[ "$(cat "$config_file")" != "$github_config" ]]; then
+            echo "::error title=Existing SSH config::$config_file already exists. This action writes its own SSH config so only the supplied key and GitHub's pinned host keys apply to github.com, and won't merge with another one. Run it before any other SSH setup, on a runner without an SSH config."
+            exit 1
+          fi
+          config_existed=true
         fi
 
-        mkdir -p "$ssh_dir"
-        chmod 700 "$ssh_dir"
+        config_tmp=""
+        cleanup() {
+          rm -f "$key_file" "$known_hosts_file" "$config_tmp"
+          if [[ "$config_existed" == false ]]; then
+            rm -f "$config_file"
+          fi
+        }
+        trap cleanup ERR
+
+        mkdir -p "$secret_dir" "$ssh_dir"
+        chmod 700 "$secret_dir" "$ssh_dir"
+        rm -f "$key_file" "$known_hosts_file"
         printf '%s\n' "$SSH_PRIVATE_KEY" > "$key_file"
         printf '%s' "$GITHUB_KNOWN_HOSTS" > "$known_hosts_file"
-        printf '%s\n' "$github_config" > "$config_file"
+        config_tmp=$(mktemp "$ssh_dir/config.XXXXXX")
+        printf '%s\n' "$github_config" > "$config_tmp"
+        mv -f "$config_tmp" "$config_file"
         chmod 600 "$key_file" "$known_hosts_file" "$config_file"
+        trap - ERR
 
-        echo "Configured SSH for github.com with the pinned host keys."
+        echo "Configured SSH for github.com with the pinned host keys. The key is in RUNNER_TEMP, which the runner empties after the job."
