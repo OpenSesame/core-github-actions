@@ -15,6 +15,8 @@ for example with `tf_plan_single_root`.
 - The requested GitHub environment exists and permits deployment.
 - The OIDC domain and environment resolve to an AWS role.
 - The caller can provide the required organization SSH key and package token.
+- The Terraform root has a committed `.terraform.lock.hcl` with the provider versions approved for
+  deployment.
 
 ## Usage
 

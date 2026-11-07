@@ -2,7 +2,14 @@
 
 Runs `terraform init` and `plan` for one root in a GitHub environment and writes the plan to the job
 summary. Validate runs in Repo Checks ([`run_terraform_checks`](run_terraform_checks.md)) instead,
-and init uses the root's committed `.terraform.lock.hcl`. It never applies, but providers and data sources may contact live systems.
+and init uses the root's required, committed `.terraform.lock.hcl`. It never applies, but providers
+and data sources may contact live systems.
+
+## Prerequisites
+
+- Commit `.terraform.lock.hcl` in the Terraform root with the provider versions approved for the
+  plan. Without it, `terraform init` selects versions from the configured constraints and creates a
+  transient lock file on the runner, so the plan is not reproducible.
 
 ## Usage
 

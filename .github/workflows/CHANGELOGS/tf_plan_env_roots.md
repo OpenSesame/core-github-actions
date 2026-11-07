@@ -12,7 +12,9 @@ All notable changes to the **tf_plan_env_roots** reusable workflow are documente
   `tf_plan_single_root` 1.0.0 from the same commit, without state locking. With a caller job named
   `Terraform`, checks read `Terraform / <environment> / Plan`.
 - Validate runs in Repo Checks (`run_terraform_checks`) instead, and `terraform init` uses each
-  root's committed `.terraform.lock.hcl` rather than `-upgrade`.
+  root's required, committed `.terraform.lock.hcl` rather than `-upgrade`. Without a lock file, init
+  selects provider versions from the configured constraints and creates a transient lock file on the
+  runner, so the plan is not reproducible.
 - Before upgrading, make each root's lock file match the provider versions earlier runs applied. Those
   runs used `-upgrade`, so state can record newer providers than the lock file, and Terraform
   refuses to use an older provider than the one that last wrote a resource ("Resource instance

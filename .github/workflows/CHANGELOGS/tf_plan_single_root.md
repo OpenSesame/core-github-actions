@@ -18,8 +18,9 @@ All notable changes to the **tf_plan_single_root** reusable workflow are documen
   `validate:terraform`) before plan, without a backend or credentials.
 - `terraform init` runs without `-upgrade`, so it installs the provider versions recorded in each
   root's committed `.terraform.lock.hcl`. A lock file that no longer satisfies the version
-  constraints fails init: run `terraform init -upgrade` locally and commit the lock file. Roots
-  without a lock file are unaffected.
+  constraints fails init: run `terraform init -upgrade` locally and commit the lock file. A committed
+  lock file is required for reproducible plans; without one, init selects provider versions from the
+  configured constraints and creates a transient lock file on the runner.
 - Before upgrading, make each root's lock file match the provider versions earlier runs applied. Those
   runs used `-upgrade`, so state can record newer providers than the lock file, and Terraform
   refuses to use an older provider than the one that last wrote a resource ("Resource instance

@@ -10,7 +10,8 @@ All notable changes to the **tf_apply** reusable workflow are documented in this
   installs the provider versions recorded in each root's committed `.terraform.lock.hcl` instead
   of the newest versions the constraints allow. A lock file that no longer satisfies the version
   constraints now fails init: run `terraform init -upgrade` locally and commit the lock file.
-  Roots without a lock file are unaffected.
+  A committed lock file is now required for reproducible applies; without one, init selects
+  provider versions from the configured constraints and creates a transient lock file on the runner.
 - Before upgrading, make each root's lock file match the provider versions earlier runs applied. Those
   runs used `-upgrade`, so state can record newer providers than the lock file, and Terraform
   refuses to use an older provider than the one that last wrote a resource ("Resource instance

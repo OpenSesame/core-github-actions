@@ -13,6 +13,9 @@ GitHub environment and Terraform workspace.
 - The requested GitHub environment exists and permits the deployment job to run.
 - The OIDC domain and environment resolve to an AWS role through `gha-oidc-access`.
 - The requested Terraform version is available through `hashicorp/setup-terraform`.
+- The Terraform root has a committed `.terraform.lock.hcl` with the provider versions approved for
+  deployment. Without it, `terraform init` selects versions from the configured constraints and
+  creates a transient lock file on the runner, so the apply is not reproducible.
 
 ## Usage
 
@@ -58,7 +61,7 @@ jobs:
 2. Resolves an AWS role and configures temporary credentials for `environment`.
 3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies.
 4. Installs the requested Terraform version.
-5. Runs `terraform init`, which installs the provider versions in the root's committed
+5. Runs `terraform init`, which installs the provider versions in the required, committed
    `.terraform.lock.hcl`.
 6. Selects or creates `terraform-workspace`.
 7. Runs `terraform apply -auto-approve -input=false`.

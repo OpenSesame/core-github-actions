@@ -5,6 +5,13 @@ through [`tf_plan_single_root`](tf_plan_single_root.md). It never applies, but
 providers and data sources may contact live systems. Validate runs in Repo Checks
 ([`run_terraform_checks`](run_terraform_checks.md)) instead.
 
+## Prerequisites
+
+- Commit `.terraform.lock.hcl` in each of `terraform/dev`, `terraform/stage`, and `terraform/prod`
+  with the provider versions approved for the plan. Without it, `terraform init` selects versions
+  from the configured constraints and creates a transient lock file on the runner, so the plan is
+  not reproducible.
+
 ## Usage
 
 ```yaml

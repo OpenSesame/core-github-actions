@@ -14,6 +14,8 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 - The `dev`, `stage`, and `prod` GitHub environments exist and permit deployment.
 - The OIDC domain resolves AWS roles for all three environments.
 - The caller provides the required organization SSH key and package token.
+- Each Terraform root has a committed `.terraform.lock.hcl` with the provider versions approved for
+  deployment.
 
 ## Usage
 
