@@ -41,7 +41,7 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 - Every task step runs even when an earlier one failed, as long as mise set up. Validate
   needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
 - A missing task fails its own step, and mise logs that the task doesn't exist.
-- Each Terraform root must commit `.terraform.lock.hcl`. `init:terraform` should use
+- Each Terraform root must commit `.terraform.lock.hcl`. `init:terraform` must use
   `terraform init -backend=false -lockfile=readonly` so a missing or stale lock file fails before a
   plan or apply can select unapproved provider versions.
 - Keep a matching `package.json` script for each task, such as `"lint:terraform": "mise run lint:terraform"`, so

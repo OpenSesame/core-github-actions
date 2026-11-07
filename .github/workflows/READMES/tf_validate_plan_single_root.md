@@ -43,7 +43,7 @@ The check is reported as `<caller job name> / Validate Plan`.
 | `terraform-version`        | Yes      |         | Terraform CLI version                                                |
 | `with-lock`                | No       | `true`  | Lock state while planning; locked plans for an env run one at a time |
 | `write-artifact`           | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`           |
-| `build-artifact-directory` | No       |         | Newline-separated directories to create under the root               |
+| `build-artifact-directory` | No       |         | Newline-separated paths resolved from the root; `..` may leave it    |
 
 Output: `plan-artifact-name` (empty unless `write-artifact` is `true`). Terraform gets no GitHub token.
 
