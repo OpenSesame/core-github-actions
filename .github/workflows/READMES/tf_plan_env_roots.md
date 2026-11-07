@@ -14,9 +14,8 @@ Pair this workflow with an apply that also uses the committed lock file: `tf_app
 ## Prerequisites
 
 - Commit `.terraform.lock.hcl` in each of `terraform/dev`, `terraform/stage`, and `terraform/prod`
-  with the provider versions approved for the plan. Without it, `terraform init` selects versions
-  from the configured constraints and creates a transient lock file on the runner, so the plan is
-  not reproducible.
+  with the provider versions approved for the plan. `terraform init` runs with `-lockfile=readonly`,
+  so each plan fails when its lock file is missing or doesn't satisfy the version constraints.
 
 ## Usage
 
@@ -42,13 +41,13 @@ Checks are reported as `Terraform / dev / Plan`, `Terraform / stage / Plan`, and
 
 ## Inputs
 
-| Input                      | Required | Default          | Description                                                        |
-| -------------------------- | -------- | ---------------- | ------------------------------------------------------------------ |
-| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                 |
-| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                        |
-| `terraform-version`        | Yes      |                  | Terraform CLI version                                              |
-| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                    |
-| `build-artifact-directory` | No       |                  | Newline-separated paths resolved from each root; `..` may leave it |
+| Input                      | Required | Default          | Description                                                                                         |
+| -------------------------- | -------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                                                  |
+| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                         |
+| `terraform-version`        | Yes      |                  | Terraform CLI version                                                                               |
+| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                                                     |
+| `build-artifact-directory` | No       |                  | Newline-separated directories to create before planning, as paths from each root; `..` may leave it |
 
 ## Contribution
 

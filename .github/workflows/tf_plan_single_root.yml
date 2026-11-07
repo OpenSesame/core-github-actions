@@ -104,7 +104,7 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           printf '%s\n' "$ORG_READ_ONLY_SSH_KEY" > ~/.ssh/id_rsa
-          ssh-keyscan github.com > ~/.ssh/known_hosts
+          timeout 30s ssh-keyscan github.com > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa ~/.ssh/known_hosts
 
       - name: Set up Terraform
@@ -129,7 +129,7 @@ jobs:
           done <<< "$BUILD_ARTIFACT_DIRECTORY"
 
       - name: Initialize Terraform
-        run: terraform init
+        run: terraform init -lockfile=readonly
 
       - name: Select workspace
         env:
@@ -137,7 +137,7 @@ jobs:
         run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 
       - name: Reinitialize Terraform
-        run: terraform init
+        run: terraform init -lockfile=readonly
 
       - name: Plan Terraform
         id: plan

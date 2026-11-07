@@ -42,8 +42,10 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
   needs the providers and modules Initialize downloads, so it runs only when Initialize succeeded.
 - A missing task fails its own step, and mise logs that the task doesn't exist.
 - Each Terraform root must commit `.terraform.lock.hcl`. `init:terraform` must use
-  `terraform init -backend=false -lockfile=readonly` so a missing or stale lock file fails before a
-  plan or apply can select unapproved provider versions.
+  `terraform init -backend=false -lockfile=readonly` so a missing or stale lock file fails in CI.
+  This check only protects a deploy that waits for it. `tf_plan_single_root` and `tf_plan_env_roots`
+  also init with `-lockfile=readonly`, so a plan can't select its own provider versions. `tf_apply`
+  doesn't, so gate deploys on a passing CI run for the same commit.
 - Keep a matching `package.json` script for each task, such as `"lint:terraform": "mise run lint:terraform"`, so
   `npm run check` still runs them locally. CI doesn't use those scripts.
 - The job has no secrets or cloud credentials, so the `init:terraform` and `validate:terraform` tasks
