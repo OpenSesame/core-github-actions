@@ -2,6 +2,14 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.3.1
+
+### Changed
+
+- The SSH setup writes GitHub's published host keys (from `api.github.com/meta`) to `known_hosts`
+  and requires them for github.com, instead of trusting whatever `ssh-keyscan` returns at run time.
+  If GitHub rotates a key, git over SSH fails until the pinned keys are updated.
+
 ## 0.3.0
 
 ### Changed

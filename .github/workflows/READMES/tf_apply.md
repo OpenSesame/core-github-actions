@@ -36,7 +36,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.0
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.1
     with:
       environment: dev
       oidc-domain: core
@@ -73,7 +73,8 @@ jobs:
 
 1. Writes the invocation context and inputs to the GitHub Actions job summary.
 2. Resolves an AWS role and configures temporary credentials for `environment`.
-3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies.
+3. Checks out `commit-identifier` and configures SSH access for private GitHub dependencies, with
+   GitHub's published host keys pinned for github.com.
 4. Installs the requested Terraform version.
 5. Runs `terraform init`, which installs the provider versions in the required, committed
    `.terraform.lock.hcl`.

@@ -8,6 +8,7 @@ All notable changes to the **tf_plan_env_roots** reusable workflow are documente
 
 - Composes `tf_plan_single_root` 1.0.1 from the same commit, which bumps `actions/upload-artifact`
   to 7.0.2.
+- Its `tf_plan_single_root` 1.0.1 also pins GitHub's SSH host keys instead of running `ssh-keyscan`.
 
 ## 1.0.0
 
