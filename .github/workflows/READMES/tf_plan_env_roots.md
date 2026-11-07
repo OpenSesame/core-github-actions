@@ -5,6 +5,12 @@ through [`tf_plan_single_root`](tf_plan_single_root.md). It never applies, but
 providers and data sources may contact live systems. Validate runs in Repo Checks
 ([`run_terraform_checks`](run_terraform_checks.md)) instead.
 
+## Pairing plan and apply
+
+Pair this workflow with an apply that also uses the committed lock file: `tf_apply` 0.3.0, or
+`deploy_environment` and `deploy_thru_prod` 0.4.0 or later. Earlier versions run
+`terraform init -upgrade`, so they can apply newer providers than this plan showed.
+
 ## Prerequisites
 
 - Commit `.terraform.lock.hcl` in each of `terraform/dev`, `terraform/stage`, and `terraform/prod`
