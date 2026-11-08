@@ -29,11 +29,28 @@ jobs:
 
       - name: Get all labels from PR
         id: get_labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_ACTION: ${{ github.event.action }}
         run: |
           echo "## PR Labels" >> "$GITHUB_STEP_SUMMARY"
 
-          ## Newline separated list of all labels on the PR
-          all_labels=$(jq -r '.pull_request.labels[].name' < "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+          ## Newline separated list of all labels on the PR, read from the API rather than the event
+          ## payload. Apps such as Renovate add labels just after opening a PR, so an opened or
+          ## reopened PR without labels is polled for up to 30 seconds.
+          attempts=1
+          if [ "$EVENT_ACTION" = "opened" ] || [ "$EVENT_ACTION" = "reopened" ]; then
+            attempts=7
+          fi
+          for attempt in $(seq 1 "$attempts"); do
+            all_labels=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" --jq '.labels[].name')
+            if [ -n "$all_labels" ] || [ "$attempt" -eq "$attempts" ]; then
+              break
+            fi
+            sleep 5
+          done
 
           if [ -z "$all_labels" ]; then
             echo "- (none)" >> "$GITHUB_STEP_SUMMARY"
