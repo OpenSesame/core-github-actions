@@ -1,12 +1,13 @@
-// validate-version-labels.js
-// Script to validate version labels for CI workflows
+// Validates the version labels on a pull request.
 //
 // Usage:
-//   node validate-version-labels.js <labels-file>
-//   echo -e "v:a/foo/1.2.3\nv:wf/bar/2.0.0\nother" | node scripts/internal-ci/validate-version-labels.js
+//   node scripts/internal-ci/validate-version-labels/index.js <labels-file>
+//   echo -e "v:a/foo/1.2.3\nv:wf/bar/2.0.0\nother" | node scripts/internal-ci/validate-version-labels/index.js
 //
 // Inputs:
 //   - Newline-separated list of label strings (from file or stdin)
+//   - RELEASED_TAGS_FILE (optional): newline-separated list of existing release tags. When set,
+//     a label whose tag is listed fails validation.
 //
 // Outputs:
 //   - Writes to $GITHUB_OUTPUT variable:
@@ -15,8 +16,10 @@
 //       invalidVersionLabels: comma-separated list of invalid version labels
 //       hasUntrackedVersion: true/false if untracked version label is present
 //       componentVersionLabels: comma-separated list of valid component version labels
+//       duplicateComponents: comma-separated list of components with more than one version label
 //       invalidComponents: comma-separated list of invalid component paths
 //       missingChangelogs: comma-separated list of components missing changelog entries
+//       releasedVersions: comma-separated list of component versions that already have a tag
 //       validComponents: comma-separated list of valid components with versions in format component-path/X.Y.Z
 //   - Exits with code 1 on validation failure, 0 on success
 
@@ -36,7 +39,7 @@ const componentTypeAliases = {
   a: 'actions',
   wf: 'workflows',
 };
-const semverPattern = '\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern e.g., v1.2.3
+const semverPattern = '\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern e.g., 1.2.3
 // Pattern for valid version label: v:<a|wf>/component-name/X.Y.Z
 const componentVersionRegEx = new RegExp(
   `^${versionLabelPrefix}(${Object.keys(componentTypeAliases).join('|')})/([a-z0-9_-]+)/(${semverPattern})$`
@@ -84,6 +87,26 @@ function parseComponentVersionLabels(componentVersionLabels) {
   return componentVersionMap;
 }
 
+/// Returns the components that have more than one version label
+/// It is assumed that component version labels are valid when this function is called
+function getDuplicateComponents(componentVersionLabels) {
+  const labelCounts = {};
+  componentVersionLabels.forEach(label => {
+    const componentTag = expandComponentVersionLabel(label);
+    const component = componentTag.substring(0, componentTag.lastIndexOf('/'));
+    labelCounts[component] = (labelCounts[component] || 0) + 1;
+  });
+  return Object.keys(labelCounts).filter(component => labelCounts[component] > 1);
+}
+
+/// Returns the component versions, as component-path/X.Y.Z, that already have a release tag
+function getReleasedVersions(componentVersionMap, releasedTags) {
+  const tagSet = new Set(releasedTags);
+  return Object.entries(componentVersionMap)
+    .map(([component, version]) => `${component}/${version}`)
+    .filter(tag => tagSet.has(tag));
+}
+
 /// Checks for existence of paths in the repo matching the component
 function getInvalidComponents(componentVersionMap) {
   if (Object.keys(componentVersionMap).length == 0) {
@@ -99,7 +122,7 @@ function getInvalidComponents(componentVersionMap) {
       }
     } else if (path.startsWith('workflows/')) {
       const expectedFile = `.github/${path}.yml`;
-      if (!fs.existsSync(expectedFile) || !fs.lstatSync(expectedFile).isFile) {
+      if (!fs.existsSync(expectedFile) || !fs.lstatSync(expectedFile).isFile()) {
         invalidComponents.push(path);
       }
     } else {
@@ -108,6 +131,14 @@ function getInvalidComponents(componentVersionMap) {
   }
 
   return invalidComponents;
+}
+
+/// Checks for a `## X.Y.Z` heading, optionally followed by ` - title` or ` — title`
+function hasChangelogEntry(changelogContent, version) {
+  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^## ${escapedVersion}(?:[ \\t]+[-—][ \\t].*)?[ \\t\\r]*$`, 'm').test(
+    changelogContent
+  );
 }
 
 /// Checks for CHANGELOG.md entry matching the version for each component
@@ -133,8 +164,7 @@ function getMissingChangelogs(componentVersionMap) {
       continue;
     }
     const changelogContent = fs.readFileSync(changelogPath, 'utf8');
-    const expectedVersionHeader = `## ${componentVersionMap[path]}`;
-    if (!changelogContent.includes(expectedVersionHeader)) {
+    if (!hasChangelogEntry(changelogContent, componentVersionMap[path])) {
       missingChangelogs.push(path);
     }
   }
@@ -147,7 +177,9 @@ function validate(
   hasComponentVersionLabels,
   hasUntrackedVersion,
   hasInvalidComponents,
-  hasMissingChangelogs
+  hasMissingChangelogs,
+  hasDuplicateComponents = false,
+  hasReleasedVersions = false
 ) {
   const hasVersionLabels =
     hasInvalidVersionLabels || hasComponentVersionLabels || hasUntrackedVersion;
@@ -165,11 +197,17 @@ function validate(
     validationMessage +=
       '- Conflicting version labels found: both untracked and component version labels present\n';
   }
+  if (hasDuplicateComponents) {
+    validationMessage += '- More than one version label found for a component\n';
+  }
   if (hasInvalidComponents) {
     validationMessage += '- Non-existent components found (invalid paths)\n';
   }
   if (hasMissingChangelogs) {
     validationMessage += '- Missing or incomplete CHANGELOG.md entries found\n';
+  }
+  if (hasReleasedVersions) {
+    validationMessage += '- Versions that are already released found (the tag exists)\n';
   }
 
   if (validationMessage === '') {
@@ -186,12 +224,7 @@ function validate(
 // Main entry
 if (require.main === module) {
   // Accept labels from stdin or as a file argument
-  let rawLabels = '';
-  if (process.argv.length > 2) {
-    rawLabels = fs.readFileSync(process.argv[2], 'utf8');
-  } else {
-    rawLabels = fs.readFileSync(0, 'utf8'); // Read from stdin
-  }
+  const rawLabels = fs.readFileSync(process.argv.length > 2 ? process.argv[2] : 0, 'utf8');
 
   const labels = getLabelArray(rawLabels);
   console.log('Normalized Labels:', labels);
@@ -203,30 +236,45 @@ if (require.main === module) {
   const hasUntrackedVersion = versionLabels.includes(untrackedLabel);
 
   const componentVersionMap = parseComponentVersionLabels(componentVersionLabels);
+  const duplicateComponents = getDuplicateComponents(componentVersionLabels);
 
   const invalidComponents = getInvalidComponents(componentVersionMap);
 
-  let validComponentMap = Object.fromEntries(
-    Object.entries(componentVersionMap).filter(
-      ([component]) => !invalidComponents.includes(component)
-    )
+  const withoutComponents = (componentMap, excluded) =>
+    Object.fromEntries(
+      Object.entries(componentMap).filter(([component]) => !excluded.includes(component))
+    );
+
+  let validComponentMap = withoutComponents(
+    componentVersionMap,
+    duplicateComponents.concat(invalidComponents)
   );
 
   const missingChangelogs = getMissingChangelogs(validComponentMap);
+  validComponentMap = withoutComponents(validComponentMap, missingChangelogs);
 
+  const releasedTagsFile = process.env.RELEASED_TAGS_FILE;
+  const releasedVersions = releasedTagsFile
+    ? getReleasedVersions(
+        validComponentMap,
+        getLabelArray(fs.readFileSync(releasedTagsFile, 'utf8'))
+      )
+    : [];
   validComponentMap = Object.fromEntries(
     Object.entries(validComponentMap).filter(
-      ([component]) => !missingChangelogs.includes(component)
+      ([component, version]) => !releasedVersions.includes(`${component}/${version}`)
     )
   );
 
   // Validate
-  let { isValid, validationMessage } = validate(
+  const { isValid, validationMessage } = validate(
     invalidVersionLabels.length > 0,
     componentVersionLabels.length,
     hasUntrackedVersion,
     invalidComponents.length > 0,
-    missingChangelogs.length > 0
+    missingChangelogs.length > 0,
+    duplicateComponents.length > 0,
+    releasedVersions.length > 0
   );
 
   // write outputs for use in later steps
@@ -239,8 +287,10 @@ if (require.main === module) {
       githubOutput,
       `componentVersionLabels=${componentVersionLabels.join(', ')}\n`
     );
+    fs.appendFileSync(githubOutput, `duplicateComponents=${duplicateComponents.join(', ')}\n`);
     fs.appendFileSync(githubOutput, `invalidComponents=${invalidComponents.join(', ')}\n`);
     fs.appendFileSync(githubOutput, `missingChangelogs=${missingChangelogs.join(', ')}\n`);
+    fs.appendFileSync(githubOutput, `releasedVersions=${releasedVersions.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
       `validationMessage=${validationMessage.replace(/\n/g, '\\n')}\n`
@@ -270,7 +320,10 @@ module.exports = {
   getComponentVersionLabels,
   expandComponentVersionLabel,
   parseComponentVersionLabels,
+  getDuplicateComponents,
+  getReleasedVersions,
   getInvalidComponents,
+  hasChangelogEntry,
   getMissingChangelogs,
   validate,
   versionLabelPrefix,

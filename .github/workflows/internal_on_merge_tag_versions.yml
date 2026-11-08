@@ -2,9 +2,14 @@ name: Set Version Tags
 
 on:
   pull_request:
+    branches: [main]
     types: [closed]
 
 permissions: {}
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   no-merge:
@@ -27,12 +32,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           persist-credentials: true # Required for git push of the version tags.
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Get all labels from PR
         id: get_labels
@@ -73,8 +80,37 @@ jobs:
           COMPONENT_TAGS: ${{ steps.get_tags.outputs.componentTags }}
         run: |
           IFS=',' read -r -a tagsArray <<< "$COMPONENT_TAGS"
+          if [ "${#tagsArray[@]}" -eq 0 ]; then
+            exit 0
+          fi
+
+          released_tags=$(git ls-remote --tags --refs origin | cut -f2)
+          existing=()
+          refs=()
+          for tag in "${tagsArray[@]}"; do
+            if grep -Fxq "refs/tags/$tag" <<< "$released_tags"; then
+              existing+=("$tag")
+            fi
+            refs+=("refs/tags/$tag")
+          done
+
+          if [ "${#existing[@]}" -gt 0 ]; then
+            message="These tags already exist, so no tags were created: ${existing[*]}"
+            echo "❌ $message" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Tags Already Exist::$message"
+            exit 1
+          fi
+
           for tag in "${tagsArray[@]}"; do
             git tag "$tag"
-            git push origin "$tag"
+          done
+          if ! git push --atomic origin "${refs[@]}"; then
+            message="The atomic push was rejected, so no tags were pushed. Another run may have created one of these tags since the check: ${tagsArray[*]}"
+            echo "❌ $message" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Tag Push Rejected::$message"
+            exit 1
+          fi
+
+          for tag in "${tagsArray[@]}"; do
             echo "✅ Created and pushed tag: $tag" >> "$GITHUB_STEP_SUMMARY"
           done

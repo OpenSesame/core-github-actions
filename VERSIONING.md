@@ -81,7 +81,7 @@ v:a/pr-open-check/1.1.0
 v:wf/run_semgrep_scan/1.0.0
 ```
 
-Multiple version labels are allowed on a PR.
+Multiple version labels are allowed on a PR, one per component.
 
 ### Special Case: Untracked Versions
 
@@ -109,7 +109,9 @@ A PR will fail automated validation if any of the following are true:
 - There are multiple version labels and one of them is `v:untracked`
 - A version label uses an invalid component name
 - X.Y.Z version does not appear in the component’s CHANGELOG.md
-- There are duplicate or malformed version labels
+- A component has more than one version label
+- A version label's tag already exists, so the version is already released
+- There are malformed version labels
 
 A PR cannot merge until version validation passes.
 
@@ -163,7 +165,8 @@ Each released version must have a heading that includes the version label
 
 Minimum requirements:
 
-- The header must contain `## X.Y.Z` exactly (this is what validation looks for).
+- The header must be a line that is exactly `## X.Y.Z`, optionally followed by ` - title` or
+  ` — title` (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
   (`v:a/{component-name}/X.Y.Z` or `v:wf/{component-name}/X.Y.Z`).
 

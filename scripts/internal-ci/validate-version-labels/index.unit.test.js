@@ -5,7 +5,10 @@ const {
   getComponentVersionLabels,
   expandComponentVersionLabel,
   parseComponentVersionLabels,
+  getDuplicateComponents,
+  getReleasedVersions,
   getInvalidComponents,
+  hasChangelogEntry,
   getMissingChangelogs,
   validate,
   versionLabelPrefix,
@@ -104,6 +107,45 @@ describe('parseComponentVersionLabels', () => {
   });
 });
 
+describe('getDuplicateComponents', () => {
+  it('should return components with more than one version label', () => {
+    const componentLabels = [
+      `${versionLabelPrefix}a/component-a/1.2.3`,
+      `${versionLabelPrefix}wf/component-b/2.3.4`,
+      `${versionLabelPrefix}a/component-a/1.2.4`,
+      `${versionLabelPrefix}wf/component-a/1.0.0`,
+    ];
+    expect(getDuplicateComponents(componentLabels)).toEqual(['actions/component-a']);
+  });
+
+  it('should return an empty array when each component has one label', () => {
+    const componentLabels = [
+      `${versionLabelPrefix}a/component-a/1.2.3`,
+      `${versionLabelPrefix}wf/component-a/1.2.3`,
+    ];
+    expect(getDuplicateComponents(componentLabels)).toEqual([]);
+  });
+});
+
+describe('getReleasedVersions', () => {
+  const releasedTags = ['actions/component-a/1.0.0', 'workflows/component-b/2.0.0'];
+
+  it('should return component versions that already have a tag', () => {
+    const componentVersionMap = {
+      'actions/component-a': '1.0.0',
+      'workflows/component-b': '2.0.1',
+    };
+    expect(getReleasedVersions(componentVersionMap, releasedTags)).toEqual([
+      'actions/component-a/1.0.0',
+    ]);
+  });
+
+  it('should not match a tag of the same version for another component type', () => {
+    const componentVersionMap = { 'workflows/component-a': '1.0.0' };
+    expect(getReleasedVersions(componentVersionMap, releasedTags)).toEqual([]);
+  });
+});
+
 // It is assumed that path is correctly formatted when this function is called (dir1/dir2)
 describe('getInvalidComponents', () => {
   const fs = require('fs');
@@ -117,6 +159,7 @@ describe('getInvalidComponents', () => {
     '.github/actions/not-a-directory': 'file', // invalid action, extensionless file instead of directory
     '.github/workflows/not-a-file': 'directory', // invalid workflow - subdirectory instead of file
     '.github/workflows/not-yaml.txt': 'file', // invalid workflow - wrong file type
+    '.github/workflows/directory-workflow.yml': 'directory', // invalid workflow - directory named like a workflow
     '.github/foo/bar.yml': 'file', // invalid type
   };
 
@@ -189,6 +232,38 @@ describe('getInvalidComponents', () => {
     };
     const invalidComponents = getInvalidComponents(componentVersionMap);
     expect(invalidComponents).toEqual(['workflows/not-a-file', 'workflows/not-yaml']);
+  });
+
+  it('should return workflows whose .yml path is a directory', () => {
+    const componentVersionMap = {
+      'workflows/directory-workflow': '1.0.0',
+    };
+    const invalidComponents = getInvalidComponents(componentVersionMap);
+    expect(invalidComponents).toEqual(['workflows/directory-workflow']);
+  });
+});
+
+describe('hasChangelogEntry', () => {
+  it.each([
+    ['## 1.0.0\n- Initial release', '1.0.0'],
+    ['# Changelog\n\n## 1.0.1\n\n## 1.0.0', '1.0.0'],
+    ['## 1.0.0 - Initial Release', '1.0.0'],
+    ['## 1.0.0 — Initial Release', '1.0.0'],
+    ['## 1.0.0\r\n- Windows line endings', '1.0.0'],
+  ])('should find the entry in %j for %s', (content, version) => {
+    expect(hasChangelogEntry(content, version)).toBe(true);
+  });
+
+  it.each([
+    ['## 1.0.10', '1.0.1'],
+    ['### 1.0.0', '1.0.0'],
+    ['## 11.0.0', '1.0.0'],
+    ['## 1x0x0', '1.0.0'],
+    ['## v1.0.0', '1.0.0'],
+    ['## 1.0.0-beta', '1.0.0'],
+    ['Released in ## 1.0.0', '1.0.0'],
+  ])('should not find the entry in %j for %s', (content, version) => {
+    expect(hasChangelogEntry(content, version)).toBe(false);
   });
 });
 
@@ -340,6 +415,31 @@ describe('validate', () => {
     },
   ];
 
+  scenarios.push(
+    {
+      description: 'a component has more than one version label',
+      hasUntrackedLabel: false,
+      hasInvalidLabels: false,
+      hasComponentLabels: true,
+      hasInvalidComponents: false,
+      hasMissingChangelogs: false,
+      hasDuplicateComponents: true,
+      expectedIsValid: false,
+      expectedMessageFragment: '- More than one version label found for a component',
+    },
+    {
+      description: 'a version is already released',
+      hasUntrackedLabel: false,
+      hasInvalidLabels: false,
+      hasComponentLabels: true,
+      hasInvalidComponents: false,
+      hasMissingChangelogs: false,
+      hasReleasedVersions: true,
+      expectedIsValid: false,
+      expectedMessageFragment: '- Versions that are already released',
+    }
+  );
+
   scenarios.forEach(scenario => {
     it(`should ${scenario.expectedIsValid ? 'pass' : 'fail'} when ${scenario.description}`, () => {
       const result = validate(
@@ -347,7 +447,9 @@ describe('validate', () => {
         scenario.hasComponentLabels,
         scenario.hasUntrackedLabel,
         scenario.hasInvalidComponents,
-        scenario.hasMissingChangelogs
+        scenario.hasMissingChangelogs,
+        scenario.hasDuplicateComponents,
+        scenario.hasReleasedVersions
       );
       expect(result.isValid).toBe(scenario.expectedIsValid);
       expect(result.validationMessage).toContain(scenario.expectedMessageFragment);
