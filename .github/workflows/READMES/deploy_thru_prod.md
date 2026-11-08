@@ -36,7 +36,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.1
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.2
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core

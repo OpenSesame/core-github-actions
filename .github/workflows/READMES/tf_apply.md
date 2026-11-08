@@ -36,7 +36,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.1
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.2
     with:
       environment: dev
       oidc-domain: core

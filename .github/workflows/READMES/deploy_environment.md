@@ -37,7 +37,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   deploy-dev:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.4.1
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.4.2
     with:
       environment: dev
       commit-identifier: ${{ github.sha }}
