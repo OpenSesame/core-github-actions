@@ -29,13 +29,48 @@ jobs:
 
       - name: Get all labels from PR
         id: get_labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_ACTION: ${{ github.event.action }}
         run: |
           echo "## PR Labels" >> "$GITHUB_STEP_SUMMARY"
 
-          ## Newline separated list of all labels on the PR
-          all_labels=$(jq -r '.pull_request.labels[].name' < "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+          ## Newline separated list of all labels on the PR, read from the API rather than the event
+          ## payload. Failed requests are retried. Apps such as Renovate add labels just after
+          ## opening a PR, so an opened or reopened PR without a v: label is polled for up to
+          ## 30 seconds, and the last label set read is validated.
+          attempts=3
+          wait_for_version_label=false
+          if [ "$EVENT_ACTION" = "opened" ] || [ "$EVENT_ACTION" = "reopened" ]; then
+            attempts=7
+            wait_for_version_label=true
+          fi
+          fetched=false
+          all_labels=""
+          for attempt in $(seq 1 "$attempts"); do
+            if response=$(gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" --jq '.labels[].name'); then
+              fetched=true
+              all_labels=$response
+              if [ "$wait_for_version_label" = "false" ] || grep -q '^v:' <<< "$all_labels"; then
+                break
+              fi
+            fi
+            if [ "$attempt" -lt "$attempts" ]; then
+              sleep 5
+            fi
+          done
+
+          if [ "$fetched" = "false" ]; then
+            echo "labels_unavailable=true" >> "$GITHUB_OUTPUT"
+            echo "- (unavailable)" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Labels Unavailable::Could not read this PR's labels from the GitHub API after $attempts attempts."
+            exit 1
+          fi
 
           if [ -z "$all_labels" ]; then
+            echo "no_labels=true" >> "$GITHUB_OUTPUT"
             echo "- (none)" >> "$GITHUB_STEP_SUMMARY"
             echo "::error title=No Labels::No Labels were found on this PR. A version label is required."
             exit 1
@@ -60,7 +95,8 @@ jobs:
       - name: Validation Job Summary
         if: ${{ always() }}
         env:
-          NO_LABELS: ${{ steps.get_labels.outcome == 'failure' }}
+          LABELS_UNAVAILABLE: ${{ steps.get_labels.outputs.labels_unavailable == 'true' }}
+          NO_LABELS: ${{ steps.get_labels.outputs.no_labels == 'true' }}
           IS_VALID: ${{ steps.validate.outputs.isValid }}
           VALIDATION_MESSAGE: ${{ steps.validate.outputs.validationMessage }}
           INVALID_VERSION_LABELS: ${{ steps.validate.outputs.invalidVersionLabels }}
@@ -71,6 +107,10 @@ jobs:
         run: |
           {
             echo "## Validation Outcome"
+
+            if [ "$LABELS_UNAVAILABLE" == "true" ]; then
+              echo "❌ Could not read the PR's labels from the GitHub API. Re-run the job."
+            fi
 
             if [ "$NO_LABELS" == "true" ]; then
               echo "❌ No labels found on the PR. Add at least one version label."
@@ -91,7 +131,7 @@ jobs:
               if [ -n "$MISSING_CHANGELOGS" ]; then
                 echo "**Components missing changelogs/entries**: $MISSING_CHANGELOGS"
               fi
-            else
+            elif [ "$IS_VALID" == "true" ]; then
               echo "✅ Version label validation passed"
             fi
             echo -e "\n**Untracked Version**: $HAS_UNTRACKED_VERSION"
