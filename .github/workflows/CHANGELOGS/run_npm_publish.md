@@ -2,6 +2,21 @@
 
 All notable changes to the **run_npm_publish** reusable workflow are documented in this file.
 
+## 1.1.3
+
+### Changed
+
+- Works out the next version in its own step instead of `anothrNick/github-tag-action`, which has had
+  no release since August 2025. The workflow's inputs and outputs are unchanged.
+- The `Version` job's checkout keeps no credentials; it no longer runs `git fetch --tags`.
+
+### Fixed
+
+- A beta numbers after the highest beta of the version it publishes. Before, once a repository had an
+  `x.y.z` tag, only the highest beta tag of any version counted, so a beta could reuse a taken number.
+- A commit that already has a beta tag of the version publishes nothing, with or without an `x.y.z`
+  tag. Before, a repository with no `x.y.z` tag published another beta.
+
 ## 1.1.2
 
 ### Changed
