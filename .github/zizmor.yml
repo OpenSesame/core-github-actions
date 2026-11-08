@@ -1,0 +1,4 @@
+rules:
+  # actionlint rejects the $/ form until rhysd/actionlint#711 lands.
+  self-repository:
+    disable: true
