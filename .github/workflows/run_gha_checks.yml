@@ -53,12 +53,16 @@ jobs:
       - name: Lint
         id: lint
         if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
-        run: mise run lint:gha
+        run: |
+          # shellcheck disable=SC2016
+          mise run lint:gha -- \
+            -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}},title=actionlint {{$err.Kind}}::{{$err.Message}}\n{{end}}'
 
       - name: Scan
         id: scan
         if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
-        run: mise run scan:gha
+        run: |
+          mise run scan:gha -- --format=github
 
       - name: Count baselined issues
         id: baseline

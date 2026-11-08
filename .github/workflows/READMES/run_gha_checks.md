@@ -13,7 +13,7 @@ jobs:
     name: GHA
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.3
+    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.4
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -30,10 +30,14 @@ The check is reported as `GHA / Checks`.
 The job sets up mise 2026.10.25, which installs the tools pinned in the repo's `mise.toml`, then runs
 each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`:
 
-| mise task  | Step | Typical command            |
-| ---------- | ---- | -------------------------- |
-| `lint:gha` | Lint | actionlint                 |
-| `scan:gha` | Scan | `zizmor --offline .github` |
+| mise task  | Step | Typical command            | Arguments the step adds                  |
+| ---------- | ---- | -------------------------- | ---------------------------------------- |
+| `lint:gha` | Lint | actionlint                 | `-format` with GitHub `::error` commands |
+| `scan:gha` | Scan | `zizmor --offline .github` | `--format=github`                        |
+
+Each step passes those arguments after `--`, so each finding is annotated on its file and line. mise
+appends them to the task's `run` command, so the task must end with the actionlint or zizmor
+command, as the typical commands do. Run locally, the tasks keep their usual output.
 
 - Every task step runs even when an earlier one failed, as long as mise set up.
 - A missing task fails its own step, and mise logs that the task doesn't exist.

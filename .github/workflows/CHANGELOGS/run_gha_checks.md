@@ -2,6 +2,15 @@
 
 All notable changes to the **run_gha_checks** reusable workflow are documented in this file.
 
+## 1.0.4
+
+### Fixed
+
+- actionlint and zizmor findings are annotated on their file and line again, as `run_infra_ci`
+  did. Lint passes `-format` with GitHub `::error` commands to `lint:gha`, and Scan passes
+  `--format=github` to `scan:gha`. Each task must end with the actionlint or zizmor command so
+  mise appends the arguments to it.
+
 ## 1.0.3
 
 ### Fixed

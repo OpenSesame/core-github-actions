@@ -2,6 +2,13 @@
 
 All notable changes to the **run_repo_checks** reusable workflow are documented in this file.
 
+## 1.0.4
+
+### Fixed
+
+- Calls `run_gha_checks` 1.0.4 from the same commit, which annotates actionlint and zizmor
+  findings on their file and line.
+
 ## 1.0.3
 
 ### Fixed
