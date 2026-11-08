@@ -23,7 +23,7 @@ Pair this workflow with an apply that also uses the committed lock file: `tf_app
 jobs:
   terraform:
     name: Terraform
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_single_root.yml@<released-sha> # workflows/tf_plan_single_root/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_single_root.yml@<released-sha> # workflows/tf_plan_single_root/1.1.0
     permissions:
       id-token: write # Required to assume the plan role.
       contents: read # Required to check out the Terraform code.
@@ -41,19 +41,42 @@ jobs:
 
 The check is reported as `<caller job name> / Plan`.
 
+## Build artifact directories
+
+Terraform that packages build output, like a Lambda `source_path` or an `archive_file`
+`source_dir`, fails to plan when CI hasn't built it. After `terraform init`, the workflow reads the
+`.tf` and `.tf.json` files of the root and every local module in `.terraform/modules/modules.json`,
+and creates each directory that a string starting with `${path.module}`, `${path.root}`, or
+`${path.cwd}` points to, when the directory:
+
+- is missing and inside the repository
+- is ignored by git, so it's build output and not a mistyped path
+- doesn't look like a file (a last segment such as `index.js`)
+- comes from a string with no other interpolation, such as `${var.name}`
+
+It skips remote modules, commented lines, `output_path` values, which Terraform writes, and
+`fileexists()` arguments, because it fails on a directory. It annotates what it doesn't create. List any
+other directories in `build-artifact-directory`, or set `detect-build-artifact-directories` to
+`false` to turn detection off.
+
+Each created directory, and each empty directory from `build-artifact-directory`, gets an empty
+`.terraform-plan-placeholder` file, because `archive_file` refuses to zip an empty directory. The
+plan shows changed package hashes for that code, since it doesn't contain the real build output.
+
 ## Inputs
 
-| Input                      | Required | Default | Description                                                                                                       |
-| -------------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------- |
-| `environment`              | Yes      |         | GitHub environment and AWS account environment                                                                    |
-| `oidc-domain`              | Yes      |         | AWS role domain, such as `core` or `reveng`                                                                       |
-| `commit-identifier`        | Yes      |         | Commit SHA, tag, or branch to plan                                                                                |
-| `terraform-workspace`      | Yes      |         | Workspace to select or create                                                                                     |
-| `terraform-root`           | Yes      |         | Terraform directory relative to the repo root                                                                     |
-| `terraform-version`        | Yes      |         | Terraform CLI version                                                                                             |
-| `with-lock`                | No       | `true`  | Lock state while planning; locked plans for an env run one at a time                                              |
-| `write-artifact`           | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`                                                        |
-| `build-artifact-directory` | No       |         | Newline-separated directories to create before planning, as paths relative to `terraform-root`; `..` may leave it |
+| Input                               | Required | Default | Description                                                                                                           |
+| ----------------------------------- | -------- | ------- | --------------------------------------------------------------------------------------------------------------------- |
+| `environment`                       | Yes      |         | GitHub environment and AWS account environment                                                                        |
+| `oidc-domain`                       | Yes      |         | AWS role domain, such as `core` or `reveng`                                                                           |
+| `commit-identifier`                 | Yes      |         | Commit SHA, tag, or branch to plan                                                                                    |
+| `terraform-workspace`               | Yes      |         | Workspace to select or create                                                                                         |
+| `terraform-root`                    | Yes      |         | Terraform directory relative to the repo root                                                                         |
+| `terraform-version`                 | Yes      |         | Terraform CLI version                                                                                                 |
+| `with-lock`                         | No       | `true`  | Lock state while planning; locked plans for an env run one at a time                                                  |
+| `write-artifact`                    | No       | `false` | Upload the rendered plan as `terraform-plan-<environment>`                                                            |
+| `build-artifact-directory`          | No       |         | Newline-separated directories to create before planning, as paths relative to `terraform-root`; `..` may leave it     |
+| `detect-build-artifact-directories` | No       | `true`  | Create the missing build artifact directories that the Terraform references; see [above](#build-artifact-directories) |
 
 Output: `plan-artifact-name` (empty unless `write-artifact` is `true`). Terraform gets no GitHub token.
 

@@ -2,6 +2,25 @@
 
 All notable changes to the **tf_plan_single_root** reusable workflow are documented in this file.
 
+## 1.1.0
+
+### Added
+
+- `detect-build-artifact-directories` input, `true` by default. After `terraform init`, the workflow
+  creates the missing, git-ignored directories that the root and its local modules reference with
+  `${path.module}`, `${path.root}` or `${path.cwd}` strings in `.tf` and `.tf.json` files, so most
+  callers no longer need
+  `build-artifact-directory`. It skips remote modules, paths that look like files, paths with other
+  interpolation, paths outside the repository, `fileexists()` arguments and `output_path` values,
+  and annotates what it skips. `build-artifact-directory` still works, for paths that
+  detection can't find.
+
+### Changed
+
+- Each detected directory, and each `build-artifact-directory` directory that is empty, gets an
+  empty `.terraform-plan-placeholder` file, so `archive_file` can zip it. `archive_file` fails on
+  an empty directory ("archive has not been created as it would be empty").
+
 ## 1.0.1
 
 ### Changed

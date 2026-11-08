@@ -2,6 +2,19 @@
 
 All notable changes to the **tf_plan_env_roots** reusable workflow are documented in this file.
 
+## 1.1.0
+
+### Added
+
+- `detect-build-artifact-directories` input, `true` by default, passed to `tf_plan_single_root`
+  1.1.0 from the same commit, which creates the missing, git-ignored build artifact directories that
+  each root references. `build-artifact-directory` still works, for paths that detection can't find.
+
+### Changed
+
+- Its `tf_plan_single_root` 1.1.0 puts an empty `.terraform-plan-placeholder` file in each detected
+  directory and each empty `build-artifact-directory` directory, so `archive_file` can zip it.
+
 ## 1.0.1
 
 ### Changed
