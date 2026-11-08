@@ -75,8 +75,8 @@ jobs:
 1. Calls `tf_apply` with the target ref, environment, workspace, root, Terraform version, and
    release tag.
 
-Runs for the same repository and environment share a concurrency group. The workflow declares
-`id-token: write` and `contents: read` permissions for its called workflows.
+Runs for the same repository and environment share a concurrency group. The workflow sets
+`permissions: {}` and grants `id-token: write` and `contents: read` to the `tf_apply` job.
 The composed apply job runs on Ubuntu 26.04.
 
 ## Contribution

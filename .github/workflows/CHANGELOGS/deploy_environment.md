@@ -2,6 +2,14 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+## 0.4.2
+
+### Changed
+
+- The workflow sets `permissions: {}` and grants `id-token: write` and `contents: read` to the
+  `tf_apply` job. Callers grant the same permissions as before.
+- Composes `tf_apply` 0.3.2, which also grants permissions per job.
+
 ## 0.4.1
 
 ### Changed

@@ -84,7 +84,8 @@ jobs:
 
 The apply job sets `TF_VAR_IACDeploymentRef` to the current Actions run URL and
 `TF_VAR_release_name` to `release-tag`. Runs for the same repository and environment share a
-concurrency group. The workflow requests `id-token: write` and `contents: read` permissions.
+concurrency group. The workflow sets `permissions: {}`; the apply job requests `id-token: write`
+and `contents: read`, and the summary job requests none.
 Both workflow jobs run on Ubuntu 26.04.
 
 ## Contribution

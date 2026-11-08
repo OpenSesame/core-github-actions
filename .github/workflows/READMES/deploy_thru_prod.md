@@ -79,7 +79,10 @@ The release-tag job only runs when the caller's event is a merged pull request o
 `workflow_dispatch`. Other caller event contexts cause the deployment chain to be skipped. Runs for
 the same repository share one concurrency group.
 
-The workflow requests `id-token: write`, `contents: write`, and `pull-requests: write` permissions.
+The workflow sets `permissions: {}`, so callers still grant `id-token: write`, `contents: write`,
+and `pull-requests: write`, and each job requests only what it uses: the deploy jobs
+`id-token: write` and `contents: read`, the release job `contents: write`, and the status job
+`pull-requests: write`.
 Its direct and composed jobs run on Ubuntu 26.04.
 
 ## Contribution

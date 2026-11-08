@@ -41,14 +41,15 @@ on:
 
 concurrency: ${{ github.repository }}-${{ inputs.environment }}
 
-permissions:
-  id-token: write
-  contents: read
+permissions: {}
 
 jobs:
   TF-Apply:
     name: Terraform Apply
     uses: ./.github/workflows/tf_apply.yml
+    permissions:
+      id-token: write # Required to assume the Terraform apply role through OIDC.
+      contents: read # Required to check out the Terraform code.
     with:
       environment: ${{ inputs.environment }}
       oidc-domain: ${{ inputs.oidc-domain }}
