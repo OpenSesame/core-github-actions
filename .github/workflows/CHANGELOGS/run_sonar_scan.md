@@ -42,7 +42,8 @@ All notable changes to the **run_sonar_scan** callable workflow are documented i
 
 ### Added
 
-- Added optional `coverage-artifact-name` and `coverage-artifact-path` inputs to download a same-run coverage artifact before the SonarQube scan.
+- Added optional `coverage-artifact-name` and `coverage-artifact-path` inputs to download a same-run
+  coverage artifact before the SonarQube scan.
 
 ## 1.2.0
 
@@ -62,5 +63,6 @@ All notable changes to the **run_sonar_scan** callable workflow are documented i
 ### Added
 
 - First release of the `run_sonar_scan` reusable workflow.
-- Defaults to scanning the ref that triggered the caller's workflow and optionally accepts a commit SHA, tag, or branch.
+- Defaults to scanning the ref that triggered the caller's workflow and optionally accepts a commit
+  SHA, tag, or branch.
 - Runs the SonarQube scan with full Git history and an explicitly mapped `SONAR_TOKEN` secret.

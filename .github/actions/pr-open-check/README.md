@@ -3,7 +3,8 @@
 ## 🧭 Summary
 
 Finds an open pull request associated with a given commit, typically the one triggering a workflow.
-Used to determine whether a PR exists and to provide its number and URL for usage in later steps (e.g., posting summaries or comments).
+Used to determine whether a PR exists and to provide its number and URL for usage in later steps
+(e.g., posting summaries or comments).
 
 - Outputs are written to $GITHUB_OUTPUT so they can be consumed by subsequent steps.
 - Returns pr_exists=false when no open PR includes the given commit.
@@ -22,8 +23,8 @@ branch. If two branches point at the same commit and only one has an open PR, a 
 still reports that PR. Pass `head-ref: ${{ github.ref_name }}` when you use `pr_exists` to decide whether
 a push run is covered by a PR run.
 
-The action reads one page of up to 100 PRs associated with the commit. If more than 100 PRs contain the
-commit, a matching PR beyond the first 100 is not found.
+The action reads one page of up to 100 PRs associated with the commit. If more than 100 PRs contain
+the commit, a matching PR beyond the first 100 is not found.
 
 ## 🔒 Permissions
 
@@ -111,7 +112,8 @@ run: echo "Found PR #${{ steps.pr_check.outputs.pr_number }}"
 
 ## 🧠 Notes
 
-- Uses the GitHub API via `curl`, internally the step runs the following commands to detect an open pull request including the commit.
+- Uses the GitHub API via `curl`, internally the step runs the following commands to detect an open
+  pull request including the commit.
 - It does rely on the `groot-preview`
 
 ```bash

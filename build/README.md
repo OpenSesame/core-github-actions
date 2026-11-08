@@ -4,7 +4,8 @@
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
-If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+If your team still relies on this action, you may request CODEOWNER status for this directory to
+maintain it.
 
 Known Consumers - Audited Sept 2026
 
@@ -29,4 +30,5 @@ The following items must be in the repository:
   * `core-build-library` - for core-build commands
 * `package.json` scripts:
   * `build` - build the code
-* (optional) `secrets-map.json` file containing map of secrets and associated environment variables. These will be written to `.env` file.
+* (optional) `secrets-map.json` file containing map of secrets and associated environment variables.
+  These will be written to `.env` file.

@@ -22,8 +22,9 @@ All notable changes to the **run_markdown_checks** reusable workflow are documen
 
 - First release, extracted from the Repo Checks trial in identity-infrastructure-template
   (`on_call_repo_checks.yml`), with an optional `commit-identifier` input.
-- One job, `checks` ("Checks"), that runs the `lint:markdown` package.json script with `npm run`. Each step runs after earlier failures once `npm ci` succeeded, and a
-  missing script fails its own step.
+- One job, `checks` ("Checks"), that runs the `lint:markdown` package.json script with `npm run`.
+  Each step runs after earlier failures once `npm ci` succeeded, and a missing script fails its own
+  step.
 - An optional `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` secret, so `npm ci` can install private `@opensesame`
   packages from GitHub Packages.
 - Outputs `lint` and `baselined` (inline `markdownlint-disable` comments in `*.md` files).

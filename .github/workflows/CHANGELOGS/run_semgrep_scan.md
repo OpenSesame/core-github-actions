@@ -87,13 +87,16 @@ All notable changes to the **run_semgrep_scan** callable workflow are documented
 
 ### Changed
 
-- Pinned `actions/checkout`, `actions/setup-node`, `actions/upload-artifact`, `reviewdog/action-setup`, and `actions/github-script` to Node 24-compatible releases by commit SHA (with version comments), addressing the GitHub Node 20 Actions runtime deprecation (CORE-5974).
+- Pinned `actions/checkout`, `actions/setup-node`, `actions/upload-artifact`,
+  `reviewdog/action-setup`, and `actions/github-script` to Node 24-compatible releases by commit SHA
+  (with version comments), addressing the GitHub Node 20 Actions runtime deprecation (CORE-5974).
 
 ## 1.0.1
 
 ### Changed
 
-- Updated workflow to support cross-repository usage by repo qualifying the internal composite action calls.
+- Updated workflow to support cross-repository usage by repo qualifying the internal composite
+  action calls.
 
 ## 1.0.0
 

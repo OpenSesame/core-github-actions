@@ -10,7 +10,7 @@ file.
 ### Changed
 
 - **Breaking:** composes `tf_validate_plan_single_root` 1.0.0, and the matrix job is renamed from
-  `TF-Validate-Plan-Roots` ("TF Validate/Plan ENV Roots (<environment>, false)") to `environment`,
+  `TF-Validate-Plan-Roots` (`TF Validate/Plan ENV Roots (<environment>, false)`) to `environment`,
   named after its environment. With a caller job named `Terraform`, checks read
   `Terraform / <environment> / Validate Plan`. Required status checks that use the old names must be
   updated.

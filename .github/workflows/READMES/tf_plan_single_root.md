@@ -55,8 +55,8 @@ and creates each directory that a string starting with `${path.module}`, `${path
 - comes from a string with no other interpolation, such as `${var.name}`
 
 It skips remote modules, commented lines, `output_path` values, which Terraform writes, and
-`fileexists()` arguments, because it fails on a directory. It annotates what it doesn't create. List any
-other directories in `build-artifact-directory`, or set `detect-build-artifact-directories` to
+`fileexists()` arguments, because it fails on a directory. It annotates what it doesn't create. List
+any other directories in `build-artifact-directory`, or set `detect-build-artifact-directories` to
 `false` to turn detection off.
 
 Each created directory, and each empty directory from `build-artifact-directory`, gets an empty

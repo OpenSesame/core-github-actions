@@ -6,7 +6,9 @@ This action runs Semgrep security scanning with configurable options and reporti
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
-We suggest consumers switch over to the reusable workflow for [semgrep scan](https://github.com/OpenSesame/.github/blob/main/.github/workflows/semgrep-scan.yml) so it can be run in parallel with your other jobs.
+We suggest consumers switch over to the reusable workflow for [semgrep
+scan](https://github.com/OpenSesame/.github/blob/main/.github/workflows/semgrep-scan.yml) so it can
+be run in parallel with your other jobs.
 
 Known Consumers - Audited Sept 2026
 

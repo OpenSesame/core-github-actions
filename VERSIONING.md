@@ -1,15 +1,17 @@
 # Versioning Policy
 
-This repository contains **reusable GitHub Actions and reusable workflows** that may be consumed by multiple repos or teams. To ensure safe updates and backward compatibility, all versioned components follow the standards defined below.
+This repository contains **reusable GitHub Actions and reusable workflows** that may be consumed by
+multiple repos or teams. To ensure safe updates and backward compatibility, all versioned components
+follow the standards defined below.
 
 ## Scope
 
-**Current**
+### Current
 
 - Composite Actions that live under `./github/actions`
 - Reusable workflows that live under `./github/workflows`
 
-**Excluded**
+### Excluded
 
 - Composite Actions that live in the root of this repository.
 
@@ -25,15 +27,16 @@ Each versioned component must:
 
 ## 📌 Namespaced Tags
 
-Versioned components use namespaced semantic version tags so multiple components can be versioned independently within this repository.
+Versioned components use namespaced semantic version tags so multiple components can be versioned
+independently within this repository.
 
-**Format**
+### Tag Format
 
 ```text
 actions/<component-name>/vX.Y.Z
 ```
 
-**Examples**
+### Tag Examples
 
 ```text
 actions/pr-open-check/2.0.0
@@ -41,7 +44,7 @@ actions/upsert-pr-comment/1.0.0
 workflows/run_semgrep_scan/1.0.0
 ```
 
-**Semantic Versioning**
+### Semantic Versioning
 
 Version numbers follow SemVer:
 
@@ -60,7 +63,7 @@ The version declared in a PR label must match both:
 
 PRs that modify a versioned component must include a label per component modified.
 
-**Formats**
+#### Label Formats
 
 - Actions: `v:a/<component-name>/X.Y.Z`
 - Workflows: `v:wf/<component-name>/X.Y.Z`
@@ -74,7 +77,7 @@ The compact component type is used only in PR labels to stay within GitHub's
 50-character label-name limit. Generated tags retain the canonical `actions/`
 or `workflows/` namespace.
 
-**Example**
+#### Label Example
 
 ```text
 v:a/pr-open-check/1.1.0
@@ -85,9 +88,11 @@ Multiple version labels are allowed on a PR, one per component.
 
 ### Special Case: Untracked Versions
 
-Use an untracked version label only when a PR modifies files outside of any versioned component, or modifies a component in a way that does not change its behavior (e.g., documentation-only changes, tests, comments).
+Use an untracked version label only when a PR modifies files outside of any versioned component, or
+modifies a component in a way that does not change its behavior (e.g., documentation-only changes,
+tests, comments).
 
-**Format**
+#### Untracked Label Format
 
 ```text
 v:untracked
@@ -117,9 +122,11 @@ A PR cannot merge until version validation passes.
 
 ## 📝 CHANGELOG Requirements
 
-Each versioned component must have its own changelog. The changelog is the authoritative source of truth for released versions of that component.
+Each versioned component must have its own changelog. The changelog is the authoritative source of
+truth for released versions of that component.
 
-**Located At**
+### Location
+
 Action changelogs live in their component directory under `.github/actions/`.
 
 ```text
@@ -132,7 +139,7 @@ Workflow changelogs live in a component file under the `.github/workflows/CHANGE
 .github/workflows/CHANGELOGS/<component-name>.md
 ```
 
-**Examples**
+### Path Examples
 
 ```text
 .github/actions/pr-open-check/CHANGELOG.md
@@ -165,8 +172,8 @@ Each released version must have a heading that includes the version label
 
 Minimum requirements:
 
-- The header must be a line that is exactly `## X.Y.Z`, optionally followed by ` - title` or
-  ` — title` (this is what validation looks for).
+- The header must be a line that is exactly `## X.Y.Z`, `## X.Y.Z - title` or `## X.Y.Z — title`
+  (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
   (`v:a/{component-name}/X.Y.Z` or `v:wf/{component-name}/X.Y.Z`).
 
@@ -177,7 +184,8 @@ The rest of the content (sections and bullets) is for humans, but strongly recom
 For versioned releases, a label like `v:a/pr-open-check/1.2.0`
 requires that the `CHANGELOG.md` file under `.github/actions/pr-open-check/` contain a `## 1.2.0` entry.
 
-A label like `v:wf/run_semgrep_scan/1.0.0` requires a `run_semgrep_scan.md` file under `.github/workflows/CHANGELOGS` containing a `## 1.0.0` entry.
+A label like `v:wf/run_semgrep_scan/1.0.0` requires a `run_semgrep_scan.md` file under
+`.github/workflows/CHANGELOGS` containing a `## 1.0.0` entry.
 
 Validation will fail if:
 

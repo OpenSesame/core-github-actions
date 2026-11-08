@@ -4,8 +4,9 @@ The Core Services team uses GitHub Actions to standardize our CI/CD process.
 
 ## ❌ Deprecation Notice: Legacy Composite Actions
 
-An earlier version of the 'Core' team wrote root-level composite actions in this repository to provide a standardized way for teams to build, test, and deploy software.
-These actions have not been actively maintained in years and are considered deprecated by the current Core Services team.
+An earlier version of the 'Core' team wrote root-level composite actions in this repository to
+provide a standardized way for teams to build, test, and deploy software. These actions have not
+been actively maintained in years and are considered deprecated by the current Core Services team.
 
 - [build](./build)
 - [build-apply](./build-apply)
@@ -20,12 +21,16 @@ These actions have not been actively maintained in years and are considered depr
 
 ### Why deprecated
 
-1. They hide important pipeline details making it difficult for engineers to understand or troubleshoot CI/CD pipelines.
+1. They hide important pipeline details making it difficult for engineers to understand or
+   troubleshoot CI/CD pipelines.
 2. They have accumulated technical debt and do not reflect our current best practices.
 
 ### What we're doing instead
 
-The Core Services team uses reusable workflows for shared CI/CD orchestration so standard pipeline phases remain visible. Narrowly scoped utility composite actions are also acceptable when they live under `.github/actions`, have a cohesive contract, and follow this repository's component versioning policy.
+The Core Services team uses reusable workflows for shared CI/CD orchestration so standard pipeline
+phases remain visible. Narrowly scoped utility composite actions are also acceptable when they live
+under `.github/actions`, have a cohesive contract, and follow this repository's component versioning
+policy.
 
 ### Maintenance ownership of the old composite actions
 
@@ -37,7 +42,8 @@ The Core Services team uses reusable workflows for shared CI/CD orchestration so
 
 - Copy the composite action code directly into your workflow in place of calling the composite action.
 - Use a reusable workflow for multi-phase CI/CD orchestration.
-- Use a versioned utility composite action under `.github/actions` when the behavior is cohesive and does not hide standard pipeline phases.
+- Use a versioned utility composite action under `.github/actions` when the behavior is cohesive and
+  does not hide standard pipeline phases.
 
 ## ⚠️ Versioning Warning
 
@@ -69,8 +75,8 @@ To get started:
 
 - install semgrep globally `brew install semgrep`
 - install [mise](https://mise.jdx.dev/) (`brew install mise`), then run `mise install` for actionlint,
-  shellcheck and zizmor, pinned in `mise.toml`. `npm run lint:gha` and `npm run scan:gha` run them, and
-  `npm run check` includes both.
+  shellcheck and zizmor, pinned in `mise.toml`. `npm run lint:gha` and `npm run scan:gha` run them,
+  and `npm run check` includes both.
 - use Node.js 24.15.0 or newer in the Node.js 24 release line, with the npm it ships (11.10.0 or
   newer) (`nvm use`)
 - install project dependencies `npm ci`

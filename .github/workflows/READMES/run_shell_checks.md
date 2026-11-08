@@ -36,8 +36,9 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 
 - Every task step runs even when an earlier one failed, as long as mise set up.
 - A missing task fails its own step, and mise logs that the task doesn't exist.
-- Keep a matching `package.json` script for each task, such as `"lint:shell": "mise run lint:shell"`, so
-  `npm run check` still runs them locally. CI doesn't use those scripts.
+- Keep a matching `package.json` script for each task, such as
+  `"lint:shell": "mise run lint:shell"`, so `npm run check` still runs them locally. CI doesn't use
+  those scripts.
 - The job fails if any step failed.
 
 ## Inputs

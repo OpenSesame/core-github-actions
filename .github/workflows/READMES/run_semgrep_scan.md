@@ -22,8 +22,8 @@ jobs:
 ```
 
 This runs a full scan on the default branch and a diff scan elsewhere. The check is reported as
-`Semgrep / Scan`. Pair it with [`resolve_ci_context`](resolve_ci_context.md) so pushes covered by a PR
-run are skipped.
+`Semgrep / Scan`. Pair it with [`resolve_ci_context`](resolve_ci_context.md) so pushes covered by a
+PR run are skipped.
 
 ## Inputs
 

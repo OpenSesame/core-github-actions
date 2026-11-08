@@ -2,7 +2,8 @@
 
 ## Summary
 
-Builds a deterministic, AWS-compatible role session name from workflow context. This action only constructs and sanitizes the name; it does not configure AWS credentials.
+Builds a deterministic, AWS-compatible role session name from workflow context. This action only
+constructs and sanitizes the name; it does not configure AWS credentials.
 
 The unsanitized name has this form:
 
@@ -28,11 +29,13 @@ The unsanitized name has this form:
 ## Sanitization contract
 
 - The allowed characters are `A-Z`, `a-z`, `0-9`, `_`, `+`, `=`, `,`, `.`, `@`, and `-`.
-- Each invalid byte is replaced with `-`. For example, `renovate[bot]` becomes `renovate-bot-` within the complete session name.
+- Each invalid byte is replaced with `-`. For example, `renovate[bot]` becomes `renovate-bot-`
+  within the complete session name.
 - The result is truncated to at most 64 characters.
 - The action fails if the result contains fewer than two characters.
 - Character processing uses the C locale for deterministic byte handling.
-- Inputs are passed to the shell through environment variables and are never interpolated into shell source.
+- Inputs are passed to the shell through environment variables and are never interpolated into shell
+  source.
 
 The output always matches `^[A-Za-z0-9_+=,.@-]{2,64}$`.
 
@@ -61,4 +64,6 @@ This action does not require additional GitHub token permissions.
 
 ## Versioning
 
-This action follows the repository's component versioning policy. The initial release uses the PR label `v:a/create-aws-role-session-name/1.0.0` and the namespaced tag `actions/create-aws-role-session-name/1.0.0`.
+This action follows the repository's component versioning policy. The initial release uses the PR
+label `v:a/create-aws-role-session-name/1.0.0` and the namespaced tag
+`actions/create-aws-role-session-name/1.0.0`.

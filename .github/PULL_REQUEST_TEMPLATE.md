@@ -8,7 +8,9 @@ Jira: <https://opensesame.atlassian.net/browse/CORE-XXXX>
 
 ## Versioning
 
-⚠️ Components in this repo are used by multiple repos and teams. Breaking changes to non-versioned components are high-risk. Always apply correct versioning to versioned components to ensure safe, controlled updates.
+⚠️ Components in this repo are used by multiple repos and teams. Breaking changes to non-versioned
+components are high-risk. Always apply correct versioning to versioned components to ensure safe,
+controlled updates.
 
 Versioned components live under `.github/actions` and `.github/workflows`.
 

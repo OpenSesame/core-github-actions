@@ -1,14 +1,17 @@
 # GitHub Workflows Directory
 
-This directory contains externally reusable and internal, project-specific GitHub Actions workflows for this repository.
+This directory contains externally reusable and internal, project-specific GitHub Actions workflows
+for this repository.
 
 ## Internal Workflows
 
-Internal workflows are used by this repository for the pipeline of its products. They must never expose `workflow_call` and must be  prefixed with `internal_`
+Internal workflows are used by this repository for the pipeline of its products. They must never
+expose `workflow_call` and must be prefixed with `internal_`
 
 ## Reusable Workflows
 
-This repository exposes externally reusable workflows, those that expose `workflow_call`. These workflows are treated as **products** of this repo.
+This repository exposes externally reusable workflows, those that expose `workflow_call`. These
+workflows are treated as **products** of this repo.
 
 ### Requirements
 
