@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/OpenSesame/core-services-ai-tooling/library/repository-validator/schemas/repository-contract.schema.json",
+  "title": "Core Services repository contract",
+  "description": "Repository-owned exceptions for the bundled Core Services repository standard.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["standard", "exceptions"],
+  "properties": {
+    "standard": {
+      "$ref": "#/$defs/standardReference"
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/exception"
+      }
+    }
+  },
+  "$defs": {
+    "standardReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "id", "version"],
+      "properties": {
+        "path": {
+          "const": ".core-services/repository-standard.json"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "exception": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "requirement", "rationale", "owner"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "requirement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Requirement the exception waives, such as workflow-input-names or repo-checks-prerequisites."
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reviewBy": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "isWarning": {
+          "type": "boolean"
+        },
+        "paths": {
+          "type": "array",
+          "description": "Repository-relative paths the exception covers; omit to cover every path.",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

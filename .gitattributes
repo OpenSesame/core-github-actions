@@ -11,3 +11,4 @@
 
 # SVG is text (keep diffs readable)
 *.svg text
+.core-services/generated/** linguist-generated=true
