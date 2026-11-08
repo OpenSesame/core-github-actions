@@ -163,8 +163,9 @@ describe('run_npm_publish credentials', () => {
   );
   const publishJob = workflow.slice(workflow.indexOf('\n  publish:\n'));
 
-  test('keeps the persisted checkout token in a read-only job', () => {
-    expect(versionJob).toContain('persist-credentials: true');
+  test('checks out without credentials in the read-only job', () => {
+    expect(versionJob).toContain('persist-credentials: false');
+    expect(versionJob).not.toContain('persist-credentials: true');
     expect(versionJob).toMatch(/permissions:\n\s+contents: read #/);
     expect(versionJob).not.toMatch(/:\s*write\b/);
     expect(versionJob).not.toContain('secrets.');
@@ -195,41 +196,105 @@ describe('run_npm_publish commit', () => {
 describe('run_npm_publish version source', () => {
   const workflow = fs.readFileSync(workflowPath, 'utf8');
 
-  test('runs github-tag-action only when a release tag exists, and the initial step otherwise', () => {
-    expect(workflow).toMatch(
-      /- name: Determine version\n\s+id: version\n\s+if: \$\{\{ steps\.release-tag\.outputs\.exists == 'true' \}\}\n\s+uses: anothrNick\/github-tag-action@/
-    );
-    expect(workflow).toMatch(
-      /- name: Determine initial version\n\s+id: initial-version\n\s+if: \$\{\{ steps\.release-tag\.outputs\.exists == 'false' \}\}\n/
-    );
+  test('takes the version and part from Determine version', () => {
+    expect(workflow).toContain('version: ${{ steps.version.outputs.version }}');
+    expect(workflow).toContain('VERSION_PART: ${{ steps.version.outputs.part }}');
   });
 
-  test('takes the version and part from whichever step ran', () => {
-    expect(workflow).toContain(
-      'version: ${{ steps.version.outputs.new_tag || steps.initial-version.outputs.version }}'
+  test('runs no action to work out the version', () => {
+    const versionJob = workflow.slice(
+      workflow.indexOf('\n  version:\n'),
+      workflow.indexOf('\n  publish:\n')
     );
-    expect(workflow).toContain(
-      'VERSION_PART: ${{ steps.version.outputs.part || steps.initial-version.outputs.part }}'
-    );
+    expect(versionJob.match(/uses: /g)).toHaveLength(1);
+    expect(versionJob).toContain('uses: actions/checkout@');
   });
 });
 
-describe('run_npm_publish Find release tag', () => {
+describe('run_npm_publish Determine version from release tags', () => {
+  const releaseEnv = { PRERELEASE: 'false', INITIAL_VERSION: '1.0.0' };
+
   test.each([
-    ['no tags', [], 'false'],
-    ['only v-prefixed tags', [{ tag: 'v3.0.0' }, '#patch', { tag: 'v3.0.1' }], 'false'],
-    ['only beta tags', [{ tag: '1.1.0-beta.0' }], 'false'],
-    ['x.y.z tags', [{ tag: '1.0.0' }, '#minor', { tag: '1.1.0' }], 'true'],
-    ['mixed v-prefixed and x.y.z tags', [{ tag: '1.0.2' }, '#major', { tag: 'v4.0.2' }], 'true'],
-  ])('with %s sets exists=%s', (_case, tags, expected) => {
-    const result = runStep('Find release tag', { history: ['Initial commit', ...tags] });
+    [
+      'markers since the highest x.y.z tag',
+      ['Initial commit #major', { tag: '1.2.3' }, 'Add a feature #minor', 'Fix it #patch'],
+      { version: '1.3.0', part: 'minor' },
+    ],
+    [
+      'the highest tag by version, not by name',
+      ['Initial commit', { tag: '1.9.0' }, 'More', { tag: '1.10.0' }, 'Fix it #patch'],
+      { version: '1.10.1', part: 'patch' },
+    ],
+    [
+      'x.y.z tags only, ignoring v-prefixed and beta tags',
+      [
+        'Initial commit',
+        { tag: '1.0.2' },
+        'Break it #major',
+        { tag: 'v4.0.2' },
+        { tag: '2.0.0-beta.0' },
+        'Tidy up',
+      ],
+      { version: '2.0.0', part: 'major' },
+    ],
+  ])('bumps by %s', (_case, history, outputs) => {
+    const result = runStep('Determine version', { env: releaseEnv, history });
 
     expect(result.status).toBe(0);
-    expect(result.outputs).toEqual({ exists: expected });
+    expect(result.outputs).toEqual(outputs);
+  });
+
+  test.each([
+    ['no markers since the tag', ['Initial commit #minor', { tag: '1.0.0' }, 'Tidy up']],
+    ['only #none since the tag', ['Initial commit', { tag: '1.0.0' }, 'Tidy up #none']],
+    ['the tag on this commit', ['Initial commit', 'Add a feature #minor', { tag: '1.1.0' }]],
+  ])('reports part none, and no version, for %s', (_case, history) => {
+    const result = runStep('Determine version', { env: releaseEnv, history });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ part: 'none' });
+  });
+
+  test('ignores initial-version once an x.y.z tag exists', () => {
+    const result = runStep('Determine version', {
+      env: { ...releaseEnv, INITIAL_VERSION: 'not-a-version' },
+      history: ['Initial commit', { tag: '1.0.0' }, 'Fix it #patch'],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version: '1.0.1', part: 'patch' });
+  });
+
+  test('numbers the beta after the highest beta of the bumped version', () => {
+    const result = runStep('Determine version', {
+      env: { ...releaseEnv, PRERELEASE: 'true' },
+      history: [
+        'Initial commit',
+        { tag: '1.2.0' },
+        'Add a feature #minor',
+        { tag: '1.3.0-beta.0' },
+        { tag: '1.3.0-beta.1' },
+        { tag: '1.2.1-beta.4' },
+        'Add another feature',
+      ],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ version: '1.3.0-beta.2', part: 'pre-minor' });
+  });
+
+  test('reports part none when this commit already has a beta tag of the version', () => {
+    const result = runStep('Determine version', {
+      env: { ...releaseEnv, PRERELEASE: 'true' },
+      history: ['Initial commit', { tag: '1.2.0' }, 'Add a feature #minor', { tag: '1.3.0-beta.0' }],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ part: 'none' });
   });
 });
 
-describe('run_npm_publish Determine initial version', () => {
+describe('run_npm_publish Determine version from initial-version', () => {
   const initialEnv = { PRERELEASE: 'false', INITIAL_VERSION: '1.0.0' };
 
   test.each([
@@ -247,14 +312,14 @@ describe('run_npm_publish Determine initial version', () => {
     ],
     ['a #patch in the first commit', ['Initial commit #patch'], 'patch', '1.0.1'],
   ])('bumps initial-version by %s', (_case, history, part, version) => {
-    const result = runStep('Determine initial version', { env: initialEnv, history });
+    const result = runStep('Determine version', { env: initialEnv, history });
 
     expect(result.status).toBe(0);
     expect(result.outputs).toEqual({ version, part });
   });
 
   test('counts markers from the whole history when only v-prefixed tags exist', () => {
-    const result = runStep('Determine initial version', {
+    const result = runStep('Determine version', {
       env: { ...initialEnv, INITIAL_VERSION: '3.0.1' },
       history: ['Initial commit', { tag: 'v3.0.0' }, 'Fix it #patch', { tag: 'v3.0.1' }, 'Tidy up'],
     });
@@ -267,14 +332,14 @@ describe('run_npm_publish Determine initial version', () => {
     ['no markers', ['Initial commit', 'Tidy up']],
     ['only #none', ['Initial commit', 'Tidy up #none']],
   ])('reports part none, and no version, for %s', (_case, history) => {
-    const result = runStep('Determine initial version', { env: initialEnv, history });
+    const result = runStep('Determine version', { env: initialEnv, history });
 
     expect(result.status).toBe(0);
     expect(result.outputs).toEqual({ part: 'none' });
   });
 
   test('publishes the first beta of the bumped version', () => {
-    const result = runStep('Determine initial version', {
+    const result = runStep('Determine version', {
       env: { ...initialEnv, PRERELEASE: 'true' },
       history: ['Initial commit', 'Add a feature #minor'],
     });
@@ -284,7 +349,7 @@ describe('run_npm_publish Determine initial version', () => {
   });
 
   test('numbers the beta after the highest beta of the same version', () => {
-    const result = runStep('Determine initial version', {
+    const result = runStep('Determine version', {
       env: { ...initialEnv, PRERELEASE: 'true' },
       history: [
         'Initial commit',
@@ -303,10 +368,20 @@ describe('run_npm_publish Determine initial version', () => {
     expect(result.outputs).toEqual({ version: '1.1.0-beta.11', part: 'pre-minor' });
   });
 
+  test('reports part none when this commit already has a beta tag of the bumped version', () => {
+    const result = runStep('Determine version', {
+      env: { ...initialEnv, PRERELEASE: 'true' },
+      history: ['Initial commit', 'Add a feature #minor', { tag: '1.1.0-beta.0' }],
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.outputs).toEqual({ part: 'none' });
+  });
+
   test.each(['v1.0.0', '1.0', '01.0.0', ''])(
     'fails when initial-version is "%s"',
     initialVersion => {
-      const result = runStep('Determine initial version', {
+      const result = runStep('Determine version', {
         env: { ...initialEnv, INITIAL_VERSION: initialVersion },
         history: ['Initial commit #minor'],
       });

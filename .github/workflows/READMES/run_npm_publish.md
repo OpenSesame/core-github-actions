@@ -36,7 +36,7 @@ jobs:
   publish:
     name: Publish Latest
     if: github.event.pull_request.merged == true
-    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.1.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_npm_publish.yml@<released-sha> # workflows/run_npm_publish/1.1.3
     permissions:
       contents: write # Required to create the GitHub release and its version tag.
       packages: write # Required to publish the package to GitHub Packages.
@@ -65,6 +65,7 @@ Output `version` is the published version, empty when nothing was published.
 ## Reruns
 
 - Failed before the publish finished: rerun to publish the same version.
+- A commit that already has its `x.y.z` tag, or a beta tag of the version, publishes nothing.
 - Failed after the publish: rerun to skip the publish and create the tag.
 - "Already published from another commit": that commit's tag was missing, and this run created it.
   Rerun to publish this commit as the next version.
