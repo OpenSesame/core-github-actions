@@ -10,7 +10,7 @@ jobs:
     name: JS
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_js_checks.yml@<released-sha> # workflows/run_js_checks/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_js_checks.yml@<released-sha> # workflows/run_js_checks/1.0.2
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -57,11 +57,11 @@ devDependencies), then runs each script with `npm run`:
 
 ## Outputs
 
-| Output      | Value                                                                            |
-| ----------- | -------------------------------------------------------------------------------- |
-| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`         |
-| `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped` |
-| `baselined` | Number of inline `eslint-disable` and `prettier-ignore` comments                 |
+| Output      | Value                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                                               |
+| `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped`                                                       |
+| `baselined` | Number of inline `// eslint-disable…`, `/* eslint-disable…`, `// prettier-ignore` and `/* prettier-ignore` comments in JS and TS files |
 
 ## Contribution
 

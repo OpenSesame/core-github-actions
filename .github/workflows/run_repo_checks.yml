@@ -184,18 +184,23 @@ jobs:
             def outcome($job; $key):
               ($job.outputs[$key] // "") as $step
               | if $step == "" then ($job.result // "unknown") else $step end;
-            def cell($job; $key; $applies):
-              if ($applies | not) then "—"
-              elif $job.result == "skipped" then "⏭️ skipped"
-              else badge(outcome($job; $key))
-              end;
+            def cell($job; $key; $applies; $keys):
+              outcome($job; $key) as $outcome
+              | if ($applies | not) then "—"
+                elif $job.result == "skipped" then "⏭️ skipped"
+                elif $job.result == "failure" and $outcome == "skipped"
+                  and ([$keys[] | outcome($job; .)] | any(. == "failure") | not)
+                then "❌ setup failed"
+                else badge($outcome)
+                end;
             def row($id; $label; $init; $validate; $lint; $format; $scan):
               .[$id] as $job
               | (.detect.outputs["\($id)-files"] // "") as $files
               | if $files == "0" then
                   "| \($label) | 0 | \([$init, $validate, $lint, $format, $scan] | map(if . then "⏭️ not present" else "—" end) | join(" | ")) | — |"
                 else
-                  "| \($label) | \(if $files == "" then "?" else $files end) | \(cell($job; "init"; $init)) | \(cell($job; "validate"; $validate)) | \(cell($job; "lint"; $lint)) | \(cell($job; "format"; $format)) | \(cell($job; "scan"; $scan)) | \(($job.outputs.baselined // "") | if . == "" then "?" else . end) |"
+                  ([["init", $init], ["validate", $validate], ["lint", $lint], ["format", $format], ["scan", $scan]] | map(select(.[1]) | .[0])) as $keys
+                  | "| \($label) | \(if $files == "" then "?" else $files end) | \(cell($job; "init"; $init; $keys)) | \(cell($job; "validate"; $validate; $keys)) | \(cell($job; "lint"; $lint; $keys)) | \(cell($job; "format"; $format; $keys)) | \(cell($job; "scan"; $scan; $keys)) | \(($job.outputs.baselined // "") | if . == "" then "?" else . end) |"
                 end;
             "## Repo Checks",
             "",

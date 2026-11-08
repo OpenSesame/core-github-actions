@@ -13,7 +13,7 @@ jobs:
     name: GHA
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_gha_checks.yml@<released-sha> # workflows/run_gha_checks/1.0.3
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -49,11 +49,11 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 
 ## Outputs
 
-| Output      | Value                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped` |
-| `scan`      | Outcome of the scan step: `success`, `failure`, `cancelled` or `skipped` |
-| `baselined` | Number of inline `# zizmor: ignore[...]` comments under `.github`        |
+| Output      | Value                                                                           |
+| ----------- | ------------------------------------------------------------------------------- |
+| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`        |
+| `scan`      | Outcome of the scan step: `success`, `failure`, `cancelled` or `skipped`        |
+| `baselined` | Number of inline `# zizmor: ignore[...]` comments in YAML files under `.github` |
 
 ## Contribution
 

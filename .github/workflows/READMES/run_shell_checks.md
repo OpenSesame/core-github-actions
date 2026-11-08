@@ -12,7 +12,7 @@ jobs:
     name: Shell
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_shell_checks.yml@<released-sha> # workflows/run_shell_checks/1.0.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_shell_checks.yml@<released-sha> # workflows/run_shell_checks/1.0.3
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -52,7 +52,7 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 | ----------- | -------------------------------------------------------------------------------- |
 | `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`         |
 | `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped` |
-| `baselined` | Number of inline `# shellcheck disable=` directives                              |
+| `baselined` | Number of inline `# shellcheck disable=` directives outside Markdown files       |
 
 ## Contribution
 

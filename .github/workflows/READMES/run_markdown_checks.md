@@ -10,7 +10,7 @@ jobs:
     name: Markdown
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_markdown_checks.yml@<released-sha> # workflows/run_markdown_checks/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_markdown_checks.yml@<released-sha> # workflows/run_markdown_checks/1.0.2
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -56,10 +56,10 @@ devDependencies), then runs each script with `npm run`:
 
 ## Outputs
 
-| Output      | Value                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped` |
-| `baselined` | Number of inline `markdownlint-disable` comments in `*.md` files         |
+| Output      | Value                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------- |
+| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                  |
+| `baselined` | Number of inline `<!-- markdownlint-disable…` directives (`-line`, `-next-line`, `-file`) in `*.md` files |
 
 ## Contribution
 

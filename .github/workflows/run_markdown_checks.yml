@@ -17,7 +17,7 @@ on:
         description: Outcome of the lint step (success, failure, cancelled or skipped)
         value: ${{ jobs.checks.outputs.lint }}
       baselined:
-        description: Number of inline markdownlint-disable comments in Markdown files
+        description: Number of inline markdownlint-disable directives in Markdown files
         value: ${{ jobs.checks.outputs.baselined }}
 
 permissions: {}
@@ -66,6 +66,6 @@ jobs:
         id: baseline
         if: ${{ !cancelled() }}
         run: |
-          inline=$({ git grep -c 'markdownlint-disabl[e]' -- '*.md' ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          inline=$({ git grep -ohE '(^|[[:space:]])<!--[[:space:]]*markdownlint-disable' -- '*.md' ':!.core-services' || true; } | awk 'END { print NR }')
           echo "Inline markdownlint disables: $inline"
           echo "count=$inline" >> "$GITHUB_OUTPUT"

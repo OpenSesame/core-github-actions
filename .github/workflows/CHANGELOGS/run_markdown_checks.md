@@ -2,6 +2,14 @@
 
 All notable changes to the **run_markdown_checks** reusable workflow are documented in this file.
 
+## 1.0.2
+
+### Fixed
+
+- The `baselined` output counts only real inline directives (`<!-- markdownlint-disable…` in `*.md`
+  files), and counts each one rather than each line. Names in documentation, changelogs and test
+  fixtures inflated the count.
+
 ## 1.0.1
 
 ### Changed

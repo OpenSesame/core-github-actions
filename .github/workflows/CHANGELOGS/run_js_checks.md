@@ -2,6 +2,14 @@
 
 All notable changes to the **run_js_checks** reusable workflow are documented in this file.
 
+## 1.0.2
+
+### Fixed
+
+- The `baselined` output counts only real inline directives (`//` or `/*` `eslint-disable…` and
+  `prettier-ignore` comments in JS and TS files), and counts each one rather than each line. Names
+  in documentation, changelogs and test fixtures inflated the count.
+
 ## 1.0.1
 
 ### Changed

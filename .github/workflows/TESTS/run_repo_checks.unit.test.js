@@ -165,6 +165,37 @@ describe('run_repo_checks Summary', () => {
     expect(result.summary).toContain('**Standard:** ❌ fail');
   });
 
+  test('shows a setup failure when a failed job skipped steps without a failing one', () => {
+    const result = summarize({
+      detect: detected({ 'markdown-files': '74', 'js-files': '27', 'terraform-files': '3' }),
+      gha: skipped,
+      terraform: {
+        result: 'failure',
+        outputs: {
+          init: 'skipped',
+          validate: 'skipped',
+          lint: 'skipped',
+          format: 'skipped',
+          scan: 'skipped',
+          baselined: '0',
+        },
+      },
+      markdown: { result: 'failure', outputs: { lint: 'skipped', baselined: '0' } },
+      shell: skipped,
+      js: { result: 'failure', outputs: { lint: 'skipped', format: 'skipped', baselined: '0' } },
+      standard: { result: 'success', outputs: { result: 'success' } },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.summary).toContain(
+      '| Terraform | 3 | ❌ setup failed | ❌ setup failed | ❌ setup failed | ❌ setup failed | ❌ setup failed | 0 |'
+    );
+    expect(result.summary).toContain('| Markdown | 74 | — | — | ❌ setup failed | — | — | 0 |');
+    expect(result.summary).toContain(
+      '| JavaScript/TypeScript | 27 | — | — | ❌ setup failed | ❌ setup failed | — | 0 |'
+    );
+  });
+
   test('marks every technology unknown when Detect failed', () => {
     const result = summarize({
       detect: { result: 'failure', outputs: {} },

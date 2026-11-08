@@ -15,7 +15,7 @@ jobs:
     name: Repo Checks
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_repo_checks.yml@<released-sha> # workflows/run_repo_checks/1.0.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_repo_checks.yml@<released-sha> # workflows/run_repo_checks/1.0.3
     permissions:
       contents: read # Required to check out the code to lint, format-check, scan and validate.
     with:
@@ -26,7 +26,7 @@ jobs:
 ```
 
 Add `repo-checks` to `ci-result`'s needs. Replace `<released-sha>` with the full commit SHA of the
-tag: `git rev-list -n1 workflows/run_repo_checks/1.0.2`.
+tag: `git rev-list -n1 workflows/run_repo_checks/1.0.3`.
 
 ## Jobs
 
@@ -34,14 +34,17 @@ tag: `git rev-list -n1 workflows/run_repo_checks/1.0.2`.
 | ----------------------------------- | ----------------------------------- | ------------------------------------------------- |
 | `Repo Checks / Detect`              | Always                              | —                                                 |
 | `Repo Checks / GHA / Checks`        | GitHub Actions files are present    | [`run_gha_checks`](run_gha_checks.md)             |
-| `Repo Checks / Terraform / …`       | Terraform files are present         | [`run_terraform_checks`](run_terraform_checks.md) |
-| `Repo Checks / Markdown / …`        | Markdown files are present          | [`run_markdown_checks`](run_markdown_checks.md)   |
-| `Repo Checks / Shell / …`           | Shell scripts are present           | [`run_shell_checks`](run_shell_checks.md)         |
-| `Repo Checks / JS / …`              | JavaScript or TypeScript is present | [`run_js_checks`](run_js_checks.md)               |
+| `Repo Checks / Terraform / Checks`  | Terraform files are present         | [`run_terraform_checks`](run_terraform_checks.md) |
+| `Repo Checks / Markdown / Checks`   | Markdown files are present          | [`run_markdown_checks`](run_markdown_checks.md)   |
+| `Repo Checks / Shell / Checks`      | Shell scripts are present           | [`run_shell_checks`](run_shell_checks.md)         |
+| `Repo Checks / JS / Checks`         | JavaScript or TypeScript is present | [`run_js_checks`](run_js_checks.md)               |
 | `Repo Checks / Standard / Validate` | Always                              | [`run_repo_validation`](run_repo_validation.md)   |
 | `Repo Checks / Summary`             | Always, unless the run is cancelled | —                                                 |
 
-A technology that isn't present skips its job, because Detect found none of its files. A technology
+A technology that isn't present skips its job, because Detect found none of its files. GitHub then
+reports the skipped check as `Repo Checks / <Technology>`, such as `Repo Checks / Terraform`, with no
+`/ Checks`, so a required status check on the inner name stays pending in repositories without that
+technology. A technology
 that is present but has no task or script for a step fails that step, and mise or npm logs why. Every
 step runs even when an earlier one failed, as long as mise or `npm ci` set up, and the workflow fails
 if any job failed.
@@ -91,9 +94,22 @@ validates without that check.
 
 The Summary job writes a table of each technology's file count, init, validate, lint, format and scan
 results, and baselined count, followed by the Standard result. Init and Validate apply only to
-Terraform. A baselined issue is an inline ignore comment
-(`zizmor: ignore`, `#checkov:skip=`, `tflint-ignore`, `markdownlint-disable`, `shellcheck disable=`,
-`eslint-disable`, `prettier-ignore`) or an entry in a tracked `*.checkov.baseline` file.
+Terraform. A step that was skipped because its job's setup failed, such as mise or `npm ci`, shows
+❌ setup failed. A step skipped after another step failed, such as Validate after Init, shows
+⏭️ skipped.
+
+A baselined issue is an inline ignore directive or an entry in a tracked `*.checkov.baseline` file.
+The counts match comment syntax, not just the directive name, so documentation, changelogs and test
+fixtures that mention a directive don't count, and each directive counts once even when a line has
+several:
+
+| Technology     | Counts                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------ |
+| GitHub Actions | `# zizmor: ignore[...]` in YAML files under `.github`                                            |
+| Terraform      | `#checkov:skip=` and `# tflint-ignore` (`#` or `//`) in `*.tf` files, plus baseline entries      |
+| Markdown       | `<!-- markdownlint-disable…` in `*.md` files                                                     |
+| Shell          | `# shellcheck disable=` outside Markdown files, including workflow `run` blocks                  |
+| JS             | `// eslint-disable…`, `/* eslint-disable…` and the same for `prettier-ignore` in JS and TS files |
 
 ## Inputs
 
