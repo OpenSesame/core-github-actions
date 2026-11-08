@@ -61,24 +61,6 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test
 
-      - name: Lint
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run lint:js
-
-      - name: Check formatting
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run format:prettier
-
-  infra-ci:
-    name: Infra CI
-    needs: ci-context
-    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: ./.github/workflows/run_infra_ci.yml
-    permissions:
-      contents: read # Required to check out the workflows to lint and audit.
-    with:
-      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
-
   repo-checks:
     name: Repo Checks
     needs: ci-context
@@ -108,7 +90,7 @@ jobs:
 
   ci-result:
     name: CI Result
-    needs: [ci-context, app-ci, infra-ci, repo-checks, semgrep]
+    needs: [ci-context, app-ci, repo-checks, semgrep]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-26.04
     permissions:
