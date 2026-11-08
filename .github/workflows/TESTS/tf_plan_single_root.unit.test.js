@@ -231,37 +231,58 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     expect(result.stdout).toContain('Created 0 build artifact directories');
   });
 
-  test('reads .tf.json files, including escaped strings and output_path keys', () => {
-    const result = detectAndCheck(
-      {
-        'terraform/dev/main.tf.json': JSON.stringify(
-          {
-            data: {
-              archive_file: {
-                lambda: {
-                  type: 'zip',
-                  source_dir: '${path.module}/../../lambdas/a/dist',
-                  output_path: '${path.module}/dist/a.zip',
+  test.each([
+    ['indented', 2],
+    ['compact', undefined],
+  ])(
+    'reads %s .tf.json files, skipping only output_path and fileexists() values',
+    (_case, indent) => {
+      const result = detectAndCheck(
+        {
+          'terraform/dev/main.tf.json': JSON.stringify(
+            {
+              data: {
+                archive_file: {
+                  lambda: {
+                    type: 'zip',
+                    source_dir: '${path.module}/../../lambdas/a/dist',
+                    output_path: '${path.module}/dist/a.zip',
+                  },
                 },
               },
+              output: {
+                md5: { value: '${filemd5("${path.module}/../../lambdas/b/dist/index.js")}' },
+                exists: { value: '${fileexists("${path.module}/../../lambdas/c/dist")}' },
+              },
             },
-            output: {
-              md5: { value: '${filemd5("${path.module}/../../lambdas/b/dist/index.js")}' },
-            },
-          },
-          null,
-          2
-        ),
+            null,
+            indent
+          ),
+        },
+        [`lambdas/a/dist/${placeholder}`, 'terraform/dev/dist', 'lambdas/b/dist', 'lambdas/c/dist']
+      );
+
+      expect(result.stderr).toBe('');
+      expect(result.status).toBe(0);
+      expect(result.created).toEqual([`lambdas/a/dist/${placeholder}`]);
+      expect(result.stdout).toContain(
+        '::warning::Not created: lambdas/b/dist/index.js looks like a file'
+      );
+      expect(result.stdout).toContain('Created 1 build artifact directories');
+    }
+  );
+
+  test('skips only the fileexists() argument on an HCL line with other references', () => {
+    const result = detectAndCheck(
+      {
+        'terraform/dev/main.tf':
+          'output "x" { value = fileexists("${path.module}/../../lambdas/c/dist") ? "" : "${path.module}/../../lambdas/d/dist" }\n',
       },
-      [`lambdas/a/dist/${placeholder}`, 'terraform/dev/dist', 'lambdas/b/dist']
+      ['lambdas/c/dist', 'lambdas/d/dist']
     );
 
-    expect(result.stderr).toBe('');
     expect(result.status).toBe(0);
-    expect(result.created).toEqual([`lambdas/a/dist/${placeholder}`]);
-    expect(result.stdout).toContain(
-      '::warning::Not created: lambdas/b/dist/index.js looks like a file'
-    );
+    expect(result.created).toEqual(['lambdas/d/dist']);
     expect(result.stdout).toContain('Created 1 build artifact directories');
   });
 

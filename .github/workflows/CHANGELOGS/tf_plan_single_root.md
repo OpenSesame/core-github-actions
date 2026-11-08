@@ -11,8 +11,8 @@ All notable changes to the **tf_plan_single_root** reusable workflow are documen
   `${path.module}`, `${path.root}` or `${path.cwd}` strings in `.tf` and `.tf.json` files, so most
   callers no longer need
   `build-artifact-directory`. It skips remote modules, paths that look like files, paths with other
-  interpolation, paths outside the repository, and lines that call `fileexists()` or set
-  `output_path`, and annotates what it skips. `build-artifact-directory` still works, for paths that
+  interpolation, paths outside the repository, `fileexists()` arguments and `output_path` values,
+  and annotates what it skips. `build-artifact-directory` still works, for paths that
   detection can't find.
 
 ### Changed

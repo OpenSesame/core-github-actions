@@ -54,8 +54,8 @@ and creates each directory that a string starting with `${path.module}`, `${path
 - doesn't look like a file (a last segment such as `index.js`)
 - comes from a string with no other interpolation, such as `${var.name}`
 
-It skips remote modules, commented lines, `output_path` lines, which Terraform writes, and lines
-that call `fileexists()`, which fails on a directory. It annotates what it doesn't create. List any
+It skips remote modules, commented lines, `output_path` values, which Terraform writes, and
+`fileexists()` arguments, because it fails on a directory. It annotates what it doesn't create. List any
 other directories in `build-artifact-directory`, or set `detect-build-artifact-directories` to
 `false` to turn detection off.
 

@@ -176,9 +176,9 @@ jobs:
               for file in "$dir"/*.tf "$dir"/*.tf.json; do
                 [ -f "$file" ] || continue
                 { grep -vE '^[[:space:]]*(#|//)' "$file" || true; } \
-                  | { grep -vE 'fileexists\(|output_path"?[[:space:]]*[=:]' || true; } \
-                  | { grep -oE '"\$\{path\.(module|root|cwd)\}[^"\\]*\\?"' || true; } \
+                  | { grep -oE '(fileexists\([[:space:]]*\\?|output_path"?[[:space:]]*[=:][[:space:]]*)?"\$\{path\.(module|root|cwd)\}[^"\\]*\\?"' || true; } \
                   | while IFS= read -r ref; do
+                    case "$ref" in fileexists* | output_path*) continue ;; esac
                     ref="${ref#\"}"
                     ref="${ref%\"}"
                     ref="${ref%\\}"
