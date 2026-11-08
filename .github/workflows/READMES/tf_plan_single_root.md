@@ -45,9 +45,9 @@ The check is reported as `<caller job name> / Plan`.
 
 Terraform that packages build output, like a Lambda `source_path` or an `archive_file`
 `source_dir`, fails to plan when CI hasn't built it. After `terraform init`, the workflow reads the
-root and every local module in `.terraform/modules/modules.json`, and creates each directory that a
-string starting with `${path.module}`, `${path.root}`, or `${path.cwd}` points to, when the
-directory:
+`.tf` and `.tf.json` files of the root and every local module in `.terraform/modules/modules.json`,
+and creates each directory that a string starting with `${path.module}`, `${path.root}`, or
+`${path.cwd}` points to, when the directory:
 
 - is missing and inside the repository
 - is ignored by git, so it's build output and not a mistyped path

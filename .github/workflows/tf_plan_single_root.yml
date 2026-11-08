@@ -173,14 +173,15 @@ jobs:
           references() {
             local dir file ref
             while IFS= read -r dir; do
-              for file in "$dir"/*.tf; do
+              for file in "$dir"/*.tf "$dir"/*.tf.json; do
                 [ -f "$file" ] || continue
                 { grep -vE '^[[:space:]]*(#|//)' "$file" || true; } \
-                  | { grep -vE 'fileexists\(|output_path[[:space:]]*=' || true; } \
-                  | { grep -oE '"\$\{path\.(module|root|cwd)\}[^"]*"' || true; } \
+                  | { grep -vE 'fileexists\(|output_path"?[[:space:]]*[=:]' || true; } \
+                  | { grep -oE '"\$\{path\.(module|root|cwd)\}[^"\\]*\\?"' || true; } \
                   | while IFS= read -r ref; do
                     ref="${ref#\"}"
                     ref="${ref%\"}"
+                    ref="${ref%\\}"
                     ref="${ref//\$\{path.module\}/$dir}"
                     ref="${ref//\$\{path.root\}/.}"
                     printf '%s\n' "${ref//\$\{path.cwd\}/.}"

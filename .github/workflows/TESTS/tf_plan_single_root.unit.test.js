@@ -231,6 +231,40 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     expect(result.stdout).toContain('Created 0 build artifact directories');
   });
 
+  test('reads .tf.json files, including escaped strings and output_path keys', () => {
+    const result = detectAndCheck(
+      {
+        'terraform/dev/main.tf.json': JSON.stringify(
+          {
+            data: {
+              archive_file: {
+                lambda: {
+                  type: 'zip',
+                  source_dir: '${path.module}/../../lambdas/a/dist',
+                  output_path: '${path.module}/dist/a.zip',
+                },
+              },
+            },
+            output: {
+              md5: { value: '${filemd5("${path.module}/../../lambdas/b/dist/index.js")}' },
+            },
+          },
+          null,
+          2
+        ),
+      },
+      [`lambdas/a/dist/${placeholder}`, 'terraform/dev/dist', 'lambdas/b/dist']
+    );
+
+    expect(result.stderr).toBe('');
+    expect(result.status).toBe(0);
+    expect(result.created).toEqual([`lambdas/a/dist/${placeholder}`]);
+    expect(result.stdout).toContain(
+      '::warning::Not created: lambdas/b/dist/index.js looks like a file'
+    );
+    expect(result.stdout).toContain('Created 1 build artifact directories');
+  });
+
   test('creates each directory once when several modules reference it', () => {
     const result = detectAndCheck({
       'terraform/dev/main.tf': [
