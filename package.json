@@ -19,11 +19,11 @@
     "@eslint/js": "10.0.1",
     "@eslint/json": "2.1.1",
     "@eslint/markdown": "8.0.3",
-    "eslint": "10.13.0",
+    "eslint": "10.14.0",
     "globals": "17.13.0",
     "husky": "9.1.7",
     "jest": "30.5.2",
-    "npm-run-all2": "9.0.3",
+    "npm-run-all2": "9.0.4",
     "prettier": "3.9.10",
     "semgrep": "0.0.1"
   },
