@@ -70,7 +70,7 @@ To get started:
 - install semgrep globally `brew install semgrep`
 - install [mise](https://mise.jdx.dev/) (`brew install mise`), then run `mise install` for actionlint,
   shellcheck and zizmor, pinned in `mise.toml`. `npm run lint:gha` and `npm run scan:gha` run them, and
-  `npm run check` and the pre-commit hook include both.
+  `npm run check` includes both.
 - use Node.js 24.15.0 or newer in the Node.js 24 release line (`nvm use`)
 - install the pinned npm version `npm install --global npm@12.2.1`
 - install project dependencies `npm ci`
