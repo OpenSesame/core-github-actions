@@ -6,8 +6,8 @@ the repository map, consumer guidance, and migration context.
 
 ## Commands
 
-- Use Node.js 24.15.0 or newer in the Node.js 24 release line: `nvm use`
-- Install the pinned npm version: `npm install --global npm@12.2.1`
+- Use Node.js 24.15.0 or newer in the Node.js 24 release line, with the npm it ships (11.10.0 or
+  newer): `nvm use`
 - Install dependencies: `npm ci`
 - Install the GitHub Actions lint and scan tools (needs [mise](https://mise.jdx.dev/)): `mise install`
 - Run all non-mutating checks: `npm run check` (not `npm ci`, which reinstalls dependencies)

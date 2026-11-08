@@ -30,36 +30,29 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Node in .nvmrc, the npm and engines fields, and mise tools only change this repository's own CI and tests, not a released component, so they take v:untracked.",
+      "description": "Node in .nvmrc, the engines field, and mise tools only change this repository's own CI and tests, not a released component, so they take v:untracked.",
       "matchManagers": ["nvm", "mise", "custom.regex"],
       "addLabels": ["dependencies", "v:untracked"],
       "minimumReleaseAge": "7 days",
       "matchDepNames": ["!semgrep"]
     },
     {
-      "description": "Same as above for npm itself and the engines range in package.json.",
+      "description": "Same as above for the engines ranges in package.json.",
       "matchManagers": ["npm"],
-      "matchDepTypes": ["packageManager", "engines"],
+      "matchDepTypes": ["engines"],
       "addLabels": ["dependencies", "v:untracked"],
-      "minimumReleaseAge": "7 days"
-    },
-    {
-      "description": "Update npm in package.json, CI and the setup docs in one pull request.",
-      "matchPackageNames": ["npm"],
-      "groupName": "npm",
-      "groupSlug": "npm",
       "minimumReleaseAge": "7 days"
     },
     {
       "description": "Automerge non-major tooling updates once every check passes.",
       "matchManagers": ["nvm", "mise", "custom.regex", "npm"],
-      "matchDepTypes": ["packageManager", "engines", "tools"],
+      "matchDepTypes": ["engines", "tools"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "minimumReleaseAge": "7 days"
     },
     {
-      "description": "Automerge non-major Node and npm updates found outside package.json.",
+      "description": "Automerge non-major Node updates in .nvmrc.",
       "matchManagers": ["nvm", "custom.regex"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
@@ -126,18 +119,6 @@
     "commitMessageSuffix": "[SECURITY]"
   },
   "customManagers": [
-    {
-      "customType": "regex",
-      "description": "The npm version that CI and the setup docs install by hand, kept in step with packageManager.",
-      "managerFilePatterns": [
-        "/^AGENTS\\.md$/",
-        "/^README\\.md$/",
-        "/^\\.github/workflows/internal_on_push_ci\\.yml$/"
-      ],
-      "matchStrings": ["npm install --global npm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
-      "depNameTemplate": "npm",
-      "datasourceTemplate": "npm"
-    },
     {
       "customType": "regex",
       "description": "The default semgrep-version that run_semgrep_scan installs with pip, and its README.",
