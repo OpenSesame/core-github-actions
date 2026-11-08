@@ -33,7 +33,8 @@
       "description": "Node in .nvmrc, the npm and engines fields, and mise tools only change this repository's own CI and tests, not a released component, so they take v:untracked.",
       "matchManagers": ["nvm", "mise", "custom.regex"],
       "addLabels": ["dependencies", "v:untracked"],
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "7 days",
+      "matchDepNames": ["!semgrep"]
     },
     {
       "description": "Same as above for npm itself and the engines range in package.json.",
@@ -62,7 +63,8 @@
       "matchManagers": ["nvm", "custom.regex"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
-      "minimumReleaseAge": "7 days"
+      "minimumReleaseAge": "7 days",
+      "matchDepNames": ["!semgrep"]
     },
     {
       "description": "Actions pinned in versioned workflows and actions need version labels and changelog entries that Renovate can't write. Their updates wait on the Dependency Dashboard; approving them opens one grouped pull request, to which a person adds the labels and changelogs before it merges.",
@@ -72,6 +74,49 @@
       "groupName": "GitHub Actions",
       "groupSlug": "github-actions",
       "separateMajorMinor": false
+    },
+    {
+      "description": "The default semgrep-version in run_semgrep_scan is part of a versioned workflow, so its updates join the batched GitHub Actions release.",
+      "matchManagers": ["custom.regex"],
+      "matchDepNames": ["semgrep"],
+      "dependencyDashboardApproval": true,
+      "minimumReleaseAge": "7 days",
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions",
+      "separateMajorMinor": false
+    },
+    {
+      "description": "The JavaScript actions run on the node24 runtime, so Node stays on the 24 release line.",
+      "matchPackageNames": ["node"],
+      "allowedVersions": "<25"
+    },
+    {
+      "description": "Renovate can't read this private repository from here, so its updates are checked by hand in the batched releases.",
+      "matchPackageNames": ["OpenSesame/gha-oidc-access"],
+      "enabled": false
+    },
+    {
+      "description": "Renovate looks up the mise binary that mise-action installs by its release tag without the v prefix and fails, so its version and checksum are updated by hand in the batched releases.",
+      "matchDepNames": ["jdx/mise"],
+      "matchDatasources": ["github-release-attachments"],
+      "enabled": false
+    },
+    {
+      "description": "Deprecated workflows and legacy root actions get no further updates.",
+      "matchFileNames": [
+        ".github/workflows/tf_validate_plan_*.yml",
+        "build/**",
+        "build-apply/**",
+        "build-publish/**",
+        "cleanup/**",
+        "deploy/**",
+        "select-branch-workspace/**",
+        "semgrep/**",
+        "tf-apply/**",
+        "tf-plan/**",
+        "tf-plan-comment/**"
+      ],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
@@ -92,6 +137,20 @@
       "matchStrings": ["npm install --global npm@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
       "depNameTemplate": "npm",
       "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "description": "The default semgrep-version that run_semgrep_scan installs with pip, and its README.",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/run_semgrep_scan\\.yml$/",
+        "/^\\.github/workflows/READMES/run_semgrep_scan\\.md$/"
+      ],
+      "matchStrings": [
+        "semgrep-version:\\n(?:\\s+\\w+: .*\\n)*?\\s+default: '(?<currentValue>\\d+\\.\\d+\\.\\d+)'",
+        "\\| `semgrep-version`\\s+\\| `(?<currentValue>\\d+\\.\\d+\\.\\d+)`"
+      ],
+      "depNameTemplate": "semgrep",
+      "datasourceTemplate": "pypi"
     }
   ]
 }
