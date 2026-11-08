@@ -2,6 +2,14 @@
 
 All notable changes to the **run_terraform_checks** reusable workflow are documented in this file.
 
+## 1.0.3
+
+### Fixed
+
+- The `baselined` output counts only real inline directives (`#checkov:skip=` and `# tflint-ignore`
+  comments, with `#` or `//`, in `*.tf` files), and counts each one rather than each line. Names in
+  documentation, changelogs and test fixtures inflated the count.
+
 ## 1.0.2
 
 ### Changed

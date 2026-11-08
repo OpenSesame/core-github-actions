@@ -10,7 +10,7 @@ jobs:
     name: Markdown
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_markdown_checks.yml@<released-sha> # workflows/run_markdown_checks/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_markdown_checks.yml@<released-sha> # workflows/run_markdown_checks/1.0.2
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -26,13 +26,16 @@ The check is reported as `Markdown / Checks`.
 
 ## Contract
 
-The job sets up Node from `.nvmrc`, runs `npm ci --ignore-scripts` (the tools are npm
-devDependencies), then runs each script with `npm run`:
+The job sets up Node from `.nvmrc` and npm from `package.json`'s `packageManager`, runs
+`npm ci --ignore-scripts` (the tools are npm devDependencies), then runs each script with `npm run`:
 
 | Script          | Step | Typical command     |
 | --------------- | ---- | ------------------- |
 | `lint:markdown` | Lint | `markdownlint-cli2` |
 
+- When `packageManager` is `npm@X.Y.Z` (with or without a `+sha...` hash), the job installs that npm
+  version globally before `npm ci`, so `engines.npm` and `engine-strict` hold. Otherwise it keeps the
+  npm that ships with the Node version.
 - Every script step runs even when an earlier one failed, as long as `npm ci` succeeded.
 - A missing script fails its own step; npm logs `Missing script: "<name>"`.
 - `npm ci` reads `@opensesame` packages from GitHub Packages with `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN`.
@@ -56,10 +59,10 @@ devDependencies), then runs each script with `npm run`:
 
 ## Outputs
 
-| Output      | Value                                                                    |
-| ----------- | ------------------------------------------------------------------------ |
-| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped` |
-| `baselined` | Number of inline `markdownlint-disable` comments in `*.md` files         |
+| Output      | Value                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------- |
+| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                  |
+| `baselined` | Number of inline `<!-- markdownlint-disable…` directives (`-line`, `-next-line`, `-file`) in `*.md` files |
 
 ## Contribution
 

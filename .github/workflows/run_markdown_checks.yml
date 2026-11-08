@@ -17,7 +17,7 @@ on:
         description: Outcome of the lint step (success, failure, cancelled or skipped)
         value: ${{ jobs.checks.outputs.lint }}
       baselined:
-        description: Number of inline markdownlint-disable comments in Markdown files
+        description: Number of inline markdownlint-disable directives in Markdown files
         value: ${{ jobs.checks.outputs.baselined }}
 
 permissions: {}
@@ -51,6 +51,19 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@opensesame'
 
+      - name: Set up npm
+        id: npm
+        run: | # zizmor: ignore[adhoc-packages] Installs the npm version the repository pins in packageManager; setup-node has no npm version input.
+          package_manager=$(jq -r 'if (.packageManager | type) == "string" then .packageManager else "" end' package.json)
+          if [[ "$package_manager" =~ ^npm@([0-9]+\.[0-9]+\.[0-9]+)(\+.*)?$ ]]; then
+            version=${BASH_REMATCH[1]}
+            echo "Installing npm $version from packageManager"
+            npm install --global "npm@$version"
+          else
+            echo "No npm@X.Y.Z packageManager; using the bundled npm"
+          fi
+          echo "npm $(npm --version)"
+
       - name: Install dependencies
         id: install
         env:
@@ -66,6 +79,6 @@ jobs:
         id: baseline
         if: ${{ !cancelled() }}
         run: |
-          inline=$({ git grep -c 'markdownlint-disabl[e]' -- '*.md' ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          inline=$({ git grep -ohE '(^|[[:space:]])<!--[[:space:]]*markdownlint-disable' -- '*.md' ':!.core-services' || true; } | awk 'END { print NR }')
           echo "Inline markdownlint disables: $inline"
           echo "count=$inline" >> "$GITHUB_OUTPUT"

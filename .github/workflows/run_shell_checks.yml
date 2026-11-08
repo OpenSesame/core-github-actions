@@ -16,7 +16,7 @@ on:
         description: Outcome of the format-check step (success, failure, cancelled or skipped)
         value: ${{ jobs.checks.outputs.format }}
       baselined:
-        description: Number of inline shellcheck disable directives
+        description: Number of inline shellcheck disable directives outside Markdown files
         value: ${{ jobs.checks.outputs.baselined }}
 
 permissions: {}
@@ -64,6 +64,6 @@ jobs:
         id: baseline
         if: ${{ !cancelled() }}
         run: |
-          inline=$({ git grep -c 'shellcheck disable[=]' -- ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          inline=$({ git grep -ohE '(^|[[:space:]])#[[:space:]]*shellcheck[[:space:]]+disable=' -- ':!.core-services' ':!*.md' || true; } | awk 'END { print NR }')
           echo "Inline shellcheck disables: $inline"
           echo "count=$inline" >> "$GITHUB_OUTPUT"

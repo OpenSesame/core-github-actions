@@ -13,7 +13,7 @@ jobs:
     name: Terraform
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.0.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.0.3
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -62,14 +62,14 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 
 ## Outputs
 
-| Output      | Value                                                                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `init`      | Outcome of the initialize step: `success`, `failure`, `cancelled` or `skipped`                                                         |
-| `validate`  | Outcome of the validate step: `success`, `failure`, `cancelled` or `skipped`                                                           |
-| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                                               |
-| `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped`                                                       |
-| `scan`      | Outcome of the scan step: `success`, `failure`, `cancelled` or `skipped`                                                               |
-| `baselined` | Number of findings in tracked `*.checkov.baseline` files, plus inline `#checkov:skip=` and `# tflint-ignore:` comments in `*.tf` files |
+| Output      | Value                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init`      | Outcome of the initialize step: `success`, `failure`, `cancelled` or `skipped`                                                                      |
+| `validate`  | Outcome of the validate step: `success`, `failure`, `cancelled` or `skipped`                                                                        |
+| `lint`      | Outcome of the lint step: `success`, `failure`, `cancelled` or `skipped`                                                                            |
+| `format`    | Outcome of the format-check step: `success`, `failure`, `cancelled` or `skipped`                                                                    |
+| `scan`      | Outcome of the scan step: `success`, `failure`, `cancelled` or `skipped`                                                                            |
+| `baselined` | Number of findings in tracked `*.checkov.baseline` files, plus inline `#checkov:skip=` and `# tflint-ignore` comments (`#` or `//`) in `*.tf` files |
 
 ## Contribution
 

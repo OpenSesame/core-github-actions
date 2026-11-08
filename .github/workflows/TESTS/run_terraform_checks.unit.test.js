@@ -18,12 +18,13 @@ describe('run_terraform_checks baselined count', () => {
       'terraform/.checkov.baseline': baseline(['CKV_AWS_18', 'CKV_AWS_144']),
       'terraform/modules/x/.checkov.baseline': baseline(['CKV_AWS_21']),
       'terraform/main.tf':
-        'resource "aws_s3_bucket" "a" {\n  #checkov:skip=CKV_AWS_19: reason\n}\n# tflint-ignore: terraform_unused_declarations\n',
+        'resource "aws_s3_bucket" "a" {\n  #checkov:skip=CKV_AWS_19: reason\n  # checkov:skip=CKV_AWS_20: reason\n}\n# tflint-ignore: terraform_unused_declarations\n// tflint-ignore-file: terraform_naming_convention\n',
       '.core-services/vendored.tf': '#checkov:skip=CKV_AWS_1: vendored\n',
+      'README.md': '#checkov:skip=CKV_AWS_19: documented\n',
     });
 
     expect(result.status).toBe(0);
-    expect(result.outputs.count).toBe('5');
+    expect(result.outputs.count).toBe('7');
   });
 
   test("reports zero without a baseline or inline ignores, and doesn't count its own patterns", () => {

@@ -102,6 +102,6 @@ jobs:
             baselined=0
             echo "No Checkov baseline"
           fi
-          inline=$({ git grep -c -E 'checkov[:]skip=|tflint-ignor[e]' -- '*.tf' ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          inline=$({ git grep -ohE '(^|[[:space:]])(#|//)[[:space:]]*(checkov:skip=|tflint-ignore)' -- '*.tf' ':!.core-services' || true; } | awk 'END { print NR }')
           echo "Inline checkov skips and tflint ignores: $inline"
           echo "count=$((baselined + inline))" >> "$GITHUB_OUTPUT"

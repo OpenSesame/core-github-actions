@@ -20,7 +20,7 @@ on:
         description: Outcome of the format-check step (success, failure, cancelled or skipped)
         value: ${{ jobs.checks.outputs.format }}
       baselined:
-        description: Number of inline ESLint disable and Prettier ignore comments
+        description: Number of inline ESLint disable and Prettier ignore comments in JS and TS files
         value: ${{ jobs.checks.outputs.baselined }}
 
 permissions: {}
@@ -55,6 +55,19 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@opensesame'
 
+      - name: Set up npm
+        id: npm
+        run: | # zizmor: ignore[adhoc-packages] Installs the npm version the repository pins in packageManager; setup-node has no npm version input.
+          package_manager=$(jq -r 'if (.packageManager | type) == "string" then .packageManager else "" end' package.json)
+          if [[ "$package_manager" =~ ^npm@([0-9]+\.[0-9]+\.[0-9]+)(\+.*)?$ ]]; then
+            version=${BASH_REMATCH[1]}
+            echo "Installing npm $version from packageManager"
+            npm install --global "npm@$version"
+          else
+            echo "No npm@X.Y.Z packageManager; using the bundled npm"
+          fi
+          echo "npm $(npm --version)"
+
       - name: Install dependencies
         id: install
         env:
@@ -75,6 +88,6 @@ jobs:
         id: baseline
         if: ${{ !cancelled() }}
         run: |
-          inline=$({ git grep -c -E 'eslint-disabl[e]|prettier-igno[r]e' -- ':!.core-services' || true; } | awk -F: '{ sum += $NF } END { print sum + 0 }')
+          inline=$({ git grep -ohE '(^|[[:space:]{])(//|/\*)[[:space:]]*(eslint-disable|prettier-ignore)' -- '*.js' '*.mjs' '*.cjs' '*.jsx' '*.ts' '*.mts' '*.cts' '*.tsx' ':!.core-services' || true; } | awk 'END { print NR }')
           echo "Inline ESLint and Prettier ignores: $inline"
           echo "count=$inline" >> "$GITHUB_OUTPUT"
