@@ -6,9 +6,6 @@ All notable changes to the **run_markdown_checks** reusable workflow are documen
 
 ### Fixed
 
-- Installs the npm version from `package.json`'s `packageManager` (`npm@X.Y.Z`) before `npm ci`, and
-  keeps the npm that ships with `.nvmrc`'s Node when there is none. `npm ci` failed with EBADENGINE in
-  repositories whose `engines.npm` needs a newer npm than Node bundles and that set `engine-strict`.
 - The `baselined` output counts only real inline directives (`<!-- markdownlint-disable…` in `*.md`
   files), and counts each one rather than each line. Names in documentation, changelogs and test
   fixtures inflated the count.

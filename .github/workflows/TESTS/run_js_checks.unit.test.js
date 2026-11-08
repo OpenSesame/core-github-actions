@@ -1,8 +1,6 @@
-const { describeSetUpNpm, readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
+const { readWorkflow, runStepInRepository } = require('./workflow-test-helpers');
 
 const workflowFile = 'run_js_checks.yml';
-
-describeSetUpNpm(workflowFile);
 
 describe('run_js_checks baselined count', () => {
   const count = files =>

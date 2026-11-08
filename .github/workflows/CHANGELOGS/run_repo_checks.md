@@ -6,8 +6,6 @@ All notable changes to the **run_repo_checks** reusable workflow are documented 
 
 ### Fixed
 
-- Calls the 1.0.2 Markdown and JS workflows from the same commit, which install the repository's npm
-  from `packageManager` before `npm ci`.
 - Calls the 1.0.2 or 1.0.3 per-technology workflows from the same commit, whose baselined counts
   include only real inline directives, counted once each.
 - The Summary shows ❌ setup failed for a step that was skipped because its job's setup (mise or

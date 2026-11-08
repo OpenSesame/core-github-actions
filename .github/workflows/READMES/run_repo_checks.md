@@ -67,9 +67,7 @@ Detect looks only at tracked files (`git ls-files`), and ignores anything under 
 The GHA, Terraform and Shell jobs set up mise and run mise tasks; they don't need Node or `npm ci`.
 Commit `mise.toml` and its lock file for Macs and runners
 (`mise lock --platform linux-x64,macos-arm64`). The Markdown and JS jobs use Node from `.nvmrc` and
-npm from `package.json`'s `packageManager` (`npm@X.Y.Z`; without it, the npm that ships with that
-Node), and run `npm ci --ignore-scripts`, so commit `.nvmrc` and `package-lock.json`, and set
-`packageManager` when `engines.npm` needs a newer npm than Node bundles. Pass
+run `npm ci --ignore-scripts`, so commit `.nvmrc` and `package-lock.json`. Pass
 `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` if the repository depends on private `@opensesame` packages.
 Pull requests from forks don't get Actions secrets, so private packages fail to install in them.
 Dependabot runs only see Dependabot secrets, so store the token as a Dependabot secret with the same

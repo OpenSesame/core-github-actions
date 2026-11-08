@@ -51,19 +51,6 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@opensesame'
 
-      - name: Set up npm
-        id: npm
-        run: | # zizmor: ignore[adhoc-packages] Installs the npm version the repository pins in packageManager; setup-node has no npm version input.
-          package_manager=$(jq -r 'if (.packageManager | type) == "string" then .packageManager else "" end' package.json)
-          if [[ "$package_manager" =~ ^npm@([0-9]+\.[0-9]+\.[0-9]+)(\+.*)?$ ]]; then
-            version=${BASH_REMATCH[1]}
-            echo "Installing npm $version from packageManager"
-            npm install --global "npm@$version"
-          else
-            echo "No npm@X.Y.Z packageManager; using the bundled npm"
-          fi
-          echo "npm $(npm --version)"
-
       - name: Install dependencies
         id: install
         env:

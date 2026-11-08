@@ -13,10 +13,7 @@ function extractRunScript(workflowFile, jobId, stepName) {
   const lines = readWorkflow(workflowFile).split('\n');
   const jobStart = lines.indexOf(`  ${jobId}:`);
   const stepStart = jobStart === -1 ? -1 : lines.indexOf(`      - name: ${stepName}`, jobStart);
-  const runStart =
-    stepStart === -1
-      ? -1
-      : lines.findIndex((line, index) => index > stepStart && /^ {8}run: \|( #.*)?$/.test(line));
+  const runStart = stepStart === -1 ? -1 : lines.indexOf('        run: |', stepStart);
 
   if (jobStart === -1 || stepStart === -1 || runStart === -1) {
     throw new Error(
@@ -100,64 +97,8 @@ function runStepInRepository(workflowFile, jobId, stepName, files, env) {
   }
 }
 
-function runSetUpNpm(workflowFile, packageJson) {
-  const bin = fs.mkdtempSync(path.join(os.tmpdir(), 'repo-checks-npm-'));
-  const log = path.join(bin, 'calls');
-  fs.writeFileSync(
-    path.join(bin, 'npm'),
-    `#!/usr/bin/env bash\nif [[ "$1" == --version ]]; then echo 11.19.1; else echo "$*" >> '${log}'; fi\n`,
-    { mode: 0o755 }
-  );
-  try {
-    const result = runStepInRepository(
-      workflowFile,
-      'checks',
-      'Set up npm',
-      { 'package.json': JSON.stringify(packageJson) },
-      { PATH: `${bin}:${process.env.PATH}` }
-    );
-    return { ...result, calls: fs.existsSync(log) ? fs.readFileSync(log, 'utf8') : '' };
-  } finally {
-    fs.rmSync(bin, { recursive: true, force: true });
-  }
-}
-
-function describeSetUpNpm(workflowFile) {
-  describe(`${workflowFile} Set up npm`, () => {
-    test('installs the npm version from packageManager', () => {
-      const result = runSetUpNpm(workflowFile, { packageManager: 'npm@12.2.1' });
-
-      expect(result.status).toBe(0);
-      expect(result.calls).toBe('install --global npm@12.2.1\n');
-    });
-
-    test('drops a packageManager hash', () => {
-      const result = runSetUpNpm(workflowFile, { packageManager: 'npm@12.2.1+sha512.abc123' });
-
-      expect(result.status).toBe(0);
-      expect(result.calls).toBe('install --global npm@12.2.1\n');
-    });
-
-    test.each([
-      ['no packageManager', {}],
-      ['another package manager', { packageManager: 'pnpm@10.0.0' }],
-      ['a range instead of a version', { packageManager: 'npm@^12' }],
-      ['extra text after the version', { packageManager: 'npm@12.2.1; echo hi' }],
-      ['a non-string packageManager', { packageManager: { name: 'npm' } }],
-    ])('keeps the bundled npm with %s', (_, packageJson) => {
-      const result = runSetUpNpm(workflowFile, packageJson);
-
-      expect(result.status).toBe(0);
-      expect(result.calls).toBe('');
-      expect(result.stdout).toContain('using the bundled npm');
-      expect(result.stdout).toContain('npm 11.19.1');
-    });
-  });
-}
-
 module.exports = {
   createRepository,
-  describeSetUpNpm,
   extractRunScript,
   readWorkflow,
   runScript,
