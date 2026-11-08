@@ -23,7 +23,7 @@ Pair this workflow with an apply that also uses the committed lock file: `tf_app
 jobs:
   terraform:
     name: Terraform
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_env_roots.yml@<released-sha> # workflows/tf_plan_env_roots/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_plan_env_roots.yml@<released-sha> # workflows/tf_plan_env_roots/1.1.0
     permissions:
       id-token: write # Required to assume the plan roles.
       contents: read # Required to check out the Terraform code.
@@ -41,13 +41,14 @@ Checks are reported as `Terraform / dev / Plan`, `Terraform / stage / Plan`, and
 
 ## Inputs
 
-| Input                      | Required | Default          | Description                                                                                                                          |
-| -------------------------- | -------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `commit-identifier`        | Yes      |                  | Commit SHA, tag, or branch to plan                                                                                                   |
-| `oidc-domain`              | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                                                          |
-| `terraform-version`        | Yes      |                  | Terraform CLI version                                                                                                                |
-| `terraform-workspace`      | No       | Environment name | Workspace for every environment                                                                                                      |
-| `build-artifact-directory` | No       |                  | Newline-separated directories to create before planning, as paths relative to each `terraform/<environment>` root; `..` may leave it |
+| Input                               | Required | Default          | Description                                                                                                                                                      |
+| ----------------------------------- | -------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `commit-identifier`                 | Yes      |                  | Commit SHA, tag, or branch to plan                                                                                                                               |
+| `oidc-domain`                       | Yes      |                  | AWS role domain, such as `core` or `reveng`                                                                                                                      |
+| `terraform-version`                 | Yes      |                  | Terraform CLI version                                                                                                                                            |
+| `terraform-workspace`               | No       | Environment name | Workspace for every environment                                                                                                                                  |
+| `build-artifact-directory`          | No       |                  | Newline-separated directories to create before planning, as paths relative to each `terraform/<environment>` root; `..` may leave it                             |
+| `detect-build-artifact-directories` | No       | `true`           | Create the missing build artifact directories that each root references, as [`tf_plan_single_root`](tf_plan_single_root.md#build-artifact-directories) describes |
 
 ## Contribution
 

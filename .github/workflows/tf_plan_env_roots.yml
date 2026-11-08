@@ -23,6 +23,10 @@ on:
         description: Optional directories to create before running terraform plan. Path should be relative to the terraform-root supplied. Example - "../../lambdas/auth-api/dist/out-tsc" Use multi-line string if multiple directories are needed.
         type: string
         required: false
+      detect-build-artifact-directories:
+        description: Before running terraform plan, create missing git-ignored directories that each root and its local modules reference through path.module, path.root or path.cwd, (default - true)
+        type: boolean
+        default: true
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -51,6 +55,7 @@ jobs:
       terraform-root: terraform/${{ matrix.environment }}
       terraform-version: ${{ inputs.terraform-version }}
       build-artifact-directory: ${{ inputs.build-artifact-directory }}
+      detect-build-artifact-directories: ${{ inputs.detect-build-artifact-directories }}
     secrets:
       ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN: ${{ secrets.ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN }}

@@ -39,6 +39,10 @@ on:
         description: Optional directories to create before running terraform plan. Path should be relative to the terraform-root supplied. Example - "../../lambdas/auth-api/dist/out-tsc" Use multi-line string if multiple directories are needed.
         type: string
         required: false
+      detect-build-artifact-directories:
+        description: Before running terraform plan, create missing git-ignored directories that the root and its local modules reference through path.module, path.root or path.cwd, (default - true)
+        type: boolean
+        default: true
     secrets:
       ORG_READ_ONLY_SSH_KEY:
         required: true
@@ -118,6 +122,9 @@ jobs:
             [ -z "$dir" ] && continue
             echo "Creating: [$dir]"
             mkdir -p -- "$dir"
+            if [ -z "$(ls -A -- "$dir")" ]; then
+              : > "$dir/.terraform-plan-placeholder"
+            fi
           done <<< "$BUILD_ARTIFACT_DIRECTORY"
 
       - name: Initialize Terraform
@@ -130,6 +137,82 @@ jobs:
 
       - name: Reinitialize Terraform
         run: terraform init -lockfile=readonly
+
+      - name: Detect build artifact directories
+        if: ${{ inputs.detect-build-artifact-directories }}
+        run: |
+          set -Eeuo pipefail
+          trap 'echo "::error::failed at line $LINENO: $BASH_COMMAND"' ERR
+
+          root="$(pwd -P)"
+          repo="$(cd "$(git rev-parse --show-toplevel)" && pwd -P)"
+
+          normalize() {
+            local path="$1" rest part result=""
+            case "$path" in /*) ;; *) path="$root/$path" ;; esac
+            rest="$path/"
+            while [ -n "$rest" ]; do
+              part="${rest%%/*}"
+              rest="${rest#*/}"
+              case "$part" in
+                '' | .) ;;
+                ..) result="${result%/*}" ;;
+                *) result="$result/$part" ;;
+              esac
+            done
+            printf '%s\n' "${result:-/}"
+          }
+
+          module_dirs() {
+            if [ -f .terraform/modules/modules.json ]; then
+              jq -r '.Modules[].Dir' .terraform/modules/modules.json | grep -v '^\.terraform/' || true
+            fi
+            echo .
+          }
+
+          references() {
+            local dir file ref
+            while IFS= read -r dir; do
+              for file in "$dir"/*.tf; do
+                [ -f "$file" ] || continue
+                { grep -vE '^[[:space:]]*(#|//)' "$file" || true; } \
+                  | { grep -vE 'fileexists\(|output_path[[:space:]]*=' || true; } \
+                  | { grep -oE '"\$\{path\.(module|root|cwd)\}[^"]*"' || true; } \
+                  | while IFS= read -r ref; do
+                    ref="${ref#\"}"
+                    ref="${ref%\"}"
+                    ref="${ref//\$\{path.module\}/$dir}"
+                    ref="${ref//\$\{path.root\}/.}"
+                    printf '%s\n' "${ref//\$\{path.cwd\}/.}"
+                  done
+              done
+            done < <(module_dirs | sort -u)
+          }
+
+          created=0
+          while IFS= read -r ref; do
+            static="${ref%%[\$%]\{*}"
+            [ "$static" = "$ref" ] || static="${static%/*}"
+            path="$(normalize "$static")"
+            shown="${path#"$repo"/}"
+            if [ -e "$path" ]; then
+              continue
+            elif [ "${path#"$repo"/}" = "$path" ]; then
+              echo "::notice::Not created: $ref is outside the repository"
+            elif [ "$static" != "$ref" ]; then
+              echo "::notice::Not created: $ref depends on other values. If the plan needs it, list it in build-artifact-directory."
+            elif ! git check-ignore -q -- "$path"; then
+              echo "::notice::Not created: $shown is missing, but git doesn't ignore it, so it isn't build output"
+            elif [[ "${path##*/}" =~ ^[^.].*\.[A-Za-z0-9]+$ ]]; then
+              echo "::warning::Not created: $shown looks like a file, and only directories are created. Build it before planning."
+            else
+              echo "Creating: [$shown]"
+              mkdir -p -- "$path"
+              : > "$path/.terraform-plan-placeholder"
+              created=$((created + 1))
+            fi
+          done < <(references | sort -u)
+          echo "Created $created build artifact directories"
 
       - name: Plan Terraform
         id: plan
