@@ -272,11 +272,14 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     }
   );
 
-  test('skips only the fileexists() argument on an HCL line with other references', () => {
+  test.each([
+    ['fileexists("${path.module}/../../lambdas/c/dist")'],
+    ['fileexists(abspath("${path.module}/../../lambdas/c/dist"))'],
+    ['fileexists( pathexpand( trimspace("${path.module}/../../lambdas/c/dist")))'],
+  ])('skips only the argument of %s on an HCL line with other references', call => {
     const result = detectAndCheck(
       {
-        'terraform/dev/main.tf':
-          'output "x" { value = fileexists("${path.module}/../../lambdas/c/dist") ? "" : "${path.module}/../../lambdas/d/dist" }\n',
+        'terraform/dev/main.tf': `output "x" { value = ${call} ? "" : "\${path.module}/../../lambdas/d/dist" }\n`,
       },
       ['lambdas/c/dist', 'lambdas/d/dist']
     );
@@ -284,6 +287,23 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     expect(result.status).toBe(0);
     expect(result.created).toEqual(['lambdas/d/dist']);
     expect(result.stdout).toContain('Created 1 build artifact directories');
+  });
+
+  test('skips wrapped fileexists() arguments in escaped .tf.json strings', () => {
+    const result = detectAndCheck(
+      {
+        'terraform/dev/main.tf.json': JSON.stringify({
+          output: {
+            e: { value: '${fileexists(abspath("${path.module}/../../lambdas/c/dist"))}' },
+            d: { value: '${path.module}/../../lambdas/d/dist' },
+          },
+        }),
+      },
+      ['lambdas/c/dist', 'lambdas/d/dist']
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.created).toEqual(['lambdas/d/dist']);
   });
 
   test('creates each directory once when several modules reference it', () => {
