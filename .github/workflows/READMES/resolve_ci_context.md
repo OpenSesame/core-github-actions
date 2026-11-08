@@ -1,8 +1,8 @@
 # Resolve CI Context
 
 Decides which commit CI runs against and whether to run CI, so a CI workflow can trigger on both
-`push` and `pull_request` without running twice. A push to a branch with an open PR is skipped (the PR
-run covers it); every other run executes CI.
+`push` and `pull_request` without running twice. A push to a branch with an open PR is skipped (the
+PR run covers it); every other run executes CI.
 
 ## Usage
 

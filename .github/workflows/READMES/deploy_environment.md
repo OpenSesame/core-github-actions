@@ -11,12 +11,12 @@ for example with `tf_plan_single_root`.
 
 ## Pairing plan and apply
 
-This version composes `tf_apply` 0.3.1, whose `terraform init` installs the provider versions in each root's committed
-`.terraform.lock.hcl`. Plan in CI with [`tf_plan_single_root`](tf_plan_single_root.md) or
-[`tf_plan_env_roots`](tf_plan_env_roots.md), which do the same. The deprecated `tf_validate_plan_*`
-workflows still run `terraform init -upgrade`, so with them CI can plan with newer providers than
-this apply uses, and the apply may not match the reviewed plan. Move plan and apply to the
-lock-file versions together.
+This version composes `tf_apply` 0.3.1, whose `terraform init` installs the provider versions in
+each root's committed `.terraform.lock.hcl`. Plan in CI with
+[`tf_plan_single_root`](tf_plan_single_root.md) or [`tf_plan_env_roots`](tf_plan_env_roots.md),
+which do the same. The deprecated `tf_validate_plan_*` workflows still run
+`terraform init -upgrade`, so with them CI can plan with newer providers than this apply uses, and
+the apply may not match the reviewed plan. Move plan and apply to the lock-file versions together.
 
 Even when paired, the apply doesn't run the CI plan. `terraform apply` makes a new plan at deploy
 time, with `TF_VAR_release_name` and `TF_VAR_IACDeploymentRef` set, which `tf_plan_*` don't set.
@@ -37,7 +37,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   deploy-dev:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.4.1
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_environment.yml@workflows/deploy_environment/0.4.2
     with:
       environment: dev
       commit-identifier: ${{ github.sha }}
@@ -75,8 +75,8 @@ jobs:
 1. Calls `tf_apply` with the target ref, environment, workspace, root, Terraform version, and
    release tag.
 
-Runs for the same repository and environment share a concurrency group. The workflow declares
-`id-token: write` and `contents: read` permissions for its called workflows.
+Runs for the same repository and environment share a concurrency group. The workflow sets
+`permissions: {}` and grants `id-token: write` and `contents: read` to the `tf_apply` job.
 The composed apply job runs on Ubuntu 26.04.
 
 ## Contribution

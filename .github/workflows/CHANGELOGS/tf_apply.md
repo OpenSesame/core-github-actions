@@ -2,6 +2,14 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.3.2
+
+### Changed
+
+- The workflow sets `permissions: {}`, and each job requests its own: `id-token: write` and
+  `contents: read` for the apply job, none for the summary job. Callers grant the same permissions
+  as before.
+
 ## 0.3.1
 
 ### Changed

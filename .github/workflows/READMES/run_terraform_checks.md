@@ -46,8 +46,9 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
   This check only protects a deploy that waits for it. `tf_plan_single_root` and `tf_plan_env_roots`
   also init with `-lockfile=readonly`, so a plan can't select its own provider versions. `tf_apply`
   doesn't, so gate deploys on a passing CI run for the same commit.
-- Keep a matching `package.json` script for each task, such as `"lint:terraform": "mise run lint:terraform"`, so
-  `npm run check` still runs them locally. CI doesn't use those scripts.
+- Keep a matching `package.json` script for each task, such as
+  `"lint:terraform": "mise run lint:terraform"`, so `npm run check` still runs them locally. CI
+  doesn't use those scripts.
 - The job has no secrets or cloud credentials, so the `init:terraform` and `validate:terraform` tasks
   must work without them: initialize with `-backend=false`, and use module sources that download
   without credentials, such as public registries or public git. Roots with private git, S3 or other

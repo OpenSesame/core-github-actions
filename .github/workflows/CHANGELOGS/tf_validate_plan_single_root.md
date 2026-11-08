@@ -9,9 +9,10 @@ this file.
 
 ### Changed
 
-- **Breaking:** the job is renamed from `TF-Validate-Plan` ("Terraform Validate and Plan
-  <environment>") to `validate-plan` ("Validate Plan"), so the check reads
-  `<caller job name> / Validate Plan`. Required status checks that use the old name must be updated.
+- **Breaking:** the job is renamed from `TF-Validate-Plan`
+  (`Terraform Validate and Plan <environment>`) to `validate-plan` ("Validate Plan"), so the check
+  reads `<caller job name> / Validate Plan`. Required status checks that use the old name must be
+  updated.
 - **Breaking:** the plan artifact is named `terraform-plan-<environment>` instead of
   `<environment>-tfplan-<run id>`. Read the name from the `plan-artifact-name` output.
 - **Breaking:** workflow-level permissions are `{}` and the job requests `id-token: write` and

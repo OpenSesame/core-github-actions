@@ -1,6 +1,8 @@
 # Configure AWS OIDC
 
-> **Warning:** This action changes the runner workspace because `get-role-arn` checks out its own repository. Run this action before checking out the consumer repository, or run `actions/checkout` again immediately afterward before using consumer repository files.
+> **Warning:** This action changes the runner workspace because `get-role-arn` checks out its own
+> repository. Run this action before checking out the consumer repository, or run `actions/checkout`
+> again immediately afterward before using consumer repository files.
 
 ## Summary
 
@@ -10,7 +12,8 @@ Configures temporary AWS credentials through GitHub OIDC by performing three ope
 2. Resolve the AWS role ARN and region.
 3. Assume the resolved role and export temporary AWS credentials for later steps in the same job.
 
-This cohesive utility is intended for jobs that always perform these operations together. It does not support workflows that resolve the role in one job and configure credentials in another.
+This cohesive utility is intended for jobs that always perform these operations together. It does
+not support workflows that resolve the role in one job and configure credentials in another.
 
 ## Permissions
 
@@ -33,7 +36,9 @@ permissions:
 | `actor`                 | Yes      | Triggering GitHub actor included in the role session name.             |
 | `ORG_READ_ONLY_SSH_KEY` | Yes      | Private SSH key required by `OpenSesame/gha-oidc-access/get-role-arn`. |
 
-`ORG_READ_ONLY_SSH_KEY` is an actual private SSH key and must always be passed from the GitHub `secrets` context. It is declared as an action input only because composite actions do not support a `secrets:` interface.
+`ORG_READ_ONLY_SSH_KEY` is an actual private SSH key and must always be passed from the GitHub
+`secrets` context. It is declared as an action input only because composite actions do not support a
+`secrets:` interface.
 
 ## Outputs
 
@@ -43,11 +48,14 @@ permissions:
 | `region`            | Resolved AWS region.             |
 | `role-session-name` | Sanitized AWS role session name. |
 
-The action does not output credentials or private key material. `aws-actions/configure-aws-credentials` exports temporary credentials into the current job environment; it does not create a persistent named AWS profile.
+The action does not output credentials or private key material.
+`aws-actions/configure-aws-credentials` exports temporary credentials into the current job
+environment; it does not create a persistent named AWS profile.
 
 ## Usage with consumer checkout
 
-Use the action before checking out the consumer repository. When later steps need consumer files, check out the consumer immediately afterward:
+Use the action before checking out the consumer repository. When later steps need consumer files,
+check out the consumer immediately afterward:
 
 ```yaml
 permissions:

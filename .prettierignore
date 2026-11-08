@@ -1,0 +1,2 @@
+.core-services/*
+!.core-services/repository-contract.json

@@ -1,0 +1,15 @@
+{
+  "validatorVersion": "0.14.1",
+  "standardId": "core-services-ai-ready-repository",
+  "standardVersion": "0.14.1",
+  "sourceRepository": "OpenSesame/core-services-ai-tooling",
+  "sourceCommit": "41300ef002ee4af0dd9862d4f29c74c482dd61ad",
+  "managedFiles": {
+    ".core-services/README.md": "bb1c365482c9652a17b81bd8e734db0f03164b0398e9a9edf3f7ed1b113992de",
+    ".core-services/generated/validate-repo.mjs": "b6045884b9f3a6ae9b24d8ead9e55f9dc0aac4c8d93bff7b5ecae481240ff186",
+    ".core-services/repository-contract.schema.json": "39bb3640e45e58865a4b0b916820a0bf48735577b0172356486ef02fd024ef7b",
+    ".core-services/repository-standard.json": "29b3eb40dfd08fe5db6fd0773e5c75cfae3e7eb2b19e1334047554740ff6c6e7",
+    ".core-services/templates/contract-exception.example.json": "4de592c6a5588db9233a0f20ba2a73d661a1c1835dbeab7a769d6f5d0d5292de",
+    ".core-services/templates/repository-contract.minimal.json": "ce9a21a8fd58b05a2cd890d3ca3b6610c98bb71398be0dbdbbfb99a325b97d84"
+  }
+}

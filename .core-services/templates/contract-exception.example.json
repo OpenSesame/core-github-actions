@@ -1,0 +1,9 @@
+{
+  "id": "example-legacy-input-names",
+  "requirement": "workflow-input-names",
+  "paths": [".github/workflows/example_legacy.yml"],
+  "rationale": "Replace this example with the repository-specific constraint and recovery plan.",
+  "owner": "team-name",
+  "reviewBy": "2027-01-31",
+  "isWarning": true
+}

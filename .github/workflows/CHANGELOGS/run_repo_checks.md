@@ -2,6 +2,13 @@
 
 All notable changes to the **run_repo_checks** reusable workflow are documented in this file.
 
+## 1.0.4
+
+### Fixed
+
+- Calls `run_gha_checks` 1.0.4 from the same commit, which annotates actionlint and zizmor
+  findings on their file and line.
+
 ## 1.0.3
 
 ### Fixed
@@ -24,8 +31,8 @@ All notable changes to the **run_repo_checks** reusable workflow are documented 
 
 - Calls the 1.0.1 per-technology workflows and `run_repo_validation` 1.0.1 from the same commit,
   which bump `jdx/mise-action` to 5.2.5 and `actions/setup-node` to 7.1.0.
-- Its `run_repo_validation` 1.0.1 sets up SSH with `configure-github-ssh` 1.0.0, which pins GitHub's host
-  keys, for the latest-release lookup.
+- Its `run_repo_validation` 1.0.1 sets up SSH with `configure-github-ssh` 1.0.0, which pins GitHub's
+  host keys, for the latest-release lookup.
 
 ## 1.0.0
 
@@ -43,5 +50,5 @@ All notable changes to the **run_repo_checks** reusable workflow are documented 
   skipped when Detect finds none of its files.
 - `standard` ("Standard") calls `run_repo_validation` 1.0.0 from the same commit with only the `ORG_READ_ONLY_SSH_KEY`
   secret.
-- `summary` ("Summary") writes a table of files, init, validate, lint, format and scan results, and baselined counts
-  per technology, plus the Standard result, even after failures.
+- `summary` ("Summary") writes a table of files, init, validate, lint, format and scan results, and
+  baselined counts per technology, plus the Standard result, even after failures.

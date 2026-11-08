@@ -40,14 +40,12 @@ on:
 
 concurrency: ${{ github.repository }}
 
-permissions:
-  id-token: write
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   Set-Release-Tag:
     runs-on: ubuntu-26.04
+    permissions: {}
     if: ${{ github.event.pull_request.merged || github.event_name == 'workflow_dispatch' }}
     outputs:
       release-tag: ${{ steps.releaseTag.outputs.release-tag }}
@@ -61,6 +59,9 @@ jobs:
     name: Apply Dev
     needs: [Set-Release-Tag]
     uses: ./.github/workflows/deploy_environment.yml
+    permissions:
+      id-token: write # Required to assume the Terraform apply role through OIDC.
+      contents: read # Required to check out the Terraform code.
     with:
       environment: dev
       oidc-domain: ${{ inputs.oidc-domain }}
@@ -77,6 +78,9 @@ jobs:
     name: Apply Stage
     needs: [Set-Release-Tag, DeployDev]
     uses: ./.github/workflows/deploy_environment.yml
+    permissions:
+      id-token: write # Required to assume the Terraform apply role through OIDC.
+      contents: read # Required to check out the Terraform code.
     with:
       environment: stage
       oidc-domain: ${{ inputs.oidc-domain }}
@@ -93,6 +97,9 @@ jobs:
     name: Apply Prod
     needs: [Set-Release-Tag, DeployStage]
     uses: ./.github/workflows/deploy_environment.yml
+    permissions:
+      id-token: write # Required to assume the Terraform apply role through OIDC.
+      contents: read # Required to check out the Terraform code.
     with:
       environment: prod
       oidc-domain: ${{ inputs.oidc-domain }}
@@ -109,6 +116,8 @@ jobs:
     name: Create New Release
     needs: [Set-Release-Tag, DeployProd]
     runs-on: ubuntu-26.04
+    permissions:
+      contents: write # Required to create the release.
 
     steps:
       - name: Create release
@@ -124,6 +133,8 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [DeployDev, DeployStage, DeployProd, CreateRelease]
     if: always()
+    permissions:
+      pull-requests: write # Required to comment the deploy status on the pull request.
     env:
       BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 

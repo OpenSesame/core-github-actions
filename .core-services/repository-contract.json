@@ -1,0 +1,54 @@
+{
+  "standard": {
+    "path": ".core-services/repository-standard.json",
+    "id": "core-services-ai-ready-repository",
+    "version": "0.14.1"
+  },
+  "exceptions": [
+    {
+      "id": "published-workflow-names",
+      "requirement": "workflow-file-prefixes",
+      "paths": [
+        ".github/workflows/deploy_environment.yml",
+        ".github/workflows/deploy_thru_prod.yml",
+        ".github/workflows/resolve_ci_context.yml",
+        ".github/workflows/run_gha_checks.yml",
+        ".github/workflows/run_infra_ci.yml",
+        ".github/workflows/run_js_checks.yml",
+        ".github/workflows/run_markdown_checks.yml",
+        ".github/workflows/run_npm_audit.yml",
+        ".github/workflows/run_npm_publish.yml",
+        ".github/workflows/run_repo_checks.yml",
+        ".github/workflows/run_repo_validation.yml",
+        ".github/workflows/run_semgrep_scan.yml",
+        ".github/workflows/run_shell_checks.yml",
+        ".github/workflows/run_sonar_scan.yml",
+        ".github/workflows/run_terraform_checks.yml",
+        ".github/workflows/tf_apply.yml",
+        ".github/workflows/tf_plan_env_roots.yml",
+        ".github/workflows/tf_plan_single_root.yml",
+        ".github/workflows/tf_validate_plan_env_roots.yml",
+        ".github/workflows/tf_validate_plan_single_root.yml",
+        ".github/workflows/trigger_workflow_and_wait.yml"
+      ],
+      "rationale": "These are the reusable workflows core-github-actions publishes. Consumers call them by file name and the release tags are named after them, so an on_call_ prefix would break every caller.",
+      "owner": "@OpenSesame/core-domain-operators"
+    },
+    {
+      "id": "no-runtime-dependencies",
+      "requirement": "ci-job:dependency-audit",
+      "paths": [".github/workflows/on_push_ci.yml"],
+      "rationale": "Every dependency here is a devDependency, which run_npm_audit omits, so the job would audit nothing. App CI runs npm run audit:npm on the full tree instead.",
+      "owner": "@OpenSesame/core-domain-operators",
+      "isWarning": true
+    },
+    {
+      "id": "no-sonar-project",
+      "requirement": "ci-job:sonar",
+      "paths": [".github/workflows/on_push_ci.yml"],
+      "rationale": "core-github-actions has no SonarCloud project; add the Sonar job when one exists.",
+      "owner": "@OpenSesame/core-domain-operators",
+      "isWarning": true
+    }
+  ]
+}

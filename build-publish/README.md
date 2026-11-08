@@ -4,8 +4,8 @@
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
-If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
-Known Consumers - Audited Sept 2026
+If your team still relies on this action, you may request CODEOWNER status for this directory to
+maintain it. Known Consumers - Audited Sept 2026
 
 * [core-build-library](https://github.com/OpenSesame/core-build-library)
 * [core-repo-template](https://github.com/OpenSesame/core-repo-template)
@@ -28,4 +28,7 @@ You will need to add this as a script in your `package.json`:
     "postversion": "cp package.json <dist_folder>"
 ```
 
-You can utilize the cp command, or install and use copyfiles to be system agnostic. After the `npm version` command bumps the version in the `package.json`, you need to copy the updated `package.json` into your output folder (default is `dist`) before `npm publish` runs to ensure it will publish the new version.
+You can utilize the cp command, or install and use copyfiles to be system agnostic. After the
+`npm version` command bumps the version in the `package.json`, you need to copy the updated
+`package.json` into your output folder (default is `dist`) before `npm publish` runs to ensure it
+will publish the new version.

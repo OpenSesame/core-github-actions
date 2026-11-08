@@ -9,8 +9,8 @@ Only plain `x.y.z` tags count; `v`-prefixed tags are ignored. A repository that 
 tags should add an `x.y.z` tag on its last released commit before the first run, so released
 markers don't count again.
 
-- `prerelease: false`, for merged pull requests or pushes to `main`: publishes `latest` and creates a
-  GitHub release. A merged pull request publishes its merge commit.
+- `prerelease: false`, for merged pull requests or pushes to `main`: publishes `latest` and creates
+  a GitHub release. A merged pull request publishes its merge commit.
 - `prerelease: true`, for other branches: publishes a beta with the `experimental` dist-tag and
   creates a beta tag.
 

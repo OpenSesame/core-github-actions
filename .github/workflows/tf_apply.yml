@@ -41,9 +41,7 @@ on:
 concurrency:
   group: ${{ github.repository }}-${{ inputs.environment }}-TF-Apply
 
-permissions:
-  id-token: write
-  contents: read
+permissions: {}
 
 env:
   TF_INPUT: false
@@ -52,6 +50,7 @@ env:
 jobs:
   Summary:
     runs-on: ubuntu-26.04
+    permissions: {}
     steps:
       - name: Markdown Summary
         env:
@@ -78,6 +77,9 @@ jobs:
   TF-Apply:
     name: Terraform Apply
     runs-on: ubuntu-26.04
+    permissions:
+      id-token: write # Required to assume the Terraform apply role through OIDC.
+      contents: read # Required to check out the Terraform code.
     environment: ${{ inputs.environment}}
     defaults:
       run:

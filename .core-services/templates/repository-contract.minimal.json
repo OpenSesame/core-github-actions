@@ -1,0 +1,8 @@
+{
+  "standard": {
+    "path": ".core-services/repository-standard.json",
+    "id": "core-services-ai-ready-repository",
+    "version": "0.14.1"
+  },
+  "exceptions": []
+}

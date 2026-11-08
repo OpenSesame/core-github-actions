@@ -2,7 +2,9 @@
 
 ## 🧭 Summary
 
-Creates or updates a comment on a GitHub Pull Request. The comments are identified by a unique hidden marker. This ensures only one comment per marker is present, updating the comment if one already exists for the marker or creating a new one if not.
+Creates or updates a comment on a GitHub Pull Request. The comments are identified by a unique
+hidden marker. This ensures only one comment per marker is present, updating the comment if one
+already exists for the marker or creating a new one if not.
 
 ## Scope/Limitations
 
@@ -58,7 +60,8 @@ Basic usage example:
 
 ## 🧠 Notes
 
-- The comment marker is embedded as an HTML comment and should be unique for each comment type you want to upsert.
+- The comment marker is embedded as an HTML comment and should be unique for each comment type you
+  want to upsert.
 - If multiple workflows use the same marker, they will overwrite each other's comments.
 - The action uses the GitHub REST API to list, update, or create comments.
 

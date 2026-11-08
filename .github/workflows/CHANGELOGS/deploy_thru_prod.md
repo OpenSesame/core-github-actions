@@ -2,6 +2,15 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+## 0.4.2
+
+### Changed
+
+- The workflow sets `permissions: {}`, and each job requests only what it uses: `id-token: write`
+  and `contents: read` for the deploy jobs, `contents: write` for the release job, and
+  `pull-requests: write` for the status comment. Callers grant the same permissions as before.
+- Composes `deploy_environment` 0.4.2.
+
 ## 0.4.1
 
 ### Changed

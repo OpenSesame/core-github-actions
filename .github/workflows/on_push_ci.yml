@@ -49,7 +49,7 @@ jobs:
 
       - name: Install dependencies
         id: install
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       # The audit runs here, not through run_npm_audit: this repository has only devDependencies,
       # and run_npm_audit audits production dependencies only (--omit=dev), so it would check nothing.
@@ -61,23 +61,17 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run test
 
-      - name: Lint
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run lint:js
-
-      - name: Check formatting
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: npm run format:prettier
-
-  infra-ci:
-    name: Infra CI
+  repo-checks:
+    name: Repo Checks
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: ./.github/workflows/run_infra_ci.yml
+    uses: ./.github/workflows/run_repo_checks.yml
     permissions:
-      contents: read # Required to check out the workflows to lint and audit.
+      contents: read # Required to check out the code to lint, format-check, scan and validate.
     with:
       commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 
   semgrep:
     name: Semgrep
@@ -96,20 +90,13 @@ jobs:
 
   ci-result:
     name: CI Result
-    needs: [ci-context, app-ci, infra-ci, semgrep]
-    if: ${{ !cancelled() }}
+    needs: [ci-context, app-ci, repo-checks, semgrep]
+    if: ${{ !cancelled() && needs.ci-context.outputs.should-run-ci != 'false' }}
     runs-on: ubuntu-26.04
-    permissions:
-      contents: read # Required to check out the local check-ci-result action.
+    permissions: {}
 
     steps:
-      - name: Check out code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
       - name: Check CI job results
-        uses: ./.github/actions/check-ci-result
+        uses: OpenSesame/core-github-actions/.github/actions/check-ci-result@95f95aac6fe51a55e656e82ba17ba213c530d13a # actions/check-ci-result/1.0.0
         with:
           needs-json: ${{ toJSON(needs) }}

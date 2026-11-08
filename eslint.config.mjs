@@ -4,6 +4,7 @@ import { defineConfig } from 'eslint/config';
 import globals from 'globals';
 
 export default defineConfig([
+  { ignores: ['.core-services/**'] },
   {
     files: ['**/*.{js,mjs,cjs}'],
     plugins: { js },

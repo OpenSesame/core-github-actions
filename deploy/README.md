@@ -4,7 +4,8 @@
 
 This composite action is no longer maintained by the Core Services team. Use at your own risk.
 
-If your team still relies on this action, you may request CODEOWNER status for this directory to maintain it.
+If your team still relies on this action, you may request CODEOWNER status for this directory to
+maintain it.
 
 Known Consumers - Audited Sept 2026
 
@@ -14,7 +15,8 @@ Known Consumers - Audited Sept 2026
 
 ### Overview
 
-The deploy composite action runs npm commands to deploy to a target environment, followed by post-deployment contract tests.
+The deploy composite action runs npm commands to deploy to a target environment, followed by
+post-deployment contract tests.
 
 The action will do the following:
 
@@ -33,4 +35,5 @@ The following items must be in the repository:
   * `build` - build the code
   * `test` - test the code (pre-deployment)
 * `terraform` folder containing roots for each environment (`dev`, `stage`, and `prod`)
-* (optional) `secrets-map.json` file containing map of secrets and associated environment variables. These will be written to `.env` file.
+* (optional) `secrets-map.json` file containing map of secrets and associated environment variables.
+  These will be written to `.env` file.

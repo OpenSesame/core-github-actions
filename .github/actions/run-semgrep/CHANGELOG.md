@@ -24,7 +24,8 @@ All notable changes to the run-semgrep GitHub Action will be documented in this 
 
 ### Changed
 
-- Run the action directly on the Node.js 24 action runtime while preserving its environment and output contracts
+- Run the action directly on the Node.js 24 action runtime while preserving its environment and
+  output contracts
 
 ### Fixed
 

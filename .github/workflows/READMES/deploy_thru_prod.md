@@ -10,12 +10,12 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 
 ## Pairing plan and apply
 
-This version composes `deploy_environment` 0.4.1 and `tf_apply` 0.3.1, whose `terraform init` installs the provider versions in each root's committed
-`.terraform.lock.hcl`. Plan in CI with [`tf_plan_single_root`](tf_plan_single_root.md) or
-[`tf_plan_env_roots`](tf_plan_env_roots.md), which do the same. The deprecated `tf_validate_plan_*`
-workflows still run `terraform init -upgrade`, so with them CI can plan with newer providers than
-this apply uses, and the apply may not match the reviewed plan. Move plan and apply to the
-lock-file versions together.
+This version composes `deploy_environment` 0.4.1 and `tf_apply` 0.3.1, whose `terraform init`
+installs the provider versions in each root's committed `.terraform.lock.hcl`. Plan in CI with
+[`tf_plan_single_root`](tf_plan_single_root.md) or [`tf_plan_env_roots`](tf_plan_env_roots.md),
+which do the same. The deprecated `tf_validate_plan_*` workflows still run
+`terraform init -upgrade`, so with them CI can plan with newer providers than this apply uses, and
+the apply may not match the reviewed plan. Move plan and apply to the lock-file versions together.
 
 Even when paired, the apply doesn't run the CI plan. `terraform apply` makes a new plan at deploy
 time, with `TF_VAR_release_name` and `TF_VAR_IACDeploymentRef` set, which `tf_plan_*` don't set.
@@ -36,7 +36,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.1
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.2
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
@@ -79,7 +79,10 @@ The release-tag job only runs when the caller's event is a merged pull request o
 `workflow_dispatch`. Other caller event contexts cause the deployment chain to be skipped. Runs for
 the same repository share one concurrency group.
 
-The workflow requests `id-token: write`, `contents: write`, and `pull-requests: write` permissions.
+The workflow sets `permissions: {}`, so callers still grant `id-token: write`, `contents: write`,
+and `pull-requests: write`, and each job requests only what it uses: the deploy jobs
+`id-token: write` and `contents: read`, the release job `contents: write`, and the status job
+`pull-requests: write`.
 Its direct and composed jobs run on Ubuntu 26.04.
 
 ## Contribution

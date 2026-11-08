@@ -37,4 +37,6 @@ All notable changes to the **run_terraform_checks** reusable workflow are docume
   which needs Initialize to have succeeded. A missing task fails its own step.
 - `init:terraform` and `validate:terraform` must work without secrets or cloud credentials:
   `-backend=false`, and module sources that download without credentials.
-- Outputs `init`, `validate`, `lint`, `format`, `scan` and `baselined` (findings in tracked `*.checkov.baseline` files, plus inline `#checkov:skip=` and `# tflint-ignore:` comments in `*.tf` files).
+- Outputs `init`, `validate`, `lint`, `format`, `scan` and `baselined` (findings in tracked
+  `*.checkov.baseline` files, plus inline `#checkov:skip=` and `# tflint-ignore:` comments in `*.tf`
+  files).

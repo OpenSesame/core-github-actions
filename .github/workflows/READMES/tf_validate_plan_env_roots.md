@@ -1,8 +1,9 @@
 # Terraform Validate and Plan Environment Roots
 
-> **Deprecated:** use [`tf_plan_env_roots`](tf_plan_env_roots.md) instead. This workflow gets no further releases,
-> and there's no direct upgrade path: `tf_plan_env_roots` drops `terraform validate` (it runs in Repo
-> Checks) and `init -upgrade`, and renames the checks to `… / Plan`.
+> **Deprecated:** use [`tf_plan_env_roots`](tf_plan_env_roots.md) instead. This workflow gets no
+> further releases, and there's no direct upgrade path: `tf_plan_env_roots` drops
+> `terraform validate` (it runs in Repo Checks) and `init -upgrade`, and renames the checks to
+> `… / Plan`.
 
 Plans `terraform/dev`, `terraform/stage`, and `terraform/prod` in parallel, without state locking,
 through [`tf_validate_plan_single_root`](tf_validate_plan_single_root.md). It never applies, but
