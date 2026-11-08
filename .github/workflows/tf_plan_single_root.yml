@@ -201,7 +201,7 @@ jobs:
               echo "::notice::Not created: $ref is outside the repository"
             elif [ "$static" != "$ref" ]; then
               echo "::notice::Not created: $ref depends on other values. If the plan needs it, list it in build-artifact-directory."
-            elif ! git check-ignore -q -- "$path/.terraform-plan-placeholder"; then
+            elif ! git check-ignore -q -- "$path/"; then
               echo "::notice::Not created: $shown is missing, but git doesn't ignore it, so it isn't build output"
             elif [[ "${path##*/}" =~ ^[^.].*\.[A-Za-z0-9]+$ ]]; then
               echo "::warning::Not created: $shown looks like a file, and only directories are created. Build it before planning."

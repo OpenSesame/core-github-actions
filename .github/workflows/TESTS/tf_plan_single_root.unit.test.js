@@ -133,6 +133,25 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     }
   );
 
+  test.each([['.terraform*'], ['*-placeholder']])(
+    'does not create directories when %s ignores only the placeholder inside them',
+    pattern => {
+      const result = detectAndCheck(
+        {
+          '.gitignore': `${pattern}\n`,
+          'terraform/dev/main.tf': 'output "x" { value = "${path.module}/../../lambdas/a/src" }\n',
+        },
+        ['lambdas/a/src']
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.created).toEqual([]);
+      expect(result.stdout).toContain(
+        "::notice::Not created: lambdas/a/src is missing, but git doesn't ignore it"
+      );
+    }
+  );
+
   test('puts a placeholder file in each created directory, so archive_file can zip it', () => {
     const result = detectAndCheck(
       {
