@@ -21,6 +21,7 @@
     "eslint": "10.14.0",
     "globals": "17.13.0",
     "jest": "30.5.2",
+    "markdownlint-cli2": "0.24.0",
     "npm-run-all2": "9.0.4",
     "prettier": "3.9.10",
     "semgrep": "0.0.1"
@@ -33,8 +34,10 @@
     "lint": "npm-run-all --continue-on-error lint:*",
     "lint:js": "eslint *.js --ext .js,.json",
     "lint:gha": "mise run lint:gha",
+    "lint:markdown": "markdownlint-cli2",
     "lint-fix": "npm-run-all --continue-on-error lint-fix:*",
     "lint-fix:js": "eslint *.js --ext .js,.json --fix",
+    "lint-fix:markdown": "markdownlint-cli2 --fix",
     "format": "npm-run-all --continue-on-error format:*",
     "format:prettier": "prettier --check './*.js' './*.mjs' './*.json' './*.md' 'scripts/**/*.js' '.github/actions/**/*.*'",
     "format-fix": "npm-run-all --continue-on-error format-fix:*",
@@ -43,5 +46,8 @@
     "scan:semgrep": "semgrep --config=p/ci --config=p/security-audit --config=p/javascript ./*.js ./*.mjs ./*.json scripts/ .github/actions/",
     "scan:gha": "mise run scan:gha",
     "check": "npm-run-all --continue-on-error audit lint format test scan"
+  },
+  "overrides": {
+    "re2js": "2.8.8"
   }
 }
