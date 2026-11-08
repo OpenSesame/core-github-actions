@@ -31,7 +31,7 @@ on:
         description: Semgrep version to install
         type: string
         required: false
-        default: '1.178.0'
+        default: '1.183.0'
       fail-severity:
         description: Lowest finding severity that fails the job (error | warning | info)
         type: string

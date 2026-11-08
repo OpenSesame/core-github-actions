@@ -12,7 +12,7 @@ jobs:
     name: Infra CI
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_infra_ci.yml@<released-sha> # workflows/run_infra_ci/1.0.2
+    uses: OpenSesame/core-github-actions/.github/workflows/run_infra_ci.yml@<released-sha> # workflows/run_infra_ci/1.0.3
     permissions:
       contents: read # Required to check out the workflows to lint and audit.
     with:

@@ -2,6 +2,13 @@
 
 All notable changes to the **run_repo_checks** reusable workflow are documented in this file.
 
+## 1.0.2
+
+### Changed
+
+- Calls the 1.0.2 GHA, Terraform and Shell workflows from the same commit, which install mise
+  2026.10.25.
+
 ## 1.0.1
 
 ### Changed

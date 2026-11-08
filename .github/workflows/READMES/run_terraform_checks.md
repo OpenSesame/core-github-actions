@@ -13,7 +13,7 @@ jobs:
     name: Terraform
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.0.2
     permissions:
       contents: read # Required to check out the code to check.
     with:
@@ -27,7 +27,7 @@ The check is reported as `Terraform / Checks`.
 
 ## Contract
 
-The job sets up mise 2026.9.17, which installs the tools pinned in the repo's `mise.toml`, then runs
+The job sets up mise 2026.10.25, which installs the tools pinned in the repo's `mise.toml`, then runs
 each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`:
 
 | mise task            | Step             | Typical command                                                                                                         |

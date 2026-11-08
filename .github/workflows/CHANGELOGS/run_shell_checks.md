@@ -2,6 +2,14 @@
 
 All notable changes to the **run_shell_checks** reusable workflow are documented in this file.
 
+## 1.0.2
+
+### Changed
+
+- Bumped the mise version that `jdx/mise-action` installs from 2026.9.17 to 2026.10.25, with its
+  published SHA-256 checksum. mise now rewrites `mise.lock` in `generate` mode during installs and
+  refuses archives whose symlinks point outside the install directory.
+
 ## 1.0.1
 
 ### Changed
