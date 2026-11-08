@@ -63,6 +63,7 @@ jobs:
           done
 
           if [ "$fetched" = "false" ]; then
+            echo "labels_unavailable=true" >> "$GITHUB_OUTPUT"
             echo "- (unavailable)" >> "$GITHUB_STEP_SUMMARY"
             echo "::error title=Labels Unavailable::Could not read this PR's labels from the GitHub API after $attempts attempts."
             exit 1
@@ -94,6 +95,7 @@ jobs:
       - name: Validation Job Summary
         if: ${{ always() }}
         env:
+          LABELS_UNAVAILABLE: ${{ steps.get_labels.outputs.labels_unavailable == 'true' }}
           NO_LABELS: ${{ steps.get_labels.outputs.no_labels == 'true' }}
           IS_VALID: ${{ steps.validate.outputs.isValid }}
           VALIDATION_MESSAGE: ${{ steps.validate.outputs.validationMessage }}
@@ -105,6 +107,10 @@ jobs:
         run: |
           {
             echo "## Validation Outcome"
+
+            if [ "$LABELS_UNAVAILABLE" == "true" ]; then
+              echo "❌ Could not read the PR's labels from the GitHub API. Re-run the job."
+            fi
 
             if [ "$NO_LABELS" == "true" ]; then
               echo "❌ No labels found on the PR. Add at least one version label."
@@ -125,7 +131,7 @@ jobs:
               if [ -n "$MISSING_CHANGELOGS" ]; then
                 echo "**Components missing changelogs/entries**: $MISSING_CHANGELOGS"
               fi
-            else
+            elif [ "$IS_VALID" == "true" ]; then
               echo "✅ Version label validation passed"
             fi
             echo -e "\n**Untracked Version**: $HAS_UNTRACKED_VERSION"
