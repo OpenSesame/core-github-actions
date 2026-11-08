@@ -79,6 +79,18 @@ jobs:
     with:
       commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
 
+  repo-checks:
+    name: Repo Checks
+    needs: ci-context
+    if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
+    uses: ./.github/workflows/run_repo_checks.yml
+    permissions:
+      contents: read # Required to check out the code to lint, format-check, scan and validate.
+    with:
+      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+
   semgrep:
     name: Semgrep
     needs: ci-context
@@ -96,7 +108,7 @@ jobs:
 
   ci-result:
     name: CI Result
-    needs: [ci-context, app-ci, infra-ci, semgrep]
+    needs: [ci-context, app-ci, infra-ci, repo-checks, semgrep]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-26.04
     permissions:
