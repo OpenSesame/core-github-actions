@@ -110,6 +110,29 @@ describe('tf_plan_single_root Detect build artifact directories', () => {
     }
   });
 
+  test.each([
+    ['dist/', 'lambdas/a/dist'],
+    ['/lambdas/*/dist/', 'lambdas/a/dist'],
+    ['**/dist/', 'lambdas/a/dist'],
+    ['out-tsc/', 'lambdas/a/dist/out-tsc'],
+  ])(
+    'creates missing directories that the directory-only pattern %s ignores',
+    (pattern, directory) => {
+      const result = detectAndCheck(
+        {
+          '.gitignore': `${pattern}\n.terraform/\n`,
+          'terraform/dev/main.tf': `output "x" { value = "\${path.module}/../../${directory}" }\n`,
+        },
+        [`${directory}/${placeholder}`]
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.created).toEqual([`${directory}/${placeholder}`]);
+      expect(result.stdout).toContain('Created 1 build artifact directories');
+      expect(result.stdout).not.toContain('::');
+    }
+  );
+
   test('puts a placeholder file in each created directory, so archive_file can zip it', () => {
     const result = detectAndCheck(
       {
