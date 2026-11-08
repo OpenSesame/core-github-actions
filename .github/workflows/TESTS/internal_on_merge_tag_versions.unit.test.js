@@ -37,6 +37,10 @@ describe('internal_on_merge_tag_versions trigger', () => {
   test('tags the merge commit of the pull request', () => {
     expect(workflow).toContain('ref: ${{ github.event.pull_request.merge_commit_sha }}');
   });
+
+  test('runs steps in bash with pipefail, so a failed tag lookup fails the step', () => {
+    expect(workflow).toContain('defaults:\n  run:\n    shell: bash\n');
+  });
 });
 
 describe('internal_on_merge_tag_versions Create Version Tags', () => {
@@ -99,6 +103,20 @@ describe('internal_on_merge_tag_versions Create Version Tags', () => {
     expect(result.stdout).toContain(
       '::error title=Tags Already Exist::These tags already exist, so no tags were created: actions/existing/1.0.0'
     );
+    expect(remoteTags()).toEqual(['actions/existing/1.0.0']);
+  });
+
+  test('reports a rejected push and pushes no tags', () => {
+    const hook = path.join(remote, 'hooks', 'pre-receive');
+    fs.writeFileSync(hook, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
+
+    const result = createTags('actions/new-action/1.0.0,workflows/new_workflow/2.0.0');
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain(
+      '::error title=Tag Push Rejected::The atomic push was rejected, so no tags were pushed.'
+    );
+    expect(result.summary).not.toContain('✅');
     expect(remoteTags()).toEqual(['actions/existing/1.0.0']);
   });
 

@@ -165,8 +165,8 @@ Each released version must have a heading that includes the version label
 
 Minimum requirements:
 
-- The header must be a line that is exactly `## X.Y.Z`, optionally followed by ` - title`
-  (this is what validation looks for).
+- The header must be a line that is exactly `## X.Y.Z`, optionally followed by ` - title` or
+  ` — title` (this is what validation looks for).
 - The PR must add or update an entry for the version used in the label
   (`v:a/{component-name}/X.Y.Z` or `v:wf/{component-name}/X.Y.Z`).
 

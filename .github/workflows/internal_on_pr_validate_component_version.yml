@@ -17,6 +17,10 @@ concurrency:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   validate-version-labels:
     name: Validate PR Version Labels
@@ -88,7 +92,8 @@ jobs:
           echo "$all_labels" > all_labels.txt
 
       - name: Get released version tags
-        run: git ls-remote --tags --refs origin | cut -f2 | sed 's#^refs/tags/##' > released_tags.txt
+        run: |
+          git ls-remote --tags --refs origin | cut -f2 | sed 's#^refs/tags/##' > released_tags.txt
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0

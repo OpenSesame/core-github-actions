@@ -7,6 +7,10 @@ on:
 
 permissions: {}
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   no-merge:
     if: github.event.pull_request.merged == false
@@ -100,7 +104,12 @@ jobs:
           for tag in "${tagsArray[@]}"; do
             git tag "$tag"
           done
-          git push --atomic origin "${refs[@]}"
+          if ! git push --atomic origin "${refs[@]}"; then
+            message="The atomic push was rejected, so no tags were pushed. Another run may have created one of these tags since the check: ${tagsArray[*]}"
+            echo "❌ $message" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error title=Tag Push Rejected::$message"
+            exit 1
+          fi
 
           for tag in "${tagsArray[@]}"; do
             echo "✅ Created and pushed tag: $tag" >> "$GITHUB_STEP_SUMMARY"
