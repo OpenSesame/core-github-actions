@@ -54,6 +54,8 @@ jobs:
         id: install
         run: npm ci
 
+      # The audit runs here, not through run_npm_audit: this repository has only devDependencies,
+      # and run_npm_audit audits production dependencies only (--omit=dev), so it would check nothing.
       - name: Audit dependencies
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: npm run audit:npm
