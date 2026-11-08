@@ -50,4 +50,21 @@ describe('get-version-tags main module integration', () => {
     fs.unlinkSync(labelFile);
     fs.unlinkSync(outputFile);
   });
+
+  it('fails without writing tags when a component has more than one version label', () => {
+    const labelInput = `${versionLabelPrefix}a/pr-open-check/1.0.0\n${versionLabelPrefix}a/pr-open-check/1.1.0`;
+    const unique = Date.now() + Math.random();
+    const labelFile = path.join(tmp, `labels-${unique}.txt`);
+    const outputFile = path.join(tmp, `gha_output-${unique}.txt`);
+    fs.writeFileSync(labelFile, labelInput, 'utf8');
+    const result = spawnSync('node', [scriptPath, labelFile], {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_OUTPUT: outputFile },
+    });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('More than one version label for: actions/pr-open-check');
+    expect(fs.existsSync(outputFile)).toBe(false);
+    fs.unlinkSync(labelFile);
+  });
 });
