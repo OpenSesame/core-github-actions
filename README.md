@@ -72,7 +72,7 @@ To get started:
   shellcheck and zizmor, pinned in `mise.toml`. `npm run lint:gha` and `npm run scan:gha` run them, and
   `npm run check` and the pre-commit hook include both.
 - use Node.js 24.15.0 or newer in the Node.js 24 release line (`nvm use`)
-- install the pinned npm version `npm install --global npm@12.1.0`
+- install the pinned npm version `npm install --global npm@12.2.1`
 - install project dependencies `npm ci`
 
 ### 🏷️ Versioning Policy Overview
