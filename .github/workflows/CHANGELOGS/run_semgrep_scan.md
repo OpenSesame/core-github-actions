@@ -2,6 +2,13 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 2.0.2
+
+### Changed
+
+- Bumped the default `semgrep-version` from 1.178.0 to 1.183.0. Pass `semgrep-version` to keep an
+  older release.
+
 ## 2.0.1
 
 ### Changed

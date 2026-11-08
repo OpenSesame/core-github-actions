@@ -11,7 +11,7 @@ jobs:
     name: Semgrep
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_semgrep_scan.yml@<released-sha> # workflows/run_semgrep_scan/2.0.1
+    uses: OpenSesame/core-github-actions/.github/workflows/run_semgrep_scan.yml@<released-sha> # workflows/run_semgrep_scan/2.0.2
     permissions:
       contents: read # Required to check out the code to scan.
       pull-requests: write # Required to post review comments and the summary comment on pull requests.
@@ -36,7 +36,7 @@ run are skipped.
 | `fail-severity`         | `error`                   | Lowest severity that fails the job: `error`, `warning`, `info` |
 | `baseline-ref`          | `origin/<default branch>` | Diff baseline outside `pull_request` (PRs use their base)      |
 | `extra-args`            | `''`                      | Extra Semgrep arguments                                        |
-| `semgrep-version`       | `1.178.0`                 | Semgrep version to install                                     |
+| `semgrep-version`       | `1.183.0`                 | Semgrep version to install                                     |
 | `reviewdog-filter-mode` | `added`                   | PR comments: `added`, `diff_context`, or `nofilter`            |
 | `reviewdog-reporter`    | `github-pr-review`        | PR reporter: `github-pr-review` or `github-pr-check`           |
 
