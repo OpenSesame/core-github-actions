@@ -46,6 +46,49 @@ describe('validate-version-labels main module integration', () => {
     fs.unlinkSync(outputFile);
   });
 
+  it('fails when a component has more than one version label', () => {
+    const labelInput = `${versionLabelPrefix}a/pr-open-check/1.0.0\n${versionLabelPrefix}a/pr-open-check/1.1.0`;
+    const outputFile = path.join(tmp, 'gha_duplicate_output.txt');
+    const result = spawnSync('node', [scriptPath], {
+      cwd: projectRoot,
+      input: labelInput,
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_OUTPUT: outputFile },
+    });
+    const outputs = parseGithubOutput(outputFile);
+    expect(outputs.duplicateComponents).toBe('actions/pr-open-check');
+    expect(outputs.validComponents).toBe('');
+    expect(outputs.validationMessage).toContain('More than one version label');
+    expect(outputs.isValid).toBe('false');
+    expect(result.status).not.toBe(0);
+    fs.unlinkSync(outputFile);
+  });
+
+  it('fails when the tag listed in RELEASED_TAGS_FILE already exists', () => {
+    const labelInput = `${versionLabelPrefix}a/pr-open-check/1.0.0`;
+    const releasedTagsFile = path.join(tmp, 'released_tags.txt');
+    fs.writeFileSync(
+      releasedTagsFile,
+      'actions/pr-open-check/1.0.0\nworkflows/run_semgrep_scan/1.0.0\n',
+      'utf8'
+    );
+    const outputFile = path.join(tmp, 'gha_released_output.txt');
+    const result = spawnSync('node', [scriptPath], {
+      cwd: projectRoot,
+      input: labelInput,
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_OUTPUT: outputFile, RELEASED_TAGS_FILE: releasedTagsFile },
+    });
+    const outputs = parseGithubOutput(outputFile);
+    expect(outputs.releasedVersions).toBe('actions/pr-open-check/1.0.0');
+    expect(outputs.validComponents).toBe('');
+    expect(outputs.validationMessage).toContain('already released');
+    expect(outputs.isValid).toBe('false');
+    expect(result.status).not.toBe(0);
+    fs.unlinkSync(releasedTagsFile);
+    fs.unlinkSync(outputFile);
+  });
+
   it('rejects the previous version label format', () => {
     const labelInput = 'version:actions/pr-open-check/1.0.0';
     const outputFile = path.join(tmp, 'gha_old_format_output.txt');

@@ -11,6 +11,10 @@ on:
       - unlabeled
       - reopened
 
+concurrency:
+  group: validate-version-labels-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions: {}
 
 jobs:
@@ -83,13 +87,19 @@ jobs:
 
           echo "$all_labels" > all_labels.txt
 
+      - name: Get released version tags
+        run: git ls-remote --tags --refs origin | cut -f2 | sed 's#^refs/tags/##' > released_tags.txt
+
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          package-manager-cache: false
 
       - name: Label Validation
         id: validate
+        env:
+          RELEASED_TAGS_FILE: released_tags.txt
         run: node scripts/internal-ci/validate-version-labels/index.js all_labels.txt
 
       - name: Validation Job Summary
@@ -102,8 +112,10 @@ jobs:
           INVALID_VERSION_LABELS: ${{ steps.validate.outputs.invalidVersionLabels }}
           HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
           COMPONENT_VERSION_LABELS: ${{ steps.validate.outputs.componentVersionLabels }}
+          DUPLICATE_COMPONENTS: ${{ steps.validate.outputs.duplicateComponents }}
           INVALID_COMPONENTS: ${{ steps.validate.outputs.invalidComponents }}
           MISSING_CHANGELOGS: ${{ steps.validate.outputs.missingChangelogs }}
+          RELEASED_VERSIONS: ${{ steps.validate.outputs.releasedVersions }}
         run: |
           {
             echo "## Validation Outcome"
@@ -125,11 +137,17 @@ jobs:
               if [ -n "$INVALID_VERSION_LABELS" ]; then
                 echo "**Invalid version labels**: $INVALID_VERSION_LABELS"
               fi
+              if [ -n "$DUPLICATE_COMPONENTS" ]; then
+                echo "**Components with more than one version label**: $DUPLICATE_COMPONENTS"
+              fi
               if [ -n "$INVALID_COMPONENTS" ]; then
                 echo "**Nonexistent/Invalid components**: $INVALID_COMPONENTS"
               fi
               if [ -n "$MISSING_CHANGELOGS" ]; then
                 echo "**Components missing changelogs/entries**: $MISSING_CHANGELOGS"
+              fi
+              if [ -n "$RELEASED_VERSIONS" ]; then
+                echo "**Versions already released**: $RELEASED_VERSIONS"
               fi
             elif [ "$IS_VALID" == "true" ]; then
               echo "✅ Version label validation passed"
@@ -146,13 +164,11 @@ jobs:
           HAS_UNTRACKED_VERSION: ${{ steps.validate.outputs.hasUntrackedVersion }}
           VALID_COMPONENTS: ${{ steps.validate.outputs.validComponents }}
         run: |
-          set -x
           summary="## Tags\n"
           if [ "${HAS_UNTRACKED_VERSION}" = "true" ]; then
             summary+="- No Tags will be created on main"
           else
             summary+="The following tags will be created on main after merge\n\n"
-            echo "$VALID_COMPONENTS"
             IFS=',' read -ra components <<< "$VALID_COMPONENTS"
             for component_version in "${components[@]}"; do
               summary+="🏷️  \`$component_version\`\n"
