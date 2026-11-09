@@ -1,6 +1,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { createRepository, extractRunScript, runScript } = require('./workflow-test-helpers');
+const {
+  createRepository,
+  extractRunScript,
+  readWorkflow,
+  runScript,
+} = require('./workflow-test-helpers');
 
 const workflowFile = 'run_repo_checks.yml';
 
@@ -210,6 +215,20 @@ describe('run_repo_checks Summary', () => {
     expect(result.status).toBe(0);
     expect(result.summary).toContain(
       '| Terraform | ? | ⏭️ skipped | ⏭️ skipped | ⏭️ skipped | ⏭️ skipped | ⏭️ skipped | ? |'
+    );
+  });
+});
+
+describe('run_repo_checks secrets', () => {
+  test('passes ORG_READ_ONLY_SSH_KEY to the Terraform job', () => {
+    const workflow = readWorkflow(workflowFile);
+    const terraform = workflow.indexOf('  terraform:');
+    const markdown = workflow.indexOf('  markdown:');
+
+    expect(terraform).toBeGreaterThan(-1);
+    expect(markdown).toBeGreaterThan(terraform);
+    expect(workflow.slice(terraform, markdown)).toContain(
+      'ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}'
     );
   });
 });

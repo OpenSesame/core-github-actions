@@ -13,11 +13,13 @@ jobs:
     name: Terraform
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.0.3
+    uses: OpenSesame/core-github-actions/.github/workflows/run_terraform_checks.yml@<released-sha> # workflows/run_terraform_checks/1.1.0
     permissions:
       contents: read # Required to check out the code to check.
     with:
       commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+    secrets:
+      ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
 ```
 
 `ci-context` is the caller's [`resolve_ci_context`](resolve_ci_context.md) job, which picks the commit
@@ -49,10 +51,18 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 - Keep a matching `package.json` script for each task, such as
   `"lint:terraform": "mise run lint:terraform"`, so `npm run check` still runs them locally. CI
   doesn't use those scripts.
-- The job has no secrets or cloud credentials, so the `init:terraform` and `validate:terraform` tasks
-  must work without them: initialize with `-backend=false`, and use module sources that download
-  without credentials, such as public registries or public git. Roots with private git, S3 or other
-  authenticated module sources fail here. Plan stays in [`tf_plan_env_roots`](tf_plan_env_roots.md).
+- The job has no cloud credentials, so the `init:terraform` and `validate:terraform` tasks must work
+  without them: initialize with `-backend=false`. Plan stays in
+  [`tf_plan_env_roots`](tf_plan_env_roots.md).
+- Module sources must download without credentials, such as public registries or public git, or
+  over SSH from private github.com repositories, such as
+  `git@github.com:OpenSesame/devops-terraform-modules.git//...`. For those, pass
+  `ORG_READ_ONLY_SSH_KEY`. The job then sets it up with
+  [`configure-github-ssh`](../../actions/configure-github-ssh/README.md) just before Initialize, which
+  also pins GitHub's host keys, and removes the key and SSH config right after Initialize, so
+  Validate, Lint, Format and Scan run without it. Without the secret, the job sets up no SSH, and
+  roots with private git modules fail Initialize. If SSH setup fails, Initialize and Validate are
+  skipped. Roots with S3 or other authenticated module sources fail here.
 - The job fails if any step failed.
 
 ## Inputs
@@ -60,6 +70,12 @@ each mise task with `mise run`. It doesn't need Node, `package.json` or `npm ci`
 | Input               | Default               | Description                         |
 | ------------------- | --------------------- | ----------------------------------- |
 | `commit-identifier` | Triggering ref or SHA | Commit SHA, tag, or branch to check |
+
+## Secrets
+
+| Secret                  | Required | Description                                                                                         |
+| ----------------------- | -------- | --------------------------------------------------------------------------------------------------- |
+| `ORG_READ_ONLY_SSH_KEY` | No       | Read-only SSH key that can read the private github.com repositories the Terraform modules come from |
 
 ## Outputs
 

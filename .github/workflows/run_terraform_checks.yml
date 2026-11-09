@@ -8,6 +8,10 @@ on:
         type: string
         required: false
         default: ''
+    secrets:
+      ORG_READ_ONLY_SSH_KEY:
+        description: Read-only SSH key for the org's private repositories, used only by the initialize step to download private git module sources
+        required: false
     outputs:
       init:
         description: Outcome of the initialize step (success, failure, cancelled or skipped)
@@ -40,6 +44,8 @@ jobs:
     runs-on: ubuntu-26.04
     permissions:
       contents: read # Required to check out the Terraform code.
+    env:
+      HAS_ORG_READ_ONLY_SSH_KEY: ${{ secrets.ORG_READ_ONLY_SSH_KEY != '' }}
     outputs:
       init: ${{ steps.init.outcome }}
       validate: ${{ steps.validate.outcome }}
@@ -62,10 +68,21 @@ jobs:
           version: 2026.10.25
           sha256: 5d362ecc578dc7c146679b841dda949d6472cbf86ff5635db7afdca1b6b3fd87
 
+      - name: Configure GitHub SSH credentials
+        id: ssh
+        if: ${{ env.HAS_ORG_READ_ONLY_SSH_KEY == 'true' }}
+        uses: OpenSesame/core-github-actions/.github/actions/configure-github-ssh@6d23fbcf9eb4c24c5f3404ef8bd175371f7e69a9 # actions/configure-github-ssh/1.0.0
+        with:
+          ssh-private-key: ${{ secrets.ORG_READ_ONLY_SSH_KEY }}
+
       - name: Initialize
         id: init
-        if: ${{ !cancelled() && steps.mise.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.mise.outcome == 'success' && steps.ssh.outcome != 'failure' }}
         run: mise run init:terraform
+
+      - name: Remove GitHub SSH credentials
+        if: ${{ always() && steps.ssh.outcome == 'success' }}
+        run: rm -rf "$RUNNER_TEMP/configure-github-ssh" ~/.ssh/config
 
       - name: Validate
         id: validate

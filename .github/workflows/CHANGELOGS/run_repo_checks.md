@@ -2,6 +2,14 @@
 
 All notable changes to the **run_repo_checks** reusable workflow are documented in this file.
 
+## 1.1.0
+
+### Added
+
+- Passes the optional `ORG_READ_ONLY_SSH_KEY` secret to the Terraform job, which calls
+  `run_terraform_checks` 1.1.0 from the same commit, so Terraform roots can use private git module
+  sources over SSH.
+
 ## 1.0.4
 
 ### Fixed
