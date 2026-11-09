@@ -2,6 +2,16 @@
 
 All notable changes to the **run_terraform_checks** reusable workflow are documented in this file.
 
+## 1.1.0
+
+### Added
+
+- Optional `ORG_READ_ONLY_SSH_KEY` secret. When it is set, the job sets it up with
+  `configure-github-ssh` 1.0.0 before Initialize, so `init:terraform` can download private git module
+  sources over SSH, such as `git@github.com:OpenSesame/devops-terraform-modules.git//...`. It removes
+  the key and SSH config right after Initialize, so Validate, Lint, Format and Scan run without it.
+  If SSH setup fails, Initialize and Validate are skipped. Without the secret, nothing changes.
+
 ## 1.0.3
 
 ### Fixed

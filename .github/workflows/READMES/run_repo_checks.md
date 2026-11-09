@@ -15,7 +15,7 @@ jobs:
     name: Repo Checks
     needs: ci-context
     if: ${{ needs.ci-context.outputs.should-run-ci == 'true' }}
-    uses: OpenSesame/core-github-actions/.github/workflows/run_repo_checks.yml@<released-sha> # workflows/run_repo_checks/1.0.4
+    uses: OpenSesame/core-github-actions/.github/workflows/run_repo_checks.yml@<released-sha> # workflows/run_repo_checks/1.1.0
     permissions:
       contents: read # Required to check out the code to lint, format-check, scan and validate.
     with:
@@ -26,7 +26,7 @@ jobs:
 ```
 
 Add `repo-checks` to `ci-result`'s needs. Replace `<released-sha>` with the full commit SHA of the
-tag: `git rev-list -n1 workflows/run_repo_checks/1.0.4`.
+tag: `git rev-list -n1 workflows/run_repo_checks/1.1.0`.
 
 ## Jobs
 
@@ -90,6 +90,10 @@ Repository validation needs the validator kit at `.core-services/generated/valid
 `ORG_READ_ONLY_SSH_KEY` so it can warn when a newer validator release exists; without it, it
 validates without that check.
 
+The Terraform job passes `ORG_READ_ONLY_SSH_KEY` to `run_terraform_checks`, which installs it only
+while `init:terraform` runs, so roots can use private git module sources from github.com over SSH,
+such as `git@github.com:OpenSesame/devops-terraform-modules.git//...`.
+
 ## Summary
 
 The Summary job writes a table of each technology's file count, init, validate, lint, format and scan
@@ -121,7 +125,7 @@ several:
 
 | Secret                                | Required | Description                                                                                                                         |
 | ------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `ORG_READ_ONLY_SSH_KEY`               | No       | Read-only SSH key that can read OpenSesame/core-services-ai-tooling                                                                 |
+| `ORG_READ_ONLY_SSH_KEY`               | No       | Read-only SSH key that can read OpenSesame/core-services-ai-tooling and the private repositories the Terraform modules come from    |
 | `ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN` | No       | Read-only token for the org's GitHub Packages npm registry, passed to the Markdown and JS checks for private `@opensesame` packages |
 
 ## Contribution
