@@ -88,9 +88,21 @@ jobs:
       semgrep-targets: './*.js ./*.mjs ./*.json scripts/ .github/actions/'
       semgrep-scan-mode: ${{ github.ref_name == github.event.repository.default_branch && 'full' || 'diff' }}
 
+  sonar:
+    name: Sonar
+    needs: [ci-context, app-ci]
+    if: ${{ !cancelled() && needs.ci-context.outputs.should-run-ci == 'true' }}
+    uses: ./.github/workflows/run_sonar_scan.yml
+    permissions:
+      contents: read # Required to check out the code to scan.
+    with:
+      commit-identifier: ${{ needs.ci-context.outputs.commit-identifier }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   ci-result:
     name: CI Result
-    needs: [ci-context, app-ci, repo-checks, semgrep]
+    needs: [ci-context, app-ci, repo-checks, semgrep, sonar]
     if: ${{ !cancelled() && needs.ci-context.outputs.should-run-ci != 'false' }}
     runs-on: ubuntu-26.04
     permissions: {}
