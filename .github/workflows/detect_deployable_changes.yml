@@ -1,0 +1,111 @@
+name: Detect Deployable Changes
+
+# Decides whether the caller's deploy can be skipped because only ignorable
+# files changed since the last commit whose deploy run passed proof-job. It
+# checks out the commit with full history and runs detect-deployable-changes.
+# Any doubt deploys.
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: pull-request for a pull request's deploy, merge for a merged pull request's deploy through prod
+        type: string
+        required: true
+      workflow-file:
+        description: File name of the workflow whose earlier pull_request runs prove earlier deploys, usually the caller
+        type: string
+        required: true
+      proof-job:
+        description: Full job name, as the jobs API lists it, whose success proves a run deployed its commit
+        type: string
+        required: true
+      proof-caller-job:
+        description: Caller job whose skipped result stands in for a missing proof job; empty treats it as unverified
+        type: string
+        required: false
+        default: ''
+      ignore-paths-file:
+        description: Repository file listing ignorable globs, one per line; the file itself always deploys
+        type: string
+        required: false
+        default: ''
+      ignore-paths:
+        description: Extra ignorable globs, one per line, usually the ones only this mode ignores
+        type: string
+        required: false
+        default: ''
+      deploy-paths:
+        description: Globs that deploy even when an ignorable glob matches them, one per line
+        type: string
+        required: false
+        default: ''
+      wait-timeout-minutes:
+        description: How long to wait in total for unfinished earlier runs before deploying
+        type: number
+        required: false
+        default: 40
+      poll-interval-seconds:
+        description: How often to check an unfinished earlier run
+        type: number
+        required: false
+        default: 30
+      max-commits:
+        description: How many earlier commits to search for a verified one before deploying
+        type: number
+        required: false
+        default: 50
+      timeout-minutes:
+        description: Job timeout; keep it above wait-timeout-minutes so the action deploys before the job times out
+        type: number
+        required: false
+        default: 50
+    outputs:
+      should-deploy:
+        description: "'false' when the deploy can be skipped, otherwise 'true'"
+        value: ${{ jobs.detect.outputs.should-deploy }}
+      reason:
+        description: One line explaining the decision
+        value: ${{ jobs.detect.outputs.reason }}
+      verified-sha:
+        description: The earlier commit whose deploy the decision relies on, empty when there is none
+        value: ${{ jobs.detect.outputs.verified-sha }}
+
+permissions: {}
+
+jobs:
+  detect:
+    name: Detect
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: read # Required to read earlier deploy runs and their jobs.
+      contents: read # Required to check out the history the changes are diffed against.
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    outputs:
+      should-deploy: ${{ steps.detect.outputs.should-deploy }}
+      reason: ${{ steps.detect.outputs.reason }}
+      verified-sha: ${{ steps.detect.outputs.verified-sha }}
+
+    steps:
+      # The merge mode deploys the merge commit, github.sha for a closed pull
+      # request; the pull request mode deploys the pull request's head.
+      - name: Check out commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.mode == 'merge' && github.sha || github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect deployable changes
+        id: detect
+        uses: OpenSesame/core-github-actions/.github/actions/detect-deployable-changes@fc77001a6a91b5f715a9c7493cced987312d43b6 # actions/detect-deployable-changes/1.0.0
+        with:
+          mode: ${{ inputs.mode }}
+          workflow-file: ${{ inputs.workflow-file }}
+          proof-job: ${{ inputs.proof-job }}
+          proof-caller-job: ${{ inputs.proof-caller-job }}
+          ignore-paths-file: ${{ inputs.ignore-paths-file }}
+          ignore-paths: ${{ inputs.ignore-paths }}
+          deploy-paths: ${{ inputs.deploy-paths }}
+          wait-timeout-minutes: ${{ inputs.wait-timeout-minutes }}
+          poll-interval-seconds: ${{ inputs.poll-interval-seconds }}
+          max-commits: ${{ inputs.max-commits }}
