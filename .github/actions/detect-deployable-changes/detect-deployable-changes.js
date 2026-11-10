@@ -114,12 +114,21 @@ const detectPullRequestChanges = async (
   };
 
   // A newly opened pull request has no earlier deploys, so its files decide.
-  if (event.action !== 'synchronize') {
+  if (event.action === 'opened') {
     if (onlyIgnorableInPullRequest) return onlyIgnorableResult;
     return {
       shouldDeploy: true,
       reason: 'The pull request changes deployable files.',
       files: deployableFiles(pullRequestFiles),
+    };
+  }
+
+  // Any other action, such as labeled or ready_for_review, can follow earlier
+  // deploys with no push to compare them against.
+  if (event.action !== 'synchronize') {
+    return {
+      shouldDeploy: true,
+      reason: `A pull request ${event.action} event always deploys.`,
     };
   }
 
@@ -275,13 +284,17 @@ const findVerifiedCommit = async (
 // Ubuntu runners and macOS both install it here.
 const GIT = '/usr/bin/git';
 
+// Above Node's 1 MiB default, so a large diff is read rather than refused.
+const GIT_MAX_BUFFER = 64 * 1024 * 1024;
+
 const git = arguments_ => {
-  const result = spawnSync(GIT, arguments_, { encoding: 'utf8' });
+  const result = spawnSync(GIT, arguments_, { encoding: 'utf8', maxBuffer: GIT_MAX_BUFFER });
   if (result.error) throw result.error;
   return result;
 };
 
-const createGit = (run = git) => {
+// commitLimit bounds the commit lists, so a long history is never read in full.
+const createGit = (run = git, { commitLimit } = {}) => {
   let historyChecked = false;
   // A shallow clone would diff the wrong ranges or miss earlier commits.
   const requireFullHistory = () => {
@@ -297,7 +310,8 @@ const createGit = (run = git) => {
   };
   const revList = arguments_ => {
     requireFullHistory();
-    const result = run(['rev-list', '--first-parent', ...arguments_]);
+    const limit = commitLimit ? [`--max-count=${commitLimit}`] : [];
+    const result = run(['rev-list', '--first-parent', ...limit, ...arguments_]);
     if (result.status !== 0) {
       throw new Error(`git rev-list ${arguments_.join(' ')} failed: ${result.stderr.trim()}`);
     }
@@ -500,7 +514,9 @@ const main = async (
       alwaysDeploy: config.ignorePathsFile ? [config.ignorePathsFile] : [],
     });
     const event = readEvent(environment, config.mode, readFile);
-    const repo = createGit(runGit);
+    // One more commit than the search reads, so it can tell reaching its limit
+    // apart from finding no deployed commit.
+    const repo = createGit(runGit, { commitLimit: config.maxCommits + 1 });
     const gitHub = createGitHubClient(
       {
         apiUrl: environment.GITHUB_API_URL,

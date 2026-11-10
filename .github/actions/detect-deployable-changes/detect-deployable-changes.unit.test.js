@@ -203,6 +203,22 @@ describe('detectPullRequestChanges', () => {
     await expect(result).resolves.toMatchObject({ shouldDeploy: true });
   });
 
+  // These can follow earlier deploys, so the whole pull request's files can't decide.
+  it.each(['labeled', 'edited', 'ready_for_review'])(
+    'always deploys a %s event, even when the pull request changes only ignorable files',
+    async action => {
+      const { result, findVerified } = detect(
+        { ...pullRequest, action },
+        { ...verifiedAndUnchanged, pullRequestFiles: ['README.md'], pushFiles: ['README.md'] }
+      );
+      await expect(result).resolves.toEqual({
+        shouldDeploy: true,
+        reason: `A pull request ${action} event always deploys.`,
+      });
+      expect(findVerified).not.toHaveBeenCalled();
+    }
+  );
+
   it('skips an ignorable push to an ignorable pull request when none of its commits were deployed', async () => {
     const { result, findVerified } = detect(pullRequest, {
       pullRequestFiles: ['README.md', 'material-change/x.md'],
@@ -780,6 +796,25 @@ describe('createGit', () => {
     expect(repo.changedFiles('y..z')).toEqual(['a', 'b']);
     expect(run.mock.calls.filter(([arguments_]) => arguments_[0] === 'rev-parse')).toHaveLength(1);
   });
+
+  it('bounds both commit lists by the commit limit', () => {
+    const run = jest.fn(arguments_ =>
+      arguments_[0] === 'rev-parse'
+        ? { status: 0, stdout: 'false\n', stderr: '' }
+        : { status: 0, stdout: 'a\nb\n', stderr: '' }
+    );
+    const repo = createGit(run, { commitLimit: 51 });
+    expect(repo.mainCommits('head')).toEqual(['a', 'b']);
+    expect(repo.pullRequestCommits('before', 'base')).toEqual(['a', 'b']);
+    expect(run).toHaveBeenCalledWith(['rev-list', '--first-parent', '--max-count=51', 'head~1']);
+    expect(run).toHaveBeenCalledWith([
+      'rev-list',
+      '--first-parent',
+      '--max-count=51',
+      'before',
+      '^base',
+    ]);
+  });
 });
 
 describe('main', () => {
@@ -828,6 +863,7 @@ describe('main', () => {
         },
       })
     );
+    const gitCalls = jest.fn(runGit);
     const result = await main(
       {
         INPUT_MODE: 'pull-request',
@@ -847,7 +883,7 @@ describe('main', () => {
       },
       {
         fetchImpl: fetchImpl ?? jest.fn(),
-        runGit,
+        runGit: gitCalls,
         readFile: (path, encoding) =>
           readFileSync(path.startsWith('/') ? path : join(directory, path), encoding),
         wait: async () => {},
@@ -855,6 +891,7 @@ describe('main', () => {
     );
     return {
       result,
+      gitCalls,
       output: readFileSync(output, 'utf8'),
       summary: readFileSync(summary, 'utf8'),
     };
@@ -1031,12 +1068,13 @@ describe('main', () => {
           }),
         };
       });
-    const runMerge = (headSha, fetchImpl) =>
+    const runMerge = (headSha, fetchImpl, inputs = {}) =>
       run({
         inputs: {
           INPUT_MODE: 'merge',
           'INPUT_WORKFLOW-FILE': 'on_merge_deploy_thru_prod.yml',
           'INPUT_PROOF-JOB': PROD_PROOF,
+          ...inputs,
         },
         event: { action: 'closed', merged: true, headSha: 'pull-request-head' },
         environment: { GITHUB_SHA: headSha },
@@ -1084,6 +1122,23 @@ describe('main', () => {
       const { output, summary } = await runMerge(docs.mergeSha, runs({}));
       expect(output).toContain('should-deploy=true\n');
       expect(summary).toContain('no earlier commit on the base branch was deployed');
+    });
+
+    it('reads one commit more than max-commits, so it can tell the limit from never deployed', async () => {
+      mergeBranch('one', 'docs/one.md', '# One\n');
+      mergeBranch('two', 'docs/two.md', '# Two\n');
+      const docs = mergeBranch('docs', 'README.md', '# Readme\n');
+      const { output, summary, gitCalls } = await runMerge(docs.mergeSha, runs({}), {
+        'INPUT_MAX-COMMITS': '2',
+      });
+      expect(output).toContain('should-deploy=true\n');
+      expect(summary).toContain('none of the 2 newest earlier commits has a run that passed');
+      expect(gitCalls).toHaveBeenCalledWith([
+        'rev-list',
+        '--first-parent',
+        '--max-count=3',
+        `${docs.mergeSha}~1`,
+      ]);
     });
   });
 });

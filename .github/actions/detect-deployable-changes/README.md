@@ -23,8 +23,9 @@ These always deploy:
 
 - any event other than `pull_request`, such as `workflow_dispatch`
 - a re-run (`GITHUB_RUN_ATTEMPT` above 1)
-- in `pull-request` mode: a reopened pull request, a force-push, an empty push, and a push that
-  changes any deployable file
+- in `pull-request` mode: a reopened pull request, any action other than `opened` and
+  `synchronize` (such as `labeled` or `ready_for_review`), a force-push, an empty push, and a push
+  that changes any deployable file
 - in `merge` mode: a pull request closed without merging
 - an earlier run that failed or was cancelled, or whose proof job is missing
 - an earlier run still unfinished after `wait-timeout-minutes`

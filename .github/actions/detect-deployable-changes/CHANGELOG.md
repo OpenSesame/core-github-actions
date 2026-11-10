@@ -17,5 +17,6 @@ All notable changes to the `detect-deployable-changes` action are documented in 
   `poll-interval-seconds`, and searching at most `max-commits` earlier commits.
 - `should-deploy`, `reason` and `verified-sha` outputs, and a step summary listing the deployable
   files.
-- Deploying on any doubt: other events, re-runs, reopened pull requests, force-pushes, empty pushes,
-  failed, cancelled or unfinished earlier runs, shallow checkouts, bad inputs and any error.
+- Deploying on any doubt: other events, re-runs, reopened pull requests, pull request actions other
+  than `opened` and `synchronize`, force-pushes, empty pushes, failed, cancelled or unfinished
+  earlier runs, shallow checkouts, bad inputs and any error.
