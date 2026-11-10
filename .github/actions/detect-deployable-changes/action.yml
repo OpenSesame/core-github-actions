@@ -1,0 +1,70 @@
+name: Detect deployable changes
+description: >-
+  Decides whether a deploy can be skipped because only ignorable files changed since the last
+  commit whose deploy run passed a proof job. Outputs should-deploy; any doubt deploys.
+
+inputs:
+  mode:
+    description: >-
+      pull-request for a pull request's deploy, merge for a merged pull request's deploy through
+      prod.
+    required: true
+  workflow-file:
+    description: >-
+      File name of the workflow whose earlier pull_request runs prove earlier deploys, such as
+      on_pr_deploy_dev.yml. Usually the calling workflow.
+    required: true
+  proof-job:
+    description: >-
+      Full name of the job, as the jobs API lists it, whose success proves a run deployed its
+      commit, such as "Deploy Dev / Deploy App To S3 / Build and Apply to dev".
+    required: true
+  proof-caller-job:
+    description: >-
+      Name of the caller job whose skipped result stands in for a missing proof job, for callers
+      that skip a reusable workflow call before it starts. Empty to treat a missing proof job as
+      unverified.
+    required: false
+    default: ''
+  ignore-paths-file:
+    description: >-
+      Repository file listing ignorable globs, one per line, with # comments. The file itself
+      always deploys.
+    required: false
+    default: ''
+  ignore-paths:
+    description: Extra ignorable globs, one per line, usually the ones only this mode ignores.
+    required: false
+    default: ''
+  deploy-paths:
+    description: Globs that deploy even when an ignorable glob matches them, one per line.
+    required: false
+    default: ''
+  wait-timeout-minutes:
+    description: How long to wait in total for unfinished earlier runs before deploying.
+    required: false
+    default: '40'
+  poll-interval-seconds:
+    description: How often to check an unfinished earlier run.
+    required: false
+    default: '30'
+  max-commits:
+    description: How many earlier commits to search for a verified one before deploying.
+    required: false
+    default: '50'
+  github-token:
+    description: Token that can read the repository's Actions runs (actions read).
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  should-deploy:
+    description: "'false' when the deploy can be skipped, otherwise 'true'."
+  reason:
+    description: One line explaining the decision.
+  verified-sha:
+    description: The earlier commit whose deploy the decision relies on, empty when there is none.
+
+runs:
+  using: node24
+  main: detect-deployable-changes.js
