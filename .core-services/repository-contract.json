@@ -11,6 +11,7 @@
       "paths": [
         ".github/workflows/deploy_environment.yml",
         ".github/workflows/deploy_thru_prod.yml",
+        ".github/workflows/detect_deployable_changes.yml",
         ".github/workflows/resolve_ci_context.yml",
         ".github/workflows/run_gha_checks.yml",
         ".github/workflows/run_infra_ci.yml",
@@ -31,7 +32,7 @@
         ".github/workflows/tf_validate_plan_single_root.yml",
         ".github/workflows/trigger_workflow_and_wait.yml"
       ],
-      "rationale": "These are the reusable workflows core-github-actions publishes. Consumers call them by file name and the release tags are named after them, so an on_call_ prefix would break every caller.",
+      "rationale": "These are the reusable workflows core-github-actions publishes. Consumers call them by file name and the release tags are named after them, so an on_call_ prefix would break every caller, and new published workflows keep the same naming so the set stays consistent.",
       "owner": "@OpenSesame/core-domain-operators"
     },
     {
