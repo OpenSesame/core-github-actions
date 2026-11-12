@@ -48,6 +48,6 @@
     "check": "npm-run-all --continue-on-error audit lint format test scan"
   },
   "overrides": {
-    "re2js": "2.8.8"
+    "re2js": "2.9.1"
   }
 }
