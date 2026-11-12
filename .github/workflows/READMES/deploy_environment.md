@@ -1,5 +1,10 @@
 # Deploy a Commit to One Environment
 
+> **Deprecated:** call [`tf_apply`](tf_apply.md) instead. This workflow gets no further releases. It
+> takes the same inputs and secrets and only passes them to `tf_apply`, so switch the `uses:` line
+> and keep the `with:` and `secrets:` blocks. Check names lose one level:
+> `<job> / Terraform Apply / Terraform Apply` becomes `<job> / Terraform Apply`.
+
 This reusable workflow applies one Terraform root to a selected environment by calling the
 `tf_apply` reusable workflow. `terraform apply` validates and plans as part of the apply, so the
 workflow has no separate plan job. Callers should validate in Repo Checks and plan in CI before merge,
