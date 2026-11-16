@@ -574,7 +574,10 @@ const main = async (
 };
 
 if (require.main === module) {
-  main();
+  main().catch(error => {
+    console.log(`::error title=Detect deployable changes::${singleLine(error?.message ?? error)}`);
+    process.exitCode = 1;
+  });
 }
 
 module.exports = {

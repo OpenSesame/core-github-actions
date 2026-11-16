@@ -293,7 +293,7 @@ if (require.main === module) {
     fs.appendFileSync(githubOutput, `releasedVersions=${releasedVersions.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
-      `validationMessage=${validationMessage.replace(/\n/g, '\\n')}\n`
+      `validationMessage=${validationMessage.replaceAll('\n', '\\n')}\n`
     );
     fs.appendFileSync(
       githubOutput,

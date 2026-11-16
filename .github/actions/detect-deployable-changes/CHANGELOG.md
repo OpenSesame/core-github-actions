@@ -2,6 +2,13 @@
 
 All notable changes to the `detect-deployable-changes` action are documented in this file.
 
+## 1.0.1
+
+### Fixed
+
+- An error thrown outside change detection, such as while writing outputs, now fails the step
+  with an `::error::` annotation instead of an unhandled promise rejection.
+
 ## 1.0.0
 
 ### Added

@@ -105,7 +105,6 @@
         "deploy/**",
         "select-branch-workspace/**",
         "semgrep/**",
-        "tf-apply/**",
         "tf-plan/**",
         "tf-plan-comment/**"
       ],

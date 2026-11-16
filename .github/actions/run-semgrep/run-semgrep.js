@@ -220,7 +220,7 @@ async function main() {
 
   stageResultsForReviewdog(SEMGREP_RESULTS_FILE_NAME);
 
-  const scanSummary = writeFindingsMarkdown(metrics, baseline, semgrepConfig);
+  const scanSummary = writeFindingsMarkdown(metrics);
   const configSummary = writeConfigMarkdown(baseline, semgrepConfig);
 
   const scanStatus = evaluateScanStatus(semgrepConfig.failLevel, metrics);
@@ -229,8 +229,8 @@ async function main() {
   const githubOutput = process.env.GITHUB_OUTPUT;
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `normalized-baseline=${baseline}\n`);
-    fs.appendFileSync(githubOutput, `scan-summary=${scanSummary.replace(/\n/g, '\\n')}\n`);
-    fs.appendFileSync(githubOutput, `config-summary=${configSummary.replace(/\n/g, '\\n')}\n`);
+    fs.appendFileSync(githubOutput, `scan-summary=${scanSummary.replaceAll('\n', '\\n')}\n`);
+    fs.appendFileSync(githubOutput, `config-summary=${configSummary.replaceAll('\n', '\\n')}\n`);
     fs.appendFileSync(githubOutput, `scan-status=${scanStatus}\n`);
     fs.appendFileSync(githubOutput, `total-findings=${metrics.totalFindings}\n`);
     fs.appendFileSync(githubOutput, `error-count=${metrics.numErrors}\n`);

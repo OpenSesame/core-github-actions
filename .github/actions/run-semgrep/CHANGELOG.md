@@ -2,6 +2,13 @@
 
 All notable changes to the run-semgrep GitHub Action will be documented in this file.
 
+## 2.0.1
+
+### Fixed
+
+- `writeFindingsMarkdown` is called with only the metrics it uses.
+- Multiline outputs escape newlines with `replaceAll`. Output is unchanged.
+
 ## 2.0.0 - PR context from the event only
 
 ### Changed

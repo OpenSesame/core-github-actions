@@ -15,9 +15,11 @@ been actively maintained in years and are considered deprecated by the current C
 - [deploy](./deploy)
 - [select-branch-workspace](./select-branch-workspace/)
 - [semgrep](./semgrep/)
-- [tf-apply](./tf-apply)
 - [tf-plan](./tf-plan/)
 - [tf-plan-comment](./tf-plan-comment/)
+
+`tf-apply` was removed in November 2026 because nothing called it. Pins to an existing tag or
+commit SHA still work.
 
 ### Why deprecated
 
