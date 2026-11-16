@@ -1,6 +1,9 @@
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 
+// A backslash followed by n, so a multiline value fits on one GITHUB_OUTPUT line.
+const ESCAPED_NEWLINE = String.raw`\n`;
+
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
 
@@ -225,11 +228,11 @@ async function main() {
     fs.appendFileSync(githubOutput, `normalized-baseline=${baseline}\n`);
     fs.appendFileSync(
       githubOutput,
-      `scan-summary=${scanSummary.replaceAll('\n', String.raw`\n`)}\n`
+      `scan-summary=${scanSummary.replaceAll('\n', ESCAPED_NEWLINE)}\n`
     );
     fs.appendFileSync(
       githubOutput,
-      `config-summary=${configSummary.replaceAll('\n', String.raw`\n`)}\n`
+      `config-summary=${configSummary.replaceAll('\n', ESCAPED_NEWLINE)}\n`
     );
     fs.appendFileSync(githubOutput, `scan-status=${scanStatus}\n`);
     fs.appendFileSync(githubOutput, `total-findings=${metrics.totalFindings}\n`);

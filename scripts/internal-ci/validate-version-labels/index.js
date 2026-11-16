@@ -25,6 +25,9 @@
 
 const fs = require('node:fs');
 
+// A backslash followed by n, so a multiline value fits on one GITHUB_OUTPUT line.
+const ESCAPED_NEWLINE = String.raw`\n`;
+
 // Returns an array of normalized, trimmed, non-empty label strings
 function getLabelArray(rawLabels) {
   return rawLabels
@@ -293,7 +296,7 @@ if (require.main === module) {
     fs.appendFileSync(githubOutput, `releasedVersions=${releasedVersions.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
-      `validationMessage=${validationMessage.replaceAll('\n', String.raw`\n`)}\n`
+      `validationMessage=${validationMessage.replaceAll('\n', ESCAPED_NEWLINE)}\n`
     );
     fs.appendFileSync(
       githubOutput,
