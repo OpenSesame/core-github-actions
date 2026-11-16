@@ -8,6 +8,12 @@
 > and
 > [`on_call_deploy_env.yml`](https://github.com/OpenSesame/core-mfe-template/blob/main/.github/workflows/on_call_deploy_env.yml)
 > in core-mfe-template.
+>
+> Replace this workflow in the same change as the repository's
+> [`deploy_environment`](deploy_environment.md) callers. Its applies run through the `tf_apply` of
+> its own release, which uses a different concurrency group from `tf_apply` 0.4.0 and has no lock
+> timeout. Its applies then don't wait for the new ones, and one can fail on the Terraform state
+> lock. Rerunning it recovers.
 
 This reusable workflow deploys one commit sequentially to dev, stage, and prod, creates a timestamped
 GitHub release, and posts the final stage, prod, and release status to the associated pull request.

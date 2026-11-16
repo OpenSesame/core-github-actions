@@ -5,9 +5,10 @@
 > and keep the `with:` and `secrets:` blocks. Check names lose one level:
 > `<job> / Terraform Apply / Terraform Apply` becomes `<job> / Terraform Apply`.
 >
-> Move every caller in a repository to `tf_apply` in the same change. Runs on the old version use a
-> different concurrency group and no lock timeout, so they don't wait for runs on the new one, and an
-> old run can fail on the Terraform state lock. Rerunning it recovers.
+> Move every caller in a repository to `tf_apply` in the same change, and replace
+> [`deploy_thru_prod`](deploy_thru_prod.md) there too, since it calls this workflow. Runs on the old
+> version use a different concurrency group and no lock timeout, so they don't wait for runs on the
+> new one, and an old run can fail on the Terraform state lock. Rerunning it recovers.
 
 This reusable workflow applies one Terraform root to a selected environment by calling the
 `tf_apply` reusable workflow. `terraform apply` validates and plans as part of the apply, so the
