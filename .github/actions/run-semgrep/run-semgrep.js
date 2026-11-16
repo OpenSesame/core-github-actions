@@ -1,5 +1,8 @@
-const { spawnSync } = require('child_process');
-const fs = require('fs');
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+
+// A backslash followed by n, so a multiline value fits on one GITHUB_OUTPUT line.
+const ESCAPED_NEWLINE = String.raw`\n`;
 
 const SEMGREP_RESULTS_FILE_NAME = 'semgrep_results.json';
 const REVIEWDOG_INPUT_FILE_NAME = 'reviewdog_input.txt';
@@ -130,32 +133,26 @@ function getSemgrepMetrics(resultsFileName) {
 function writeFindingsMarkdown(metrics) {
   const { totalFindings, numErrors, numWarnings, numInfo } = metrics;
 
-  let lines = [];
-  lines.push('### Scan Findings');
-  lines.push('| Total | Errors | Warnings | Info |');
-  lines.push('|------:|------:|--------:|----:|');
-  lines.push(`| ${totalFindings} | ${numErrors} | ${numWarnings} | ${numInfo} |`);
-
-  return lines.join('\n');
+  return [
+    '### Scan Findings',
+    '| Total | Errors | Warnings | Info |',
+    '|------:|------:|--------:|----:|',
+    `| ${totalFindings} | ${numErrors} | ${numWarnings} | ${numInfo} |`,
+  ].join('\n');
 }
 
 function writeConfigMarkdown(baseline, config) {
   const { rules, targets, scanMode, failLevel, extraArgs } = config;
 
-  let lines = [];
-  lines.push('### Scan Config');
-  lines.push(`- **Rules**: \`${rules}\``);
-  lines.push(`- **Targets**: \`${targets}\``);
-  lines.push(`- **Scan mode**: \`${scanMode}\``);
-  if (scanMode !== 'full') {
-    lines.push(`- **Baseline**: \`${baseline}\``);
-  } else {
-    lines.push('- **Baseline**: `n/a`');
-  }
-  lines.push(`- **Fail level**: \`${failLevel}\``);
-  lines.push(`- **Extra args**: \`${extraArgs || 'n/a'}\``);
-
-  return lines.join('\n');
+  return [
+    '### Scan Config',
+    `- **Rules**: \`${rules}\``,
+    `- **Targets**: \`${targets}\``,
+    `- **Scan mode**: \`${scanMode}\``,
+    scanMode === 'full' ? '- **Baseline**: `n/a`' : `- **Baseline**: \`${baseline}\``,
+    `- **Fail level**: \`${failLevel}\``,
+    `- **Extra args**: \`${extraArgs || 'n/a'}\``,
+  ].join('\n');
 }
 
 function evaluateScanStatus(failLevel, metrics) {
@@ -229,8 +226,14 @@ async function main() {
   const githubOutput = process.env.GITHUB_OUTPUT;
   if (githubOutput) {
     fs.appendFileSync(githubOutput, `normalized-baseline=${baseline}\n`);
-    fs.appendFileSync(githubOutput, `scan-summary=${scanSummary.replaceAll('\n', '\\n')}\n`);
-    fs.appendFileSync(githubOutput, `config-summary=${configSummary.replaceAll('\n', '\\n')}\n`);
+    fs.appendFileSync(
+      githubOutput,
+      `scan-summary=${scanSummary.replaceAll('\n', ESCAPED_NEWLINE)}\n`
+    );
+    fs.appendFileSync(
+      githubOutput,
+      `config-summary=${configSummary.replaceAll('\n', ESCAPED_NEWLINE)}\n`
+    );
     fs.appendFileSync(githubOutput, `scan-status=${scanStatus}\n`);
     fs.appendFileSync(githubOutput, `total-findings=${metrics.totalFindings}\n`);
     fs.appendFileSync(githubOutput, `error-count=${metrics.numErrors}\n`);

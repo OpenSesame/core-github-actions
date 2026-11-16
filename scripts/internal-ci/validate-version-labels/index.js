@@ -23,7 +23,10 @@
 //       validComponents: comma-separated list of valid components with versions in format component-path/X.Y.Z
 //   - Exits with code 1 on validation failure, 0 on success
 
-const fs = require('fs');
+const fs = require('node:fs');
+
+// A backslash followed by n, so a multiline value fits on one GITHUB_OUTPUT line.
+const ESCAPED_NEWLINE = String.raw`\n`;
 
 // Returns an array of normalized, trimmed, non-empty label strings
 function getLabelArray(rawLabels) {
@@ -39,7 +42,7 @@ const componentTypeAliases = {
   a: 'actions',
   wf: 'workflows',
 };
-const semverPattern = '\\d+\\.\\d+\\.\\d+'; // Semantic versioning pattern e.g., 1.2.3
+const semverPattern = String.raw`\d+\.\d+\.\d+`; // Semantic versioning pattern e.g., 1.2.3
 // Pattern for valid version label: v:<a|wf>/component-name/X.Y.Z
 const componentVersionRegEx = new RegExp(
   `^${versionLabelPrefix}(${Object.keys(componentTypeAliases).join('|')})/([a-z0-9_-]+)/(${semverPattern})$`
@@ -135,8 +138,8 @@ function getInvalidComponents(componentVersionMap) {
 
 /// Checks for a `## X.Y.Z` heading, optionally followed by ` - title` or ` — title`
 function hasChangelogEntry(changelogContent, version) {
-  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^## ${escapedVersion}(?:[ \\t]+[-—][ \\t].*)?[ \\t\\r]*$`, 'm').test(
+  const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`);
+  return new RegExp(String.raw`^## ${escapedVersion}(?:[ \t]+[-—][ \t].*)?[ \t\r]*$`, 'm').test(
     changelogContent
   );
 }
@@ -293,7 +296,7 @@ if (require.main === module) {
     fs.appendFileSync(githubOutput, `releasedVersions=${releasedVersions.join(', ')}\n`);
     fs.appendFileSync(
       githubOutput,
-      `validationMessage=${validationMessage.replaceAll('\n', '\\n')}\n`
+      `validationMessage=${validationMessage.replaceAll('\n', ESCAPED_NEWLINE)}\n`
     );
     fs.appendFileSync(
       githubOutput,

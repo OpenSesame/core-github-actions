@@ -8,7 +8,7 @@
 /// Usage:
 ///   node scripts/internal-ci/get-version-tags/index.js <labels-file>
 
-const fs = require('fs');
+const fs = require('node:fs');
 const {
   getLabelArray,
   getVersionLabelArray,

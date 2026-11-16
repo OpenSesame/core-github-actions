@@ -34,7 +34,7 @@ const MAX_JOB_PAGES = 10;
 // and a trailing / matches everything under it. Dot files match like any other.
 // Anything else that looks like glob syntax is refused, so a pattern never
 // silently means something else.
-const escapeRegExp = character => character.replace(/[.+^$()|]/g, '\\$&');
+const escapeRegExp = character => character.replace(/[.+^$()|]/g, String.raw`\$&`);
 
 const globToRegExp = pattern => {
   if (/[[\]{}!\\]/.test(pattern)) {

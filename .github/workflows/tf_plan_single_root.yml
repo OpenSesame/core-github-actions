@@ -178,7 +178,7 @@ jobs:
                 { grep -vE '^[[:space:]]*(#|//)' "$file" || true; } \
                   | { grep -oE '(fileexists\(([[:space:]]*[A-Za-z_][A-Za-z0-9_]*\()*[[:space:]]*\\?|output_path"?[[:space:]]*[=:][[:space:]]*)?"\$\{path\.(module|root|cwd)\}[^"\\]*\\?"' || true; } \
                   | while IFS= read -r ref; do
-                    case "$ref" in fileexists* | output_path*) continue ;; esac
+                    case "$ref" in fileexists* | output_path*) continue ;; *) ;; esac
                     ref="${ref#\"}"
                     ref="${ref%\"}"
                     ref="${ref%\\}"
