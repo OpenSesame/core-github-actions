@@ -1,5 +1,14 @@
 # Deploy Through Production
 
+> **Deprecated:** deploy through prod from a workflow in your own repository that calls
+> [`tf_apply`](tf_apply.md) once per environment and root. This workflow gets no further releases,
+> and callers pinned to a release keep working. A chain in your own repository can apply several
+> roots per environment in order and set its own concurrency. For an example, see
+> [`on_merge_deploy_thru_prod.yml`](https://github.com/OpenSesame/core-mfe-template/blob/main/.github/workflows/on_merge_deploy_thru_prod.yml)
+> and
+> [`on_call_deploy_env.yml`](https://github.com/OpenSesame/core-mfe-template/blob/main/.github/workflows/on_call_deploy_env.yml)
+> in core-mfe-template.
+
 This reusable workflow deploys one commit sequentially to dev, stage, and prod, creates a timestamped
 GitHub release, and posts the final stage, prod, and release status to the associated pull request.
 
@@ -10,7 +19,7 @@ GitHub release, and posts the final stage, prod, and release status to the assoc
 
 ## Pairing plan and apply
 
-This version composes `tf_apply` 0.4.0, whose `terraform init`
+This version composes `deploy_environment` 0.4.1 and `tf_apply` 0.3.1, whose `terraform init`
 installs the provider versions in each root's committed `.terraform.lock.hcl`. Plan in CI with
 [`tf_plan_single_root`](tf_plan_single_root.md) or [`tf_plan_env_roots`](tf_plan_env_roots.md),
 which do the same. The deprecated `tf_validate_plan_*` workflows still run
@@ -36,7 +45,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   deploy-through-prod:
-    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.5.0
+    uses: OpenSesame/core-github-actions/.github/workflows/deploy_thru_prod.yml@workflows/deploy_thru_prod/0.4.2
     with:
       commit-identifier: ${{ github.sha }}
       oidc-domain: core
@@ -68,7 +77,7 @@ jobs:
 ## Behavior
 
 1. Generates a UTC runner timestamp in `YYYY.MM.DD-HH-MM` form for the release tag.
-2. Deploys dev by calling `tf_apply`.
+2. Deploys dev by calling `deploy_environment`.
 3. Deploys stage only after dev succeeds.
 4. Deploys prod only after stage succeeds.
 5. Creates a GitHub release for `commit-identifier` with `gh release create`, only after prod
@@ -76,11 +85,8 @@ jobs:
 6. Posts stage, prod, and release results to the pull request when a PR context is available.
 
 The release-tag job only runs when the caller's event is a merged pull request or
-`workflow_dispatch`. Other caller event contexts cause the deployment chain to be skipped.
-
-Runs for the same repository, Terraform roots, and workspace share a concurrency group. One chain
-deploys at a time and one waits. A newer run replaces the waiting one, since its commit includes the
-older changes. Each environment's apply also takes the `tf_apply` concurrency group.
+`workflow_dispatch`. Other caller event contexts cause the deployment chain to be skipped. Runs for
+the same repository share one concurrency group.
 
 The workflow sets `permissions: {}`, so callers still grant `id-token: write`, `contents: write`,
 and `pull-requests: write`, and each job requests only what it uses: the deploy jobs
@@ -95,4 +101,4 @@ Its direct and composed jobs run on Ubuntu 26.04.
 
 ## References
 
-- [Terraform apply workflow](tf_apply.md)
+- [Single-environment deploy workflow](deploy_environment.md)

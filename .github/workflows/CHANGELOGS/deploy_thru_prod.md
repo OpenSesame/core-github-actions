@@ -2,16 +2,8 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
-## 0.5.0
-
-### Changed
-
-- Each environment deployment calls `tf_apply` 0.4.0 directly instead of the deprecated
-  `deploy_environment`, which only passed inputs through. Check names lose one level: for example,
-  `Apply Dev / Terraform Apply / Terraform Apply` becomes `Apply Dev / Terraform Apply`.
-- The concurrency group covers the repository, the three Terraform roots, and the workspace, and is
-  prefixed with `core-gha-deploy-thru-prod-` so it can't match a caller's own group. Chains for
-  different roots or workspaces in one repository no longer wait on or replace each other.
+> **Deprecated:** replaced by a deploy workflow in the caller's repository that calls
+> [`tf_apply`](tf_apply.md) for each environment. No further releases.
 
 ## 0.4.2
 
