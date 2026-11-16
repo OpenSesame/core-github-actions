@@ -111,6 +111,14 @@ describe('pr-open-check', () => {
     );
   });
 
+  test('only follows HTTPS URLs, including redirects', () => {
+    const result = runAction({ response: [] });
+
+    expect(result.curlArgs).toEqual(
+      expect.arrayContaining(['--proto', '=https', '--proto-redir', '=https'])
+    );
+  });
+
   test('returns a matching PR beyond the first 30 results', () => {
     const otherPullRequests = Array.from({ length: 40 }, (_value, index) =>
       pullRequest({ number: 100 + index, headRef: `feature/other-${index}` })

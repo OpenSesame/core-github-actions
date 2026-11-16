@@ -1,0 +1,66 @@
+name: Resolve commit
+description: Resolves a commit SHA, short SHA, tag or branch to the full SHA of the commit it names, and fails if it names none
+
+inputs:
+  commit-identifier:
+    description: SHA, short SHA, tag or branch to resolve; empty resolves the commit that triggered the workflow (github.sha)
+    required: false
+    default: ''
+  repository:
+    description: Repository to resolve the commit in, as owner/name
+    required: false
+    default: ${{ github.repository }}
+  github-token:
+    description: Token that can read the repository's contents
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  sha:
+    description: Full 40-character SHA of the resolved commit
+    value: ${{ steps.resolve.outputs.sha }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve the commit to its full SHA
+      id: resolve
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        COMMIT_IDENTIFIER: ${{ inputs.commit-identifier }}
+        REPOSITORY: ${{ inputs.repository }}
+      run: |
+        set -Eeuo pipefail
+
+        # Escapes a value for the data part of a workflow command, so an identifier can't end the
+        # annotation early or start another command.
+        escape_data() {
+          local value=$1
+          value=${value//'%'/'%25'}
+          value=${value//$'\r'/'%0D'}
+          value=${value//$'\n'/'%0A'}
+          printf '%s' "$value"
+        }
+
+        identifier=${COMMIT_IDENTIFIER:-${GITHUB_SHA:-}}
+        if [[ -z "$identifier" ]]; then
+          echo "::error title=Unresolved commit::commit-identifier is empty and GITHUB_SHA is not set."
+          exit 1
+        fi
+
+        encoded_identifier=$(jq -rn --arg value "$identifier" '$value | @uri')
+        error_file=$(mktemp)
+        if ! sha=$(gh api "repos/$REPOSITORY/commits/$encoded_identifier" --jq .sha 2>"$error_file"); then
+          reason=$(tail -n 1 "$error_file")
+          echo "::error title=Unresolved commit::Could not resolve '$(escape_data "$identifier")' in $REPOSITORY: $(escape_data "$reason")"
+          exit 1
+        fi
+
+        if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "::error title=Unresolved commit::Could not resolve '$(escape_data "$identifier")' in $REPOSITORY to a full commit SHA."
+          exit 1
+        fi
+
+        echo "sha=$sha" >> "$GITHUB_OUTPUT"
+        echo "Resolved '$identifier' to $sha"

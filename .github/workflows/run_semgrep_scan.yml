@@ -28,7 +28,7 @@ on:
         required: false
         default: ''
       semgrep-version:
-        description: Semgrep version to install
+        description: Exact Semgrep version to install (X.Y.Z)
         type: string
         required: false
         default: '1.183.0'
@@ -100,11 +100,11 @@ jobs:
         env:
           SEMGREP_VERSION: ${{ inputs.semgrep-version }}
         run: |
-          if [ -n "$SEMGREP_VERSION" ]; then
-            python3 -m pip install "semgrep==$SEMGREP_VERSION"
-          else
-            python3 -m pip install semgrep
+          if [[ ! "$SEMGREP_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error title=Semgrep Scan::semgrep-version must be an exact X.Y.Z version, got '$SEMGREP_VERSION'"
+            exit 1
           fi
+          python3 -m pip install --only-binary :all: "semgrep==$SEMGREP_VERSION"
 
       - name: Run Semgrep
         id: semgrep

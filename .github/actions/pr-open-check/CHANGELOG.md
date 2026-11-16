@@ -2,6 +2,12 @@
 
 All notable changes to the **pr-open-check** composite action will be documented in this file.
 
+## 2.1.1
+
+### Fixed
+
+- The GitHub API request only follows HTTPS URLs, including on redirects.
+
 ## 2.1.0 - Match the PR head branch
 
 ### Added

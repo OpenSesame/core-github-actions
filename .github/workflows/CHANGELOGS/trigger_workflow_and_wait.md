@@ -3,6 +3,12 @@
 All notable changes to the **trigger_workflow_and_wait** reusable workflow are documented in this
 file.
 
+## 1.0.1
+
+### Fixed
+
+- GitHub API requests only follow HTTPS URLs, including on redirects.
+
 ## 1.0.0
 
 ### Changed

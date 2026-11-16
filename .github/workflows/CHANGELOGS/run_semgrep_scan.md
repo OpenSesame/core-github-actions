@@ -2,6 +2,15 @@
 
 All notable changes to the **run_semgrep_scan** callable workflow are documented in this file.
 
+## 3.0.0
+
+### Changed
+
+- **Breaking:** `semgrep-version` must be an exact `X.Y.Z` version. An empty value no longer
+  installs the latest Semgrep; the job fails instead. Omit the input to use the default.
+- Semgrep is installed from prebuilt wheels only (`--only-binary :all:`), so pip never runs a
+  package's setup scripts.
+
 ## 2.0.2
 
 ### Changed
