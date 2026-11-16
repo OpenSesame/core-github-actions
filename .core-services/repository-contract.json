@@ -42,14 +42,6 @@
       "rationale": "Every dependency here is a devDependency, which run_npm_audit omits, so the job would audit nothing. App CI runs npm run audit:npm on the full tree instead.",
       "owner": "@OpenSesame/core-domain-operators",
       "isWarning": true
-    },
-    {
-      "id": "no-sonar-project",
-      "requirement": "ci-job:sonar",
-      "paths": [".github/workflows/on_push_ci.yml"],
-      "rationale": "core-github-actions has no SonarCloud project; add the Sonar job when one exists.",
-      "owner": "@OpenSesame/core-domain-operators",
-      "isWarning": true
     }
   ]
 }
