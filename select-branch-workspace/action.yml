@@ -38,7 +38,6 @@ runs:
 
     # sed 's/.*\///' removes everything before the final slash
     # sed 's/\(^.\{1,50\}\).*/\1/' #Character limit is 50. Terraform workspace allows up to 90 characters
-    # TODO: Remove special characters. Eg sed 's/[#$%*@]//g'
 
     - name: Select Workspace
       shell: bash
