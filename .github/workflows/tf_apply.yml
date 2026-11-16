@@ -38,8 +38,10 @@ on:
       ORG_GITHUB_PACKAGES_READ_ONLY_TOKEN:
         required: true
 
+# One apply at a time per Terraform state. A newer pending run replaces an older pending one, since
+# the newer commit includes its changes.
 concurrency:
-  group: ${{ github.repository }}-${{ inputs.environment }}-TF-Apply
+  group: core-gha-tf-apply-${{ github.repository }}-${{ inputs.environment }}-${{ inputs.terraform-root }}-${{ inputs.terraform-workspace }}
 
 permissions: {}
 
@@ -128,4 +130,4 @@ jobs:
         run: terraform workspace select -or-create "$TF_WORKSPACE_NAME"
 
       - name: Apply Terraform
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -lock-timeout=5m

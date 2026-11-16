@@ -36,7 +36,7 @@ apply differ from what CI showed.
 ```yaml
 jobs:
   terraform-apply:
-    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.3.2
+    uses: OpenSesame/core-github-actions/.github/workflows/tf_apply.yml@workflows/tf_apply/0.4.0
     with:
       environment: dev
       oidc-domain: core
@@ -80,11 +80,18 @@ jobs:
 5. Runs `terraform init`, which installs the provider versions in the required, committed
    `.terraform.lock.hcl`.
 6. Selects or creates `terraform-workspace`.
-7. Runs `terraform apply -auto-approve -input=false`.
+7. Runs `terraform apply -auto-approve -input=false -lock-timeout=5m`, which waits up to five
+   minutes for another run's state lock, such as a CI plan's.
 
 The apply job sets `TF_VAR_IACDeploymentRef` to the current Actions run URL and
-`TF_VAR_release_name` to `release-tag`. Runs for the same repository and environment share a
-concurrency group. The workflow sets `permissions: {}`; the apply job requests `id-token: write`
+`TF_VAR_release_name` to `release-tag`.
+
+Runs for the same repository, environment, root, and workspace share a concurrency group, so applies
+to different states run in parallel. One run applies at a time and one waits. A newer run replaces
+the waiting one, since its commit includes the older changes. A manually dispatched run, such as a
+rollback, can be replaced the same way, so check that it ran.
+
+The workflow sets `permissions: {}`; the apply job requests `id-token: write`
 and `contents: read`, and the summary job requests none.
 Both workflow jobs run on Ubuntu 26.04.
 

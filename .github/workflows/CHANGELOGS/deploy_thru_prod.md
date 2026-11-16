@@ -2,6 +2,9 @@
 
 All notable changes to the **deploy_thru_prod** reusable workflow are documented in this file.
 
+> **Deprecated:** replaced by a deploy workflow in the caller's repository that calls
+> [`tf_apply`](tf_apply.md) for each environment. No further releases.
+
 ## 0.4.2
 
 ### Changed

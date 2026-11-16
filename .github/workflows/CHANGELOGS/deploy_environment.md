@@ -2,6 +2,9 @@
 
 All notable changes to the **deploy_environment** reusable workflow are documented in this file.
 
+> **Deprecated:** replaced by calling [`tf_apply`](tf_apply.md) directly, with the same inputs and
+> secrets. No further releases.
+
 ## 0.4.2
 
 ### Changed

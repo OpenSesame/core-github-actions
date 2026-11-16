@@ -2,6 +2,19 @@
 
 All notable changes to the **tf_apply** reusable workflow are documented in this file.
 
+## 0.4.0
+
+### Changed
+
+- The concurrency group covers the repository, environment, Terraform root, and workspace, so
+  applies to different states in one environment no longer wait on each other, and a waiting apply
+  to one workspace is no longer replaced by a run for another. The group is prefixed with
+  `core-gha-tf-apply-` so it can't match a caller's own group.
+- Runs of earlier versions use a different group, so they don't queue behind this version. Upgrade
+  every caller in a repository together. Terraform's state lock still stops two applies to one state.
+- `terraform apply` passes `-lock-timeout=5m`, so it waits for a state lock held by another run, such
+  as a CI plan, instead of failing.
+
 ## 0.3.2
 
 ### Changed
