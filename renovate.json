@@ -10,7 +10,9 @@
     ":automergePr",
     ":automergeRequireAllStatusChecks"
   ],
-  "dependencyDashboardAutoclose": true,
+  "dependencyDashboard": {
+    "autoclose": true
+  },
   "timezone": "America/Los_Angeles",
   "automergeSchedule": ["* 9-15 * * 2-4"],
   "minimumReleaseAge": "7 days",
