@@ -18,12 +18,12 @@
     "@eslint/js": "10.0.1",
     "@eslint/json": "2.1.1",
     "@eslint/markdown": "8.0.3",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "globals": "17.14.0",
     "jest": "30.5.2",
-    "markdownlint-cli2": "0.24.0",
-    "npm-run-all2": "9.0.4",
-    "prettier": "3.9.10",
+    "markdownlint-cli2": "0.24.2",
+    "npm-run-all2": "9.1.0",
+    "prettier": "3.10.1",
     "semgrep": "0.0.1"
   },
   "scripts": {
